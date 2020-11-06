@@ -1,0 +1,7 @@
+# Platfrom IO
+.pio
+
+# Eclipse
+.settings
+.project
+.cproject
