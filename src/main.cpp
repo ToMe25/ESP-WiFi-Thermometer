@@ -6,10 +6,11 @@
  */
 
 #include <main.h>
-#include <sstream>
 #include <regex>
+#include <sstream>
 #include <Adafruit_Sensor.h>
-#include <WiFi.h>
+#include <ArduinoOTA.h>
+#include <ESPmDNS.h>
 
 void getIndex(AsyncWebServerRequest *request) {
 	std::string page = INDEX_HTML;
@@ -60,12 +61,7 @@ void setupWifi() {
 	WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
 
-void setup() {
-	Serial.begin(115200);
-	dht.begin();
-
-	setupWifi();
-
+void setupWebServer() {
 	server.on("/", HTTP_GET, getIndex);
 	server.on("/index.html", HTTP_GET, getIndex);
 
@@ -92,6 +88,51 @@ void setup() {
 	server.begin();
 }
 
+void setupOTA() {
+	ArduinoOTA.setHostname(HOSTNAME);
+	ArduinoOTA.setPassword(OTA_PASS);
+
+	ArduinoOTA.onStart([]() {
+		Serial.println("Start updating sketch.");
+	});
+
+	ArduinoOTA.onProgress([](uint progress, uint total) {
+		Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+	});
+
+	ArduinoOTA.onEnd([]() {
+		Serial.println("\nUpdate Done.");
+	});
+
+	ArduinoOTA.onError([](ota_error_t error) {
+		Serial.printf("OTA Error[%u]: ", error);
+		if (error == OTA_AUTH_ERROR) {
+			Serial.println("Auth Failed.");
+		} else if (error == OTA_BEGIN_ERROR) {
+			Serial.println("Begin Failed.");
+		} else if (error == OTA_CONNECT_ERROR) {
+			Serial.println("Connect Failed.");
+		} else if (error == OTA_RECEIVE_ERROR) {
+			Serial.println("Receive Failed.");
+		} else if (error == OTA_END_ERROR) {
+			Serial.println("End Failed.");
+		}
+	});
+
+	ArduinoOTA.begin();
+}
+
+void setup() {
+	Serial.begin(115200);
+	dht.begin();
+
+	setupWifi();
+	setupWebServer();
+	setupOTA();
+
+	MDNS.addService("http", "tcp", 80);
+}
+
 bool handle_serial_input(std::string input) {
 	if (input == "ip") {
 		Serial.println("IP Address: ");
@@ -113,8 +154,17 @@ bool handle_serial_input(std::string input) {
 }
 
 void loop() {
-	temperature = dht.readTemperature();
-	humidity = dht.readHumidity();
+	uint64_t start = millis();
+
+	if (loop_iterations % 4 == 0) {
+		temperature = dht.readTemperature();
+		humidity = dht.readHumidity();
+
+		if (loop_iterations % 20 == 0) {
+			Serial.printf("Temperature: %f°C\n", temperature);
+			Serial.printf("Humidity: %f%%\n", humidity);
+		}
+	}
 
 	uint available = Serial.available();
 	if (available > 0) {
@@ -137,10 +187,8 @@ void loop() {
 		}
 	}
 
-	if (loop_iterations % 10 == 0) {
-		Serial.printf("Temperature: %f°C\n", temperature);
-		Serial.printf("Humidity: %f%%\n", humidity);
-	}
+	ArduinoOTA.handle();
+
 	loop_iterations++;
-	delay(1000);
+	delay(500 + start - millis());
 }

@@ -17,6 +17,9 @@ extern const char WIFI_SSID[] asm("_binary_wifissid_txt_start");
 // includes the content of the file "wifipass.txt" in the project root.
 // Make sure this file doesn't end with an empty line.
 extern const char WIFI_PASS[] asm("_binary_wifipass_txt_start");
+// includes the content of the file "otapass.txt" in the project root.
+// Make sure this file doesn't end with an empty line.
+extern const char OTA_PASS[] asm("_binary_otapass_txt_start");
 
 extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
 extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
@@ -41,6 +44,6 @@ static float humidity;
 
 std::string command;
 
-uint loop_iterations = 0;
+uint8_t loop_iterations = 0;
 
 #endif /* SRC_MAIN_H_ */
