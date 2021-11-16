@@ -22,7 +22,11 @@ extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
 extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
 
-static IPAddress localhost;
+static constexpr char HOSTNAME[] = "esp32-dht22";
+
+static const IPAddress GATEWAY(192, 168, 2, 1);
+
+static IPAddress localhost = INADDR_NONE;
 static IPv6Address localhost_ipv6;
 
 static AsyncWebServer server(80);
@@ -38,7 +42,5 @@ static float humidity;
 std::string command;
 
 uint loop_iterations = 0;
-
-bool ipv6_enabled;
 
 #endif /* SRC_MAIN_H_ */

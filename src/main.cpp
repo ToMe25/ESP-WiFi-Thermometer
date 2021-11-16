@@ -23,37 +23,48 @@ void getIndex(AsyncWebServerRequest *request) {
 	request->send(200, "text/html", page.c_str());
 }
 
+void WiFiEvent(WiFiEvent_t event) {
+	switch(event) {
+	case SYSTEM_EVENT_STA_START:
+		WiFi.setHostname(HOSTNAME);
+		break;
+	case SYSTEM_EVENT_STA_CONNECTED:
+		WiFi.enableIpV6();
+		break;
+	case SYSTEM_EVENT_GOT_IP6:
+        Serial.print("STA IPv6: ");
+        Serial.println(localhost_ipv6 = WiFi.localIPv6());
+        break;
+	case SYSTEM_EVENT_STA_GOT_IP:
+        Serial.print("STA IP: ");
+        Serial.println(localhost = WiFi.localIP());
+        break;
+	case SYSTEM_EVENT_STA_DISCONNECTED:
+		WiFi.reconnect();
+		break;
+	default:
+		break;
+	}
+}
+
+void setupWifi() {
+	WiFi.mode(WIFI_STA);
+	WiFi.disconnect(1);
+	WiFi.onEvent(WiFiEvent);
+
+	if (!WiFi.config(localhost, GATEWAY, INADDR_NONE)) {
+		Serial.println("Configuring WiFi failed!");
+		return;
+	}
+
+	WiFi.begin(WIFI_SSID, WIFI_PASS);
+}
+
 void setup() {
 	Serial.begin(115200);
 	dht.begin();
 
-	WiFi.mode(WIFI_STA);
-	WiFi.begin(WIFI_SSID, WIFI_PASS);
-	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
-		Serial.printf("WiFi Failed!\n");
-		return;
-	}
-
-	ipv6_enabled = WiFi.enableIpV6();
-	localhost = WiFi.localIP();
-
-	const uint max_wait = 2000;
-	const IPv6Address empty = IPv6Address();
-	for (int wait = 0; wait < max_wait; wait += 100) {
-		if(WiFi.localIPv6().toString() != empty.toString()) {
-			break;
-		}
-		delay(100);
-	}
-
-	Serial.println("IP Address: ");
-	if (ipv6_enabled) {
-		localhost_ipv6 = WiFi.localIPv6();
-		Serial.print("IPv6: ");
-		Serial.println(localhost_ipv6);
-	}
-	Serial.print("IPv4: ");
-	Serial.println(localhost);
+	setupWifi();
 
 	server.on("/", HTTP_GET, getIndex);
 	server.on("/index.html", HTTP_GET, getIndex);
@@ -84,10 +95,8 @@ void setup() {
 bool handle_serial_input(std::string input) {
 	if (input == "ip") {
 		Serial.println("IP Address: ");
-		if (ipv6_enabled) {
-			Serial.print("IPv6: ");
-			Serial.println(localhost_ipv6);
-		}
+		Serial.print("IPv6: ");
+		Serial.println(localhost_ipv6);
 		Serial.print("IPv4: ");
 		Serial.println(localhost);
 		return true;
