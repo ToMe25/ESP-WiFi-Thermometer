@@ -2,6 +2,10 @@
 .pio
 
 # Eclipse
-.settings
 .project
 .cproject
+.settings/
+
+# Credentials
+wifissid.txt
+wifipass.txt

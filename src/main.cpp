@@ -1,38 +1,26 @@
+/*
+ * main.h
+ *
+ *  Created on: 06.11.2020
+ *      Author: ToMe25
+ */
+
+#include <main.h>
 #include <sstream>
-#include <Arduino.h>
+#include <regex>
 #include <Adafruit_Sensor.h>
-#include <DHT.h>
 #include <WiFi.h>
-#include <ESPAsyncWebServer.h>
 
-#define DHTTYPE DHT22
-#define DHTPIN 5
-
-AsyncWebServer server(80);
-
-const char *ssid = "WIFI_SSID";
-const char *password = "WIFI_PASS";
-
-const char *HTML_START =
-		"<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\">\n<meta http-equiv=\"refresh\" content=\"5\">\n<title>ESP32-DHT22</title></head>\n<body><center><h1><b>";
-const char *HTML_END = "</b></h1></center></body></html>";
-
-DHT dht(DHTPIN, DHTTYPE);
-
-IPAddress localhost;
-IPv6Address localhost_ipv6;
-
-float temperature;
-float humidity;
-
-std::string command;
-
-uint loop_iterations = 0;
-
-bool ipv6_enabled;
-
-void notFound(AsyncWebServerRequest *request) {
-	request->send(404, "text/plain", "Not found");
+void getIndex(AsyncWebServerRequest *request) {
+	std::string page = INDEX_HTML;
+	std::ostringstream converter;
+	converter << temperature;
+	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
+	converter.clear();
+	converter.str("");
+	converter << humidity;
+	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
+	request->send(200, "text/html", page.c_str());
 }
 
 void setup() {
@@ -40,7 +28,7 @@ void setup() {
 	dht.begin();
 
 	WiFi.mode(WIFI_STA);
-	WiFi.begin(ssid, password);
+	WiFi.begin(WIFI_SSID, WIFI_PASS);
 	if (WiFi.waitForConnectResult() != WL_CONNECTED) {
 		Serial.printf("WiFi Failed!\n");
 		return;
@@ -67,16 +55,11 @@ void setup() {
 	Serial.print("IPv4: ");
 	Serial.println(localhost);
 
-	server.on("/", HTTP_GET, [](AsyncWebServerRequest *request) {
-		std::ostringstream os;
-		os << HTML_START;
-		os << "Temperature: ";
-		os << temperature;
-		os << "°C<br>\nHumidity: ";
-		os << humidity;
-		os << "%";
-		os << HTML_END;
-		request->send(200, "text/html", os.str().c_str());
+	server.on("/", HTTP_GET, getIndex);
+	server.on("/index.html", HTTP_GET, getIndex);
+
+	server.on("/main.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send(200, "text/css", MAIN_CSS);
 	});
 
 	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
@@ -91,7 +74,9 @@ void setup() {
 		request->send(200, "text/plain", os.str().c_str());
 	});
 
-	server.onNotFound(notFound);
+	server.onNotFound([](AsyncWebServerRequest *request) {
+		request->send(404, "text/html", NOT_FOUND_HTML);
+	});
 
 	server.begin();
 }
