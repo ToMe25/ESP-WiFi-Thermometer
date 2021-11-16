@@ -35,7 +35,7 @@ void getJson(AsyncWebServerRequest *request) {
 }
 
 void WiFiEvent(WiFiEvent_t event) {
-	switch(event) {
+	switch (event) {
 	case SYSTEM_EVENT_STA_START:
 		WiFi.setHostname(HOSTNAME);
 		break;
@@ -43,13 +43,13 @@ void WiFiEvent(WiFiEvent_t event) {
 		WiFi.enableIpV6();
 		break;
 	case SYSTEM_EVENT_GOT_IP6:
-        Serial.print("STA IPv6: ");
-        Serial.println(localhost_ipv6 = WiFi.localIPv6());
-        break;
+		Serial.print("STA IPv6: ");
+		Serial.println(localhost_ipv6 = WiFi.localIPv6());
+		break;
 	case SYSTEM_EVENT_STA_GOT_IP:
-        Serial.print("STA IP: ");
-        Serial.println(localhost = WiFi.localIP());
-        break;
+		Serial.print("STA IP: ");
+		Serial.println(localhost = WiFi.localIP());
+		break;
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 		WiFi.reconnect();
 		break;
@@ -203,8 +203,13 @@ void loop() {
 		}
 	}
 
+	if (loop_iterations == 200) {
+		loop_iterations = 0;
+	}
+
 	ArduinoOTA.handle();
 
 	loop_iterations++;
-	delay(500 + start - millis());
+	uint64_t end = millis();
+	delay(max(0, 500 - int16_t(start - end)));
 }
