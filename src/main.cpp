@@ -2,7 +2,10 @@
  * main.h
  *
  *  Created on: 06.11.2020
- *      Author: ToMe25
+ *
+ * Copyright (C) 2020-2021 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #include <main.h>
