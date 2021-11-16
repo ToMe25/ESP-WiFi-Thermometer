@@ -23,6 +23,7 @@ extern const char OTA_PASS[] asm("_binary_otapass_txt_start");
 
 extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
 extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
+extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
 
 static constexpr char HOSTNAME[] = "esp32-dht22";

@@ -24,6 +24,16 @@ void getIndex(AsyncWebServerRequest *request) {
 	request->send(200, "text/html", page.c_str());
 }
 
+void getJson(AsyncWebServerRequest *request) {
+	std::ostringstream json;
+	json << "{\"temperature\": ";
+	json << temperature;
+	json << ", \"humidity\": ";
+	json << humidity;
+	json << '}';
+	request->send(200, "application/json", json.str().c_str());
+}
+
 void WiFiEvent(WiFiEvent_t event) {
 	switch(event) {
 	case SYSTEM_EVENT_STA_START:
@@ -69,6 +79,10 @@ void setupWebServer() {
 		request->send(200, "text/css", MAIN_CSS);
 	});
 
+	server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+		request->send(200, "text/javascript", INDEX_JS);
+	});
+
 	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
 		std::ostringstream os;
 		os << temperature;
@@ -80,6 +94,8 @@ void setupWebServer() {
 		os << humidity;
 		request->send(200, "text/plain", os.str().c_str());
 	});
+
+	server.on("/data.json", HTTP_GET, getJson);
 
 	server.onNotFound([](AsyncWebServerRequest *request) {
 		request->send(404, "text/html", NOT_FOUND_HTML);
