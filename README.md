@@ -2,6 +2,8 @@
 This project measures the temperature and relative humidity using a DHT22 and shows it on a simple web interface.
 The web interface updates itself every 2 seconds(the max refresh rate possible with a single DHT22) using a small javascript.
 This is done by querying /data.json on the esp and replacing the shown values using that.
+A screenshot of the web interface:  
+![web interface](https://raw.githubusercontent.com/ToMe25/ESP32-DHT22/master/images/web_interface.png)
 
 # Requirements
  1. ESP32-devkitc
