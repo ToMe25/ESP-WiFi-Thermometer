@@ -1,0 +1,26 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: esp32-dht22-sm
+  namespace: monitoring
+  labels:
+    k8s-app: esp32-dht22
+spec:
+  selector:
+    matchLabels:
+      k8s-app: esp32-dht22
+  namespaceSelector:
+    matchNames:
+    - monitoring
+  jobLabel: esp32-dht22-exporter
+  endpoints:
+  - interval: 10s
+    port: metrics
+    relabelings:
+    - action: replace
+      regex: (.*)
+      replacement: $1
+      sourceLabels:
+      - __meta_kubernetes_pod_node_name
+      targetLabel: instance
+    scheme: http

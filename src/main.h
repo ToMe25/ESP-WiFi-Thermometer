@@ -29,15 +29,17 @@ extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
 extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
 
+// WiFi variables
 static constexpr char HOSTNAME[] = "esp32-dht22";
-
 static const IPAddress GATEWAY(192, 168, 2, 1);
-
 static IPAddress localhost = INADDR_NONE;
 static IPv6Address localhost_ipv6;
 
-static AsyncWebServer server(80);
+// Web Server variables
+static const uint16_t WEB_PORT = 80;
+static AsyncWebServer server(WEB_PORT);
 
+//DHT22 variables
 static const uint8_t DHT_TYPE = DHT22;
 static const uint8_t DHT_PIN = 5;
 
@@ -46,8 +48,14 @@ static DHT dht(DHT_PIN, DHT_TYPE);
 static float temperature;
 static float humidity;
 
-std::string command;
+// prometheus variables
+static uint32_t used_heap;
+static uint64_t web_requests_200;
+static uint64_t web_requests_404;
 
-uint8_t loop_iterations = 0;
+// Other variables
+static std::string command;
+
+static uint8_t loop_iterations = 0;
 
 #endif /* SRC_MAIN_H_ */

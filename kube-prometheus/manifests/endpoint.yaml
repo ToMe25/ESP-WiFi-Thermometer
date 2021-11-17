@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: esp32-dht22
+  namespace: monitoring
+  labels:
+    k8s-app: esp32-dht22
+subsets:
+- addresses:
+  - ip: 192.168.2.102
+  ports:
+    - name: metrics
+      port: 80
+      protocol: TCP

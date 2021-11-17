@@ -33,3 +33,17 @@ These are the steps required to use this project and flash it onto an ESP32.
  * Wait a few seconds for the ESP32 to finish booting.
  * Enter `ip` and press return to get the device ip.
  * Enter the IPv4 ip(probably 192.168.xxx.xxx) returned by this into your browser to see the web interface, showing your current temperature and relative humidity.
+
+# Kube-Prometheus integration
+This repository contains the necessary kubectl manifests and grafana dashboard to be used with [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus).
+To install this prometheus integration simply run `kubectl apply -f kube-prometheus/manifests/` in the project root on the server.
+After this, to install the grafana dashboard, follow these steps:
+ * Open your grafana instance and Log in as a user with the required permissions to create a dashboard.
+ * Hover over the '+' on the left side of the page.
+ * Click "Import".
+ * Click "Upload .json file".
+ * Select the "grafana-dashboard.json" file in the "kube-prometheus" folder.
+ * Click "Import".
+
+A screenshot of the grafana dasboard:  
+![dashboard](https://raw.githubusercontent.com/ToMe25/ESP32-DHT22/master/images/grafana_dashboard.png)

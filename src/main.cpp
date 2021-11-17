@@ -16,6 +16,7 @@
 #include <ESPmDNS.h>
 
 void getIndex(AsyncWebServerRequest *request) {
+	web_requests_200++;
 	std::string page = INDEX_HTML;
 	std::ostringstream converter;
 	converter << temperature;
@@ -28,6 +29,7 @@ void getIndex(AsyncWebServerRequest *request) {
 }
 
 void getJson(AsyncWebServerRequest *request) {
+	web_requests_200++;
 	std::ostringstream json;
 	json << "{\"temperature\": ";
 	json << temperature;
@@ -35,6 +37,29 @@ void getJson(AsyncWebServerRequest *request) {
 	json << humidity;
 	json << '}';
 	request->send(200, "application/json", json.str().c_str());
+}
+
+void getMetrics(AsyncWebServerRequest *request) {
+	web_requests_200++;
+	std::ostringstream metrics;
+	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22." << std::endl;
+	metrics << "# TYPE environment_temperature gauge" << std::endl;
+	metrics << "environment_temperature " << temperature << std::endl;
+
+	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22." << std::endl;
+	metrics << "# TYPE environment_humidity gauge" << std::endl;
+	metrics << "environment_humidity " << humidity << std::endl;
+
+	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes." << std::endl;
+	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
+	metrics << "process_heap_bytes " << used_heap << std::endl;
+
+	metrics << "# HELP http_requests_total The total number of http requests handled by this server." << std::endl;
+	metrics << "# TYPE http_requests_total counter" << std::endl;
+	metrics << "http_requests_total{method=\"get\",code=\"200\"} " << web_requests_200 << std::endl;
+	metrics << "http_requests_total{method=\"get\",code=\"404\"} " << web_requests_404 << std::endl;
+
+	request->send(200, "text/plain", metrics.str().c_str());
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -79,20 +104,24 @@ void setupWebServer() {
 	server.on("/index.html", HTTP_GET, getIndex);
 
 	server.on("/main.css", HTTP_GET, [](AsyncWebServerRequest *request) {
+		web_requests_200++;
 		request->send(200, "text/css", MAIN_CSS);
 	});
 
 	server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request) {
+		web_requests_200++;
 		request->send(200, "text/javascript", INDEX_JS);
 	});
 
 	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
+		web_requests_200++;
 		std::ostringstream os;
 		os << temperature;
 		request->send(200, "text/plain", os.str().c_str());
 	});
 
 	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
+		web_requests_200++;
 		std::ostringstream os;
 		os << humidity;
 		request->send(200, "text/plain", os.str().c_str());
@@ -100,7 +129,10 @@ void setupWebServer() {
 
 	server.on("/data.json", HTTP_GET, getJson);
 
+	server.on("/metrics", HTTP_GET, getMetrics);
+
 	server.onNotFound([](AsyncWebServerRequest *request) {
+		web_requests_404++;
 		request->send(404, "text/html", NOT_FOUND_HTML);
 	});
 
@@ -176,8 +208,14 @@ void loop() {
 	uint64_t start = millis();
 
 	if (loop_iterations % 4 == 0) {
-		temperature = dht.readTemperature();
-		humidity = dht.readHumidity();
+		float temp = dht.readTemperature();
+		if (!isnan(temp)) {
+			temperature = temp;
+		}
+		temp = dht.readHumidity();
+		if (!isnan(temp)) {
+			humidity = temp;
+		}
 
 		if (loop_iterations % 20 == 0) {
 			Serial.printf("Temperature: %f°C\n", temperature);
@@ -205,6 +243,8 @@ void loop() {
 			command = "";
 		}
 	}
+
+	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
 
 	if (loop_iterations == 200) {
 		loop_iterations = 0;
