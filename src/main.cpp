@@ -15,8 +15,7 @@
 #include <ArduinoOTA.h>
 #include <ESPmDNS.h>
 
-void getIndex(AsyncWebServerRequest *request) {
-	web_requests_200++;
+uint16_t getIndex(AsyncWebServerRequest *request) {
 	std::string page = INDEX_HTML;
 	std::ostringstream converter;
 	converter << temperature;
@@ -26,10 +25,10 @@ void getIndex(AsyncWebServerRequest *request) {
 	converter << humidity;
 	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
 	request->send(200, "text/html", page.c_str());
+	return 200;
 }
 
-void getJson(AsyncWebServerRequest *request) {
-	web_requests_200++;
+uint16_t getJson(AsyncWebServerRequest *request) {
 	std::ostringstream json;
 	json << "{\"temperature\": ";
 	json << temperature;
@@ -37,29 +36,65 @@ void getJson(AsyncWebServerRequest *request) {
 	json << humidity;
 	json << '}';
 	request->send(200, "application/json", json.str().c_str());
+	return 200;
 }
 
-void getMetrics(AsyncWebServerRequest *request) {
-	web_requests_200++;
+uint16_t getMetrics(AsyncWebServerRequest *request) {
 	std::ostringstream metrics;
-	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22." << std::endl;
+	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22."
+			<< std::endl;
 	metrics << "# TYPE environment_temperature gauge" << std::endl;
 	metrics << "environment_temperature " << temperature << std::endl;
 
-	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22." << std::endl;
+	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22."
+			<< std::endl;
 	metrics << "# TYPE environment_humidity gauge" << std::endl;
 	metrics << "environment_humidity " << humidity << std::endl;
 
-	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes." << std::endl;
+	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes."
+			<< std::endl;
 	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
 	metrics << "process_heap_bytes " << used_heap << std::endl;
 
-	metrics << "# HELP http_requests_total The total number of http requests handled by this server." << std::endl;
+	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
+			<< std::endl;
 	metrics << "# TYPE http_requests_total counter" << std::endl;
-	metrics << "http_requests_total{method=\"get\",code=\"200\"} " << web_requests_200 << std::endl;
-	metrics << "http_requests_total{method=\"get\",code=\"404\"} " << web_requests_404 << std::endl;
+
+	for (std::pair<std::pair<std::string, uint16_t>, uint64_t> element : http_requests_total) {
+		metrics << "http_requests_total{method=\"get\",code=\""
+				<< element.first.second << "\",path=\"" << element.first.first
+				<< "\"} " << element.second << std::endl;
+	}
 
 	request->send(200, "text/plain", metrics.str().c_str());
+	return 200;
+}
+
+/*
+ * Registers the given handler for the web server, and increments the web requests counter
+ * by one each time it is called.
+ */
+void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
+		HTTPRequestHandler handler) {
+	server.on(uri, method,
+			[uri, handler](AsyncWebServerRequest *request) {
+				http_requests_total[std::pair<const char*, uint16_t>(uri,
+						handler(request))]++;
+			});
+}
+
+/*
+ * Registers a request handler that returns the given content type and web page each time it is called.
+ * Expects request type get.
+ * Also increments the request counter.
+ */
+void registerStaticHandler(const char *uri, const char *content_type,
+		const char *page) {
+	registerRequestHandler(uri, HTTP_GET,
+			[content_type, page](AsyncWebServerRequest *request) -> uint16_t {
+				request->send(200, content_type, page);
+				return 200;
+			});
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -100,41 +135,38 @@ void setupWifi() {
 }
 
 void setupWebServer() {
-	server.on("/", HTTP_GET, getIndex);
-	server.on("/index.html", HTTP_GET, getIndex);
+	registerRequestHandler("/", HTTP_GET, getIndex);
+	registerRequestHandler("/index.html", HTTP_GET, getIndex);
 
-	server.on("/main.css", HTTP_GET, [](AsyncWebServerRequest *request) {
-		web_requests_200++;
-		request->send(200, "text/css", MAIN_CSS);
-	});
+	registerStaticHandler("/main.css", "text/css", MAIN_CSS);
+	registerStaticHandler("/index.js", "text/javascript", INDEX_JS);
 
-	server.on("/index.js", HTTP_GET, [](AsyncWebServerRequest *request) {
-		web_requests_200++;
-		request->send(200, "text/javascript", INDEX_JS);
-	});
+	registerRequestHandler("/temperature", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> uint16_t {
+				std::ostringstream os;
+				os << temperature;
+				request->send(200, "text/plain", os.str().c_str());
+				return 200;
+			});
 
-	server.on("/temperature", HTTP_GET, [](AsyncWebServerRequest *request) {
-		web_requests_200++;
-		std::ostringstream os;
-		os << temperature;
-		request->send(200, "text/plain", os.str().c_str());
-	});
+	registerRequestHandler("/humidity", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> uint16_t {
+				std::ostringstream os;
+				os << humidity;
+				request->send(200, "text/plain", os.str().c_str());
+				return 200;
+			});
 
-	server.on("/humidity", HTTP_GET, [](AsyncWebServerRequest *request) {
-		web_requests_200++;
-		std::ostringstream os;
-		os << humidity;
-		request->send(200, "text/plain", os.str().c_str());
-	});
+	registerRequestHandler("/data.json", HTTP_GET, getJson);
+	registerRequestHandler("/metrics", HTTP_GET, getMetrics);
 
-	server.on("/data.json", HTTP_GET, getJson);
-
-	server.on("/metrics", HTTP_GET, getMetrics);
-
-	server.onNotFound([](AsyncWebServerRequest *request) {
-		web_requests_404++;
-		request->send(404, "text/html", NOT_FOUND_HTML);
-	});
+	server.onNotFound(
+			[](AsyncWebServerRequest *request) {
+				request->send(404, "text/html", NOT_FOUND_HTML);
+				Serial.println(request->url().c_str());
+				http_requests_total[std::pair<std::string, uint16_t>(
+						std::string(request->url().c_str()), 404)]++;
+			});
 
 	server.begin();
 }

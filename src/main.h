@@ -11,6 +11,7 @@
 #ifndef SRC_MAIN_H_
 #define SRC_MAIN_H_
 
+#include <map>
 #include <ESPAsyncWebServer.h>
 #include <DHT.h>
 
@@ -28,6 +29,8 @@ extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
 extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
 extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
+
+typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
 
 // WiFi variables
 static constexpr char HOSTNAME[] = "esp32-dht22";
@@ -50,8 +53,7 @@ static float humidity;
 
 // prometheus variables
 static uint32_t used_heap;
-static uint64_t web_requests_200;
-static uint64_t web_requests_404;
+static std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
 
 // Other variables
 static std::string command;

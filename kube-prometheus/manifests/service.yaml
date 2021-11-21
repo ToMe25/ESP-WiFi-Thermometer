@@ -7,10 +7,9 @@ metadata:
     k8s-app: esp32-dht22
 spec:
   type: ExternalName
-  externalName: 192.168.2.102
-  clusterIP: ""
+  externalName: 192.168.2.100
   ports:
   - name: metrics
-    port: 9100
+    port: 80
     protocol: TCP
     targetPort: 80
