@@ -11,6 +11,7 @@
 #ifndef SRC_MAIN_H_
 #define SRC_MAIN_H_
 
+#include <chrono>
 #include <map>
 #include <ESPAsyncWebServer.h>
 #include <DHT.h>
@@ -50,6 +51,7 @@ static DHT dht(DHT_PIN, DHT_TYPE);
 
 static float temperature;
 static float humidity;
+static std::chrono::time_point<std::chrono::system_clock> last_measurement;
 
 // prometheus variables
 static uint32_t used_heap;
@@ -59,5 +61,26 @@ static std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
 static std::string command;
 
 static uint8_t loop_iterations = 0;
+
+// Methods
+/*
+ * Returns a string with the time since the last measurement formatted like this "Hour(24):Minute:Second.Millisecond".
+ */
+std::string getTimeSinceMeasurement();
+
+/*
+ * Registers the given handler for the web server, and increments the web requests counter
+ * by one each time it is called.
+ */
+void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
+		HTTPRequestHandler handler);
+
+/*
+ * Registers a request handler that returns the given content type and web page each time it is called.
+ * Expects request type get.
+ * Also increments the request counter.
+ */
+void registerStaticHandler(const char *uri, const char *content_type,
+		const char *page);
 
 #endif /* SRC_MAIN_H_ */

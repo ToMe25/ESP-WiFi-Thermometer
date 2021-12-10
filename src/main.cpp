@@ -9,93 +9,12 @@
  */
 
 #include <main.h>
+#include <iomanip>
 #include <regex>
 #include <sstream>
 #include <Adafruit_Sensor.h>
 #include <ArduinoOTA.h>
 #include <ESPmDNS.h>
-
-uint16_t getIndex(AsyncWebServerRequest *request) {
-	std::string page = INDEX_HTML;
-	std::ostringstream converter;
-	converter << temperature;
-	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
-	converter.clear();
-	converter.str("");
-	converter << humidity;
-	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
-	request->send(200, "text/html", page.c_str());
-	return 200;
-}
-
-uint16_t getJson(AsyncWebServerRequest *request) {
-	std::ostringstream json;
-	json << "{\"temperature\": ";
-	json << temperature;
-	json << ", \"humidity\": ";
-	json << humidity;
-	json << '}';
-	request->send(200, "application/json", json.str().c_str());
-	return 200;
-}
-
-uint16_t getMetrics(AsyncWebServerRequest *request) {
-	std::ostringstream metrics;
-	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22."
-			<< std::endl;
-	metrics << "# TYPE environment_temperature gauge" << std::endl;
-	metrics << "environment_temperature " << temperature << std::endl;
-
-	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22."
-			<< std::endl;
-	metrics << "# TYPE environment_humidity gauge" << std::endl;
-	metrics << "environment_humidity " << humidity << std::endl;
-
-	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes."
-			<< std::endl;
-	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
-	metrics << "process_heap_bytes " << used_heap << std::endl;
-
-	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
-			<< std::endl;
-	metrics << "# TYPE http_requests_total counter" << std::endl;
-
-	for (std::pair<std::pair<std::string, uint16_t>, uint64_t> element : http_requests_total) {
-		metrics << "http_requests_total{method=\"get\",code=\""
-				<< element.first.second << "\",path=\"" << element.first.first
-				<< "\"} " << element.second << std::endl;
-	}
-
-	request->send(200, "text/plain", metrics.str().c_str());
-	return 200;
-}
-
-/*
- * Registers the given handler for the web server, and increments the web requests counter
- * by one each time it is called.
- */
-void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
-		HTTPRequestHandler handler) {
-	server.on(uri, method,
-			[uri, handler](AsyncWebServerRequest *request) {
-				http_requests_total[std::pair<const char*, uint16_t>(uri,
-						handler(request))]++;
-			});
-}
-
-/*
- * Registers a request handler that returns the given content type and web page each time it is called.
- * Expects request type get.
- * Also increments the request counter.
- */
-void registerStaticHandler(const char *uri, const char *content_type,
-		const char *page) {
-	registerRequestHandler(uri, HTTP_GET,
-			[content_type, page](AsyncWebServerRequest *request) -> uint16_t {
-				request->send(200, content_type, page);
-				return 200;
-			});
-}
 
 void WiFiEvent(WiFiEvent_t event) {
 	switch (event) {
@@ -134,6 +53,64 @@ void setupWifi() {
 	WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
 
+uint16_t getIndex(AsyncWebServerRequest *request) {
+	std::string page = INDEX_HTML;
+	std::ostringstream converter;
+	converter << std::setprecision(3) << temperature;
+	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
+	converter.clear();
+	converter.str("");
+	converter << std::setprecision(3) << humidity;
+	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
+	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
+	request->send(200, "text/html", page.c_str());
+	return 200;
+}
+
+uint16_t getJson(AsyncWebServerRequest *request) {
+	std::ostringstream json;
+	json << "{\"temperature\": ";
+	json << std::setprecision(3) << temperature;
+	json << ", \"humidity\": ";
+	json << std::setprecision(3) << humidity;
+	json << ", \"time\": \"";
+	json << getTimeSinceMeasurement();
+	json << "\"}";
+	request->send(200, "application/json", json.str().c_str());
+	return 200;
+}
+
+uint16_t getMetrics(AsyncWebServerRequest *request) {
+	std::ostringstream metrics;
+	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22."
+			<< std::endl;
+	metrics << "# TYPE environment_temperature gauge" << std::endl;
+	metrics << "environment_temperature " << std::setprecision(3) << temperature << std::endl;
+
+	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22."
+			<< std::endl;
+	metrics << "# TYPE environment_humidity gauge" << std::endl;
+	metrics << "environment_humidity " << std::setprecision(3) << humidity << std::endl;
+
+	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes."
+			<< std::endl;
+	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
+	metrics << "process_heap_bytes " << used_heap << std::endl;
+
+	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
+			<< std::endl;
+	metrics << "# TYPE http_requests_total counter" << std::endl;
+
+	for (std::pair<std::pair<std::string, uint16_t>, uint64_t> element : http_requests_total) {
+		metrics << "http_requests_total{method=\"get\",code=\""
+				<< element.first.second << "\",path=\"" << element.first.first
+				<< "\"} " << element.second << std::endl;
+	}
+
+	request->send(200, "text/plain", metrics.str().c_str());
+	return 200;
+}
+
 void setupWebServer() {
 	registerRequestHandler("/", HTTP_GET, getIndex);
 	registerRequestHandler("/index.html", HTTP_GET, getIndex);
@@ -144,7 +121,7 @@ void setupWebServer() {
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
 				std::ostringstream os;
-				os << temperature;
+				os << std::setprecision(3) << temperature;
 				request->send(200, "text/plain", os.str().c_str());
 				return 200;
 			});
@@ -152,7 +129,7 @@ void setupWebServer() {
 	registerRequestHandler("/humidity", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
 				std::ostringstream os;
-				os << humidity;
+				os << std::setprecision(3) << humidity;
 				request->send(200, "text/plain", os.str().c_str());
 				return 200;
 			});
@@ -244,9 +221,14 @@ void loop() {
 		if (!isnan(temp)) {
 			temperature = temp;
 		}
-		temp = dht.readHumidity();
-		if (!isnan(temp)) {
-			humidity = temp;
+
+		float humid = dht.readHumidity();
+		if (!isnan(humid)) {
+			humidity = humid;
+		}
+
+		if (!isnan(temp) && !isnan(humid)) {
+			last_measurement = std::chrono::system_clock::now();
 		}
 
 		if (loop_iterations % 20 == 0) {
@@ -287,4 +269,40 @@ void loop() {
 	loop_iterations++;
 	uint64_t end = millis();
 	delay(max(0, 500 - int16_t(start - end)));
+}
+
+std::string getTimeSinceMeasurement() {
+	using namespace std::chrono;
+	std::ostringstream stream;
+	time_point<system_clock> now = system_clock::now();
+	stream << std::internal << std::setfill('0') << std::setw(2);
+	stream << duration_cast<hours>(now - last_measurement).count() % 24;
+	stream << ':';
+	stream << std::internal << std::setfill('0') << std::setw(2);
+	stream << duration_cast<minutes>(now - last_measurement).count() % 60;
+	stream << ':';
+	stream << std::internal << std::setfill('0') << std::setw(2);
+	stream << duration_cast<seconds>(now - last_measurement).count() % 60;
+	stream << '.';
+	stream << std::internal << std::setfill('0') << std::setw(3);
+	stream << duration_cast<milliseconds>(now - last_measurement).count() % 1000;
+	return stream.str();
+}
+
+void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
+		HTTPRequestHandler handler) {
+	server.on(uri, method,
+			[uri, handler](AsyncWebServerRequest *request) {
+				http_requests_total[std::pair<const char*, uint16_t>(uri,
+						handler(request))]++;
+			});
+}
+
+void registerStaticHandler(const char *uri, const char *content_type,
+		const char *page) {
+	registerRequestHandler(uri, HTTP_GET,
+			[content_type, page](AsyncWebServerRequest *request) -> uint16_t {
+				request->send(200, content_type, page);
+				return 200;
+			});
 }
