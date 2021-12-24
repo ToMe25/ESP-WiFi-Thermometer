@@ -1,6 +1,6 @@
 # Description
-This project measures the temperature and relative humidity using a DHT22 and shows it on a simple web interface.
-The web interface updates itself every 2 seconds(the max refresh rate possible with a single DHT22) using a small javascript.
+This project measures the temperature and relative humidity using a DHT22 and shows it on a simple web interface.  
+The web interface updates itself every 2 seconds(the max refresh rate possible with a single DHT22) using a small javascript.  
 This is done by querying /data.json on the esp and replacing the shown values using that.
 A screenshot of the web interface:  
 ![web interface](https://raw.githubusercontent.com/ToMe25/ESP32-DHT22/master/images/web_interface.png)
@@ -35,8 +35,11 @@ These are the steps required to use this project and flash it onto an ESP32.
  * Enter the IPv4 ip(probably 192.168.xxx.xxx) returned by this into your browser to see the web interface, showing your current temperature and relative humidity.
 
 # Kube-Prometheus integration
-This repository contains the necessary kubectl manifests and grafana dashboard to be used with [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus).
-To install this prometheus integration simply run `kubectl apply -f kube-prometheus/manifests/` in the project root on the server.
+This repository contains the necessary kubectl manifests and grafana dashboard to be used with [kube-prometheus](https://github.com/prometheus-operator/kube-prometheus).  
+The necessary metrics for this are provided on /metrics on port 80 on the esp by default.  
+To install this prometheus integration simply run `kubectl apply -f integration/kube-prometheus-scrape.yaml` in the project root on the server.  
+This configures kube-prometheus to scrape /metrics on the esp(the IP has to be set in the yaml) every 10 seconds.  
+This change might take a few minutes until it applies, so don't worry if you don't have data immediately.  
 After this, to install the grafana dashboard, follow these steps:
  * Open your grafana instance and Log in as a user with the required permissions to create a dashboard.
  * Hover over the '+' on the left side of the page.
