@@ -11,6 +11,7 @@
 #ifndef SRC_MAIN_H_
 #define SRC_MAIN_H_
 
+#include "config.h"
 #include <chrono>
 #include <map>
 #include <ESPAsyncWebServer.h>
@@ -34,19 +35,13 @@ extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
 typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
 
 // WiFi variables
-static constexpr char HOSTNAME[] = "esp32-dht22";
-static const IPAddress GATEWAY(192, 168, 2, 1);
-static IPAddress localhost = INADDR_NONE;
+static IPAddress localhost = STATIC_IP;
 static IPv6Address localhost_ipv6;
 
 // Web Server variables
-static const uint16_t WEB_PORT = 80;
-static AsyncWebServer server(WEB_PORT);
+static AsyncWebServer server(WEB_SERVER_PORT);
 
 //DHT22 variables
-static const uint8_t DHT_TYPE = DHT22;
-static const uint8_t DHT_PIN = 5;
-
 static DHT dht(DHT_PIN, DHT_TYPE);
 
 static float temperature;

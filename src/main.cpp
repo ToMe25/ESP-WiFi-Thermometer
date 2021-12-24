@@ -8,7 +8,7 @@
  * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
-#include <main.h>
+#include "main.h"
 #include <iomanip>
 #include <regex>
 #include <sstream>
@@ -45,7 +45,7 @@ void setupWifi() {
 	WiFi.disconnect(1);
 	WiFi.onEvent(WiFiEvent);
 
-	if (!WiFi.config(localhost, GATEWAY, INADDR_NONE)) {
+	if (!WiFi.config(localhost, GATEWAY, SUBNET)) {
 		Serial.println("Configuring WiFi failed!");
 		return;
 	}
@@ -80,6 +80,7 @@ uint16_t getJson(AsyncWebServerRequest *request) {
 	return 200;
 }
 
+#ifdef ENABLE_PROMETHEUS_SUPPORT
 uint16_t getMetrics(AsyncWebServerRequest *request) {
 	std::ostringstream metrics;
 	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22."
@@ -110,6 +111,7 @@ uint16_t getMetrics(AsyncWebServerRequest *request) {
 	request->send(200, "text/plain", metrics.str().c_str());
 	return 200;
 }
+#endif /* ENABLE_PROMETHEUS_SUPPORT */
 
 void setupWebServer() {
 	registerRequestHandler("/", HTTP_GET, getIndex);
@@ -135,7 +137,10 @@ void setupWebServer() {
 			});
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
+
+#ifdef ENABLE_PROMETHEUS_SUPPORT
 	registerRequestHandler("/metrics", HTTP_GET, getMetrics);
+#endif
 
 	server.onNotFound(
 			[](AsyncWebServerRequest *request) {
