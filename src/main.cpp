@@ -40,8 +40,8 @@ void setup() {
 	prom::setup();
 }
 
-void onWiFiEvent(WiFiEvent_t event) {
-	switch (event) {
+void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
+	switch (id) {
 	case SYSTEM_EVENT_STA_START:
 		WiFi.setHostname(HOSTNAME);
 		break;
@@ -59,6 +59,30 @@ void onWiFiEvent(WiFiEvent_t event) {
 		break;
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 		WiFi.reconnect();
+		break;
+	case SYSTEM_EVENT_SCAN_DONE:
+		Serial.println("WiFi scan results: ");
+		Serial.print("Found ");
+		Serial.print((uint16_t) info.scan_done.number);
+		Serial.println(" WiFi networks.");
+		for (uint8_t i = 0; i < info.scan_done.number; i++) {
+			String SSID;
+			uint8_t encryptionType;
+			int32_t RSSI;
+			uint8_t *BSSID;
+			int32_t channel;
+			WiFi.getNetworkInfo(i, SSID, encryptionType, RSSI, BSSID, channel);
+			Serial.print("network ");
+			Serial.print(i + 1);
+			Serial.print(": ssid = ");
+			Serial.print(SSID);
+			Serial.print(", rssi = ");
+			Serial.print(RSSI);
+			Serial.print(", channel = ");
+			Serial.print(channel);
+			Serial.print(", encryptionType = ");
+			Serial.println(encryptionType);
+		}
 		break;
 	default:
 		break;
@@ -183,19 +207,36 @@ void setupWebServer() {
 }
 
 bool handle_serial_input(std::string input) {
-	if (input == "ip") {
+	if (input == "temperature" || input == "temp") {
+		Serial.println();
+		Serial.printf("Temperature: %f°C, %f°F\n", temperature,
+				dht.convertCtoF(temperature));
+		return true;
+	} else if (input == "humidity") {
+		Serial.println();
+		Serial.printf("Relative Humidity: %f%%\n", humidity);
+		return true;
+	} else if (input == "ip") {
+		Serial.println();
 		Serial.println("IP Address: ");
 		Serial.print("IPv6: ");
 		Serial.println(localhost_ipv6);
 		Serial.print("IPv4: ");
 		Serial.println(localhost);
 		return true;
-	} else if (input == "temperature" || input == "temp") {
-		Serial.printf("Temperature: %f°C, %f°F\n", temperature,
-				dht.convertCtoF(temperature));
+	} else if (input == "scan") {
+		Serial.println();
+		Serial.println("Starting WiFi scan...");
+		WiFi.scanNetworks(true, true);
 		return true;
-	} else if (input == "humidity") {
-		Serial.printf("Humidity: %f%%\n", humidity);
+	} else if (input == "help") {
+		Serial.println();
+		Serial.println("ESP32-DHT22 help:");
+		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
+		Serial.println("humidity:              Prints the relative humidity in %.");
+		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
+		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
+		Serial.println("help:                  Prints this help text.");
 		return true;
 	} else {
 		return false;
@@ -228,20 +269,29 @@ void loop() {
 
 	uint available = Serial.available();
 	if (available > 0) {
-		char *input = new char[available];
+		char input[available];
 		Serial.readBytes(input, available);
-		command += std::string(input).substr(0, available);
 
-		size_t pos = 0;
-		std::string cmd;
-		while ((pos = command.find("\n")) != std::string::npos) {
-			cmd = command.substr(0, pos - 1);
-			command.erase(0, pos + 1);
-			if (!handle_serial_input(cmd)) {
-				Serial.print("Unknown Command: ");
-				Serial.println(cmd.c_str());
+		for (char c : input) {
+			if (c == '\b') {
+				Serial.print("\b \b");
+				if (!command.empty()) {
+					command.pop_back();
+				}
+			} else if (c == '\n') {
+				if (!command.empty() && !handle_serial_input(command)) {
+					Serial.println();
+					Serial.print("Unknown Command: ");
+					Serial.println(command.c_str());
+					Serial.println("Use \"help\" to get a list of valid commands.");
+				}
+				command = "";
+			} else if (!iscntrl(c)) {
+				Serial.write(c);
+				command += c;
 			}
 		}
+
 		if (handle_serial_input(command)) {
 			command = "";
 		}
