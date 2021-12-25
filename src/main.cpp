@@ -9,6 +9,7 @@
  */
 
 #include "main.h"
+#include "prometheus.h"
 #include <iomanip>
 #include <regex>
 #include <sstream>
@@ -16,7 +17,30 @@
 #include <ArduinoOTA.h>
 #include <ESPmDNS.h>
 
-void WiFiEvent(WiFiEvent_t event) {
+IPAddress localhost = STATIC_IP;
+IPv6Address localhost_ipv6;
+AsyncWebServer server(WEB_SERVER_PORT);
+DHT dht(DHT_PIN, DHT_TYPE);
+float temperature = 0;
+float humidity = 0;
+std::chrono::time_point<std::chrono::system_clock> last_measurement;
+std::string command;
+uint8_t loop_iterations = 0;
+
+void setup() {
+	Serial.begin(115200);
+	dht.begin();
+
+	setupWiFi();
+#if ENABLE_ARDUINO_OTA == 1
+	setupOTA();
+#endif
+	setupWebServer();
+
+	prom::setup();
+}
+
+void onWiFiEvent(WiFiEvent_t event) {
 	switch (event) {
 	case SYSTEM_EVENT_STA_START:
 		WiFi.setHostname(HOSTNAME);
@@ -31,6 +55,7 @@ void WiFiEvent(WiFiEvent_t event) {
 	case SYSTEM_EVENT_STA_GOT_IP:
 		Serial.print("STA IP: ");
 		Serial.println(localhost = WiFi.localIP());
+		prom::connect();
 		break;
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 		WiFi.reconnect();
@@ -40,10 +65,10 @@ void WiFiEvent(WiFiEvent_t event) {
 	}
 }
 
-void setupWifi() {
+void setupWiFi() {
 	WiFi.mode(WIFI_STA);
 	WiFi.disconnect(1);
-	WiFi.onEvent(WiFiEvent);
+	WiFi.onEvent(onWiFiEvent);
 
 	if (!WiFi.config(localhost, GATEWAY, SUBNET)) {
 		Serial.println("Configuring WiFi failed!");
@@ -53,108 +78,10 @@ void setupWifi() {
 	WiFi.begin(WIFI_SSID, WIFI_PASS);
 }
 
-uint16_t getIndex(AsyncWebServerRequest *request) {
-	std::string page = INDEX_HTML;
-	std::ostringstream converter;
-	converter << std::setprecision(3) << temperature;
-	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
-	converter.clear();
-	converter.str("");
-	converter << std::setprecision(3) << humidity;
-	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
-	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
-	request->send(200, "text/html", page.c_str());
-	return 200;
-}
-
-uint16_t getJson(AsyncWebServerRequest *request) {
-	std::ostringstream json;
-	json << "{\"temperature\": ";
-	json << std::setprecision(3) << temperature;
-	json << ", \"humidity\": ";
-	json << std::setprecision(3) << humidity;
-	json << ", \"time\": \"";
-	json << getTimeSinceMeasurement();
-	json << "\"}";
-	request->send(200, "application/json", json.str().c_str());
-	return 200;
-}
-
-#ifdef ENABLE_PROMETHEUS_SUPPORT
-uint16_t getMetrics(AsyncWebServerRequest *request) {
-	std::ostringstream metrics;
-	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22."
-			<< std::endl;
-	metrics << "# TYPE environment_temperature gauge" << std::endl;
-	metrics << "environment_temperature " << std::setprecision(3) << temperature << std::endl;
-
-	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22."
-			<< std::endl;
-	metrics << "# TYPE environment_humidity gauge" << std::endl;
-	metrics << "environment_humidity " << std::setprecision(3) << humidity << std::endl;
-
-	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes."
-			<< std::endl;
-	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
-	metrics << "process_heap_bytes " << used_heap << std::endl;
-
-	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
-			<< std::endl;
-	metrics << "# TYPE http_requests_total counter" << std::endl;
-
-	for (std::pair<std::pair<std::string, uint16_t>, uint64_t> element : http_requests_total) {
-		metrics << "http_requests_total{method=\"get\",code=\""
-				<< element.first.second << "\",path=\"" << element.first.first
-				<< "\"} " << element.second << std::endl;
-	}
-
-	request->send(200, "text/plain", metrics.str().c_str());
-	return 200;
-}
-#endif /* ENABLE_PROMETHEUS_SUPPORT */
-
-void setupWebServer() {
-	registerRequestHandler("/", HTTP_GET, getIndex);
-	registerRequestHandler("/index.html", HTTP_GET, getIndex);
-
-	registerStaticHandler("/main.css", "text/css", MAIN_CSS);
-	registerStaticHandler("/index.js", "text/javascript", INDEX_JS);
-
-	registerRequestHandler("/temperature", HTTP_GET,
-			[](AsyncWebServerRequest *request) -> uint16_t {
-				std::ostringstream os;
-				os << std::setprecision(3) << temperature;
-				request->send(200, "text/plain", os.str().c_str());
-				return 200;
-			});
-
-	registerRequestHandler("/humidity", HTTP_GET,
-			[](AsyncWebServerRequest *request) -> uint16_t {
-				std::ostringstream os;
-				os << std::setprecision(3) << humidity;
-				request->send(200, "text/plain", os.str().c_str());
-				return 200;
-			});
-
-	registerRequestHandler("/data.json", HTTP_GET, getJson);
-
-#ifdef ENABLE_PROMETHEUS_SUPPORT
-	registerRequestHandler("/metrics", HTTP_GET, getMetrics);
-#endif
-
-	server.onNotFound(
-			[](AsyncWebServerRequest *request) {
-				request->send(404, "text/html", NOT_FOUND_HTML);
-				Serial.println(request->url().c_str());
-				http_requests_total[std::pair<std::string, uint16_t>(
-						std::string(request->url().c_str()), 404)]++;
-			});
-
-	server.begin();
-}
-
+#if ENABLE_ARDUINO_OTA == 1
 void setupOTA() {
 	ArduinoOTA.setHostname(HOSTNAME);
+	ArduinoOTA.setPort(ARDUINO_OTA_PORT);
 	ArduinoOTA.setPassword(OTA_PASS);
 
 	ArduinoOTA.onStart([]() {
@@ -186,14 +113,71 @@ void setupOTA() {
 
 	ArduinoOTA.begin();
 }
+#endif /* ENABLE_ARDUINO_OTA */
 
-void setup() {
-	Serial.begin(115200);
-	dht.begin();
+uint16_t getIndex(AsyncWebServerRequest *request) {
+	std::string page = INDEX_HTML;
+	std::ostringstream converter;
+	converter << std::setprecision(3) << temperature;
+	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
+	converter.clear();
+	converter.str("");
+	converter << std::setprecision(3) << humidity;
+	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
+	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
+	request->send(200, "text/html", page.c_str());
+	return 200;
+}
 
-	setupWifi();
-	setupWebServer();
-	setupOTA();
+uint16_t getJson(AsyncWebServerRequest *request) {
+	std::ostringstream json;
+	json << "{\"temperature\": ";
+	json << std::setprecision(3) << temperature;
+	json << ", \"humidity\": ";
+	json << std::setprecision(3) << humidity;
+	json << ", \"time\": \"";
+	json << getTimeSinceMeasurement();
+	json << "\"}";
+	request->send(200, "application/json", json.str().c_str());
+	return 200;
+}
+
+void setupWebServer() {
+	registerRequestHandler("/", HTTP_GET, getIndex);
+	registerRequestHandler("/index.html", HTTP_GET, getIndex);
+
+	registerStaticHandler("/main.css", "text/css", MAIN_CSS);
+	registerStaticHandler("/index.js", "text/javascript", INDEX_JS);
+
+	registerRequestHandler("/temperature", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> uint16_t {
+				std::ostringstream os;
+				os << std::setprecision(3) << temperature;
+				request->send(200, "text/plain", os.str().c_str());
+				return 200;
+			});
+
+	registerRequestHandler("/humidity", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> uint16_t {
+				std::ostringstream os;
+				os << std::setprecision(3) << humidity;
+				request->send(200, "text/plain", os.str().c_str());
+				return 200;
+			});
+
+	registerRequestHandler("/data.json", HTTP_GET, getJson);
+
+	server.onNotFound(
+			[](AsyncWebServerRequest *request) {
+				request->send(404, "text/html", NOT_FOUND_HTML);
+				Serial.print("A client tried to access the not existing file \"");
+				Serial.print(request->url().c_str());
+				Serial.println("\".");
+				prom::http_requests_total[std::pair<std::string, uint16_t>(
+						std::string(request->url().c_str()), 404)]++;
+			});
+
+	server.begin();
 
 	MDNS.addService("http", "tcp", 80);
 }
@@ -263,13 +247,13 @@ void loop() {
 		}
 	}
 
-	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
-
 	if (loop_iterations == 200) {
 		loop_iterations = 0;
 	}
 
 	ArduinoOTA.handle();
+
+	prom::loop();
 
 	loop_iterations++;
 	uint64_t end = millis();
@@ -298,7 +282,7 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 		HTTPRequestHandler handler) {
 	server.on(uri, method,
 			[uri, handler](AsyncWebServerRequest *request) {
-				http_requests_total[std::pair<const char*, uint16_t>(uri,
+				prom::http_requests_total[std::pair<const char*, uint16_t>(uri,
 						handler(request))]++;
 			});
 }

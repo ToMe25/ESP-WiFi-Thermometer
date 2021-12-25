@@ -13,7 +13,6 @@
 
 #include "config.h"
 #include <chrono>
-#include <map>
 #include <ESPAsyncWebServer.h>
 #include <DHT.h>
 
@@ -35,42 +34,60 @@ extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
 typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
 
 // WiFi variables
-static IPAddress localhost = STATIC_IP;
-static IPv6Address localhost_ipv6;
+extern IPAddress localhost;
+extern IPv6Address localhost_ipv6;
 
 // Web Server variables
-static AsyncWebServer server(WEB_SERVER_PORT);
+extern AsyncWebServer server;
 
 //DHT22 variables
-static DHT dht(DHT_PIN, DHT_TYPE);
+extern DHT dht;
 
-static float temperature;
-static float humidity;
-static std::chrono::time_point<std::chrono::system_clock> last_measurement;
-
-// prometheus variables
-static uint32_t used_heap;
-static std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
+extern float temperature;
+extern float humidity;
+extern std::chrono::time_point<std::chrono::system_clock> last_measurement;
 
 // Other variables
-static std::string command;
+extern std::string command;
 
-static uint8_t loop_iterations = 0;
+extern uint8_t loop_iterations;
 
 // Methods
-/*
+/**
+ * Initializes the program and everything needed by it.
+ */
+void setup();
+
+/**
+ * Initializes everything related to WiFi, and establishes a connection to an WiFi access point, if possible.
+ */
+void setupWiFi();
+
+#if ENABLE_ARDUINO_OTA == 1
+/**
+ * Initializes everything required for Arduino OTA.
+ */
+void setupOTA();
+#endif
+
+/**
+ * Initializes the Web Server and the mDNS entry for the web server.
+ */
+void setupWebServer();
+
+/**
  * Returns a string with the time since the last measurement formatted like this "Hour(24):Minute:Second.Millisecond".
  */
 std::string getTimeSinceMeasurement();
 
-/*
+/**
  * Registers the given handler for the web server, and increments the web requests counter
  * by one each time it is called.
  */
 void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 		HTTPRequestHandler handler);
 
-/*
+/**
  * Registers a request handler that returns the given content type and web page each time it is called.
  * Expects request type get.
  * Also increments the request counter.
