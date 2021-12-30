@@ -9,7 +9,6 @@
 #define SRC_PROMETHEUS_H_
 
 #include "config.h"
-#include <chrono>
 #include <map>
 #include <HTTPClient.h>
 #include <ESPAsyncWebServer.h>
@@ -20,7 +19,8 @@
 namespace prom {
 extern uint32_t used_heap;
 extern std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
-extern std::chrono::time_point<std::chrono::system_clock> last_push;
+extern uint64_t last_push;
+extern TaskHandle_t *metrics_pusher;
 extern HTTPClient http;
 extern std::string push_url;
 
@@ -57,6 +57,14 @@ uint16_t handleMetrics(AsyncWebServerRequest *request);
 #endif
 
 #if ENABLE_PROMETHEUS_PUSH == 1
+/**
+ * This is the method run in the Metric Pusher task.
+ * Should run forever delaying for as many seconds as specified in PROMETHEUS_PUSH_INTERVAL between pushMetrics calls.
+ *
+ * @param param	The task parameters. Should be empty.
+ */
+void metricPusher(void *param);
+
 /**
  * This method pushes the prometheus metrics to the configured prometheus pushgateway server.
  */

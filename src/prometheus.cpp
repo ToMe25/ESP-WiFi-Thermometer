@@ -13,7 +13,8 @@
 
 uint32_t prom::used_heap = 0;
 std::map<std::pair<std::string, uint16_t>, uint64_t> prom::http_requests_total;
-std::chrono::time_point<std::chrono::system_clock> prom::last_push;
+uint64_t prom::last_push = 0;
+TaskHandle_t *prom::metrics_pusher;
 HTTPClient prom::http;
 std::string prom::push_url;
 
@@ -21,14 +22,14 @@ void prom::setup() {
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	registerRequestHandler("/metrics", HTTP_GET, handleMetrics);
 #endif
+
+#if ENABLE_PROMETHEUS_PUSH == 1
+	xTaskCreate(metricPusher, "Metrics Pusher", 3000, NULL, 1, metrics_pusher);
+#endif
 }
 
 void prom::loop() {
 	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
-
-#if ENABLE_PROMETHEUS_PUSH == 1
-	pushMetrics();
-#endif
 }
 
 void prom::connect() {
@@ -96,24 +97,35 @@ uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
 #endif
 
 #if ENABLE_PROMETHEUS_PUSH == 1
+void prom::metricPusher(void *param) {
+	while (true) {
+		uint64_t start = millis();
+		pushMetrics();
+		delay(std::max((uint32_t) 0, (uint32_t) (PROMETHEUS_PUSH_INTERVAL * 1000 + start - millis())));
+	}
+}
+
 void prom::pushMetrics() {
 	if (!WiFi.isConnected()) {
 		return;
 	}
 
-	using std::chrono::time_point;
-	using std::chrono::system_clock;
-	time_point<system_clock> now = system_clock::now();
+	uint64_t now = millis();
 
-	if (std::chrono::duration_cast<std::chrono::seconds>(now - last_push).count() >= PROMETHEUS_PUSH_INTERVAL) {
+	if (now - last_push >= PROMETHEUS_PUSH_INTERVAL) {
 		last_push = now;
+
+		if (PROMETHEUS_PUSH_INTERVAL < 10) {
+			http.setTimeout(PROMETHEUS_PUSH_INTERVAL * 500);
+		}
+
 		http.begin(push_url.c_str());
 		int code = http.POST(getMetrics().c_str());
 		http.end();
 		if (code != 200) {
 			Serial.print("Received http status code ");
 			Serial.print(code);
-			Serial.print(" when trying to push metrics.");
+			Serial.println(" when trying to push metrics.");
 		}
 	}
 }
