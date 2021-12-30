@@ -23,7 +23,7 @@ void prom::setup() {
 	registerRequestHandler("/metrics", HTTP_GET, handleMetrics);
 #endif
 
-#if ENABLE_PROMETHEUS_PUSH == 1
+#if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 	xTaskCreate(metricPusher, "Metrics Pusher", 3000, NULL, 1, metrics_pusher);
 #endif
 }
@@ -76,6 +76,7 @@ std::string prom::getMetrics() {
 	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
 	metrics << "process_heap_bytes " << used_heap << std::endl;
 
+#if ENABLE_WEB_SERVER == 1
 	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
 			<< std::endl;
 	metrics << "# TYPE http_requests_total counter" << std::endl;
@@ -85,6 +86,7 @@ std::string prom::getMetrics() {
 				<< element.first.second << "\",path=\"" << element.first.first
 				<< "\"} " << element.second << std::endl;
 	}
+#endif
 
 	return metrics.str();
 }

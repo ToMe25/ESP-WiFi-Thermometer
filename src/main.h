@@ -12,7 +12,6 @@
 #define SRC_MAIN_H_
 
 #include "config.h"
-#include <chrono>
 #include <ESPAsyncWebServer.h>
 #include <DHT.h>
 
@@ -45,12 +44,14 @@ extern DHT dht;
 
 extern float temperature;
 extern float humidity;
-extern std::chrono::time_point<std::chrono::system_clock> last_measurement;
+extern uint64_t last_measurement;
 
 // Other variables
 extern std::string command;
 
 extern uint8_t loop_iterations;
+
+extern uint64_t start;
 
 // Methods
 /**
@@ -70,13 +71,39 @@ void setupWiFi();
 void setupOTA();
 #endif
 
+#if ENABLE_WEB_SERVER == 1
 /**
  * Initializes the Web Server and the mDNS entry for the web server.
  */
 void setupWebServer();
+#endif
+
+/**
+ * The core of this program, the method that gets called repeatedly as long as the program runs.
+ */
+void loop();
+
+/**
+ * Reads in the sensor measurements and stores them in the correct values.
+ */
+void measure();
+
+#if ENABLE_WEB_SERVER == 1
+/**
+ * The request handler for /data.json.
+ * Responds with a json object containing the current temperature and humidity,
+ * as well as the time since the last measurement.
+ *
+ * @param request	The web request to handle.
+ * @return	The returned http status code.
+ */
+uint16_t getJson(AsyncWebServerRequest *request);
 
 /**
  * Returns a string with the time since the last measurement formatted like this "Hour(24):Minute:Second.Millisecond".
+ * Currently only used for the web server.
+ *
+ * @return	A formatted string representing the time since the last measurement.
  */
 std::string getTimeSinceMeasurement();
 
@@ -94,5 +121,6 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
  */
 void registerStaticHandler(const char *uri, const char *content_type,
 		const char *page);
+#endif /* ENABLE_WEB_SERVER */
 
 #endif /* SRC_MAIN_H_ */

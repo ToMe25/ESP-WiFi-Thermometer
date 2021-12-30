@@ -23,11 +23,13 @@ AsyncWebServer server(WEB_SERVER_PORT);
 DHT dht(DHT_PIN, DHT_TYPE);
 float temperature = 0;
 float humidity = 0;
-std::chrono::time_point<std::chrono::system_clock> last_measurement;
+uint64_t last_measurement = 0;
 std::string command;
 uint8_t loop_iterations = 0;
+uint64_t start = 0;
 
 void setup() {
+	start = millis();
 	Serial.begin(115200);
 	dht.begin();
 
@@ -35,7 +37,33 @@ void setup() {
 #if ENABLE_ARDUINO_OTA == 1
 	setupOTA();
 #endif
+
+#if ENABLE_WEB_SERVER == 1
 	setupWebServer();
+#endif
+
+#if ENABLE_DEEP_SLEEP_MODE == 1
+	measure();
+
+	Serial.print("Temperature: ");
+	Serial.print(temperature);
+	Serial.println("°C");
+	Serial.print("Humidity: ");
+	Serial.print(humidity);
+	Serial.println('%');
+
+	if (WiFi.waitForConnectResult() == WL_CONNECTED) {
+#if ENABLE_PROMETHEUS_PUSH == 1
+		prom::pushMetrics();
+#endif
+	} else {
+		Serial.println("Failed to connect to WiFi!");
+	}
+
+	WiFi.disconnect(1, 1);
+	esp_sleep_enable_timer_wakeup(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start * 1000));
+	esp_deep_sleep_start();
+#endif
 
 	prom::setup();
 }
@@ -53,6 +81,12 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		Serial.println(localhost_ipv6 = WiFi.localIPv6());
 		break;
 	case SYSTEM_EVENT_STA_GOT_IP:
+#if CORE_DEBUG_LEVEL == 5
+		delay(10);// if not doing this the additional logging causes the next log entry to not work.
+#endif
+		Serial.print("WiFi ready ");
+		Serial.print(millis() - start);
+		Serial.println("ms after start.");
 		Serial.print("STA IP: ");
 		Serial.println(localhost = WiFi.localIP());
 		prom::connect();
@@ -91,7 +125,9 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 
 void setupWiFi() {
 	WiFi.mode(WIFI_STA);
+#if ENABLE_DEEP_SLEEP_MODE != 1
 	WiFi.disconnect(1);
+#endif
 	WiFi.onEvent(onWiFiEvent);
 
 	if (!WiFi.config(localhost, GATEWAY, SUBNET)) {
@@ -139,6 +175,7 @@ void setupOTA() {
 }
 #endif /* ENABLE_ARDUINO_OTA */
 
+#if ENABLE_WEB_SERVER == 1
 uint16_t getIndex(AsyncWebServerRequest *request) {
 	std::string page = INDEX_HTML;
 	std::ostringstream converter;
@@ -150,19 +187,6 @@ uint16_t getIndex(AsyncWebServerRequest *request) {
 	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
 	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
 	request->send(200, "text/html", page.c_str());
-	return 200;
-}
-
-uint16_t getJson(AsyncWebServerRequest *request) {
-	std::ostringstream json;
-	json << "{\"temperature\": ";
-	json << std::setprecision(3) << temperature;
-	json << ", \"humidity\": ";
-	json << std::setprecision(3) << humidity;
-	json << ", \"time\": \"";
-	json << getTimeSinceMeasurement();
-	json << "\"}";
-	request->send(200, "application/json", json.str().c_str());
 	return 200;
 }
 
@@ -203,8 +227,26 @@ void setupWebServer() {
 
 	server.begin();
 
+#if ENABLE_ARDUINO_OTA != 1
+	MDNS.begin(HOSTNAME);
+#endif
+
 	MDNS.addService("http", "tcp", 80);
 }
+
+uint16_t getJson(AsyncWebServerRequest *request) {
+	std::ostringstream json;
+	json << "{\"temperature\": ";
+	json << std::setprecision(3) << temperature;
+	json << ", \"humidity\": ";
+	json << std::setprecision(3) << humidity;
+	json << ", \"time\": \"";
+	json << getTimeSinceMeasurement();
+	json << "\"}";
+	request->send(200, "application/json", json.str().c_str());
+	return 200;
+}
+#endif /* ENABLE_WEB_SERVER */
 
 bool handle_serial_input(std::string input) {
 	if (input == "temperature" || input == "temp") {
@@ -247,23 +289,15 @@ void loop() {
 	uint64_t start = millis();
 
 	if (loop_iterations % 4 == 0) {
-		float temp = dht.readTemperature();
-		if (!isnan(temp)) {
-			temperature = temp;
-		}
+		measure();
 
-		float humid = dht.readHumidity();
-		if (!isnan(humid)) {
-			humidity = humid;
-		}
-
-		if (!isnan(temp) && !isnan(humid)) {
-			last_measurement = std::chrono::system_clock::now();
-		}
-
-		if (loop_iterations % 20 == 0) {
-			Serial.printf("Temperature: %f°C\n", temperature);
-			Serial.printf("Humidity: %f%%\n", humidity);
+		if (loop_iterations % 20 == 0 && millis() - last_measurement < 10000) {
+			Serial.print("Temperature: ");
+			Serial.print(temperature);
+			Serial.println("°C");
+			Serial.print("Humidity: ");
+			Serial.print(humidity);
+			Serial.println('%');
 		}
 	}
 
@@ -310,21 +344,37 @@ void loop() {
 	delay(max(0, 500 - int16_t(start - end)));
 }
 
+void measure() {
+	float temp = dht.readTemperature();
+	if (!isnan(temp)) {
+		temperature = temp;
+	}
+
+	float humid = dht.readHumidity();
+	if (!isnan(humid)) {
+		humidity = humid;
+	}
+
+	if (!isnan(temp) && !isnan(humid)) {
+		last_measurement = millis();
+	}
+}
+
+#if ENABLE_WEB_SERVER == 1
 std::string getTimeSinceMeasurement() {
-	using namespace std::chrono;
 	std::ostringstream stream;
-	time_point<system_clock> now = system_clock::now();
+	uint64_t now = millis();
 	stream << std::internal << std::setfill('0') << std::setw(2);
-	stream << duration_cast<hours>(now - last_measurement).count() % 24;
+	stream << (now - last_measurement) / 3600000 % 24;
 	stream << ':';
 	stream << std::internal << std::setfill('0') << std::setw(2);
-	stream << duration_cast<minutes>(now - last_measurement).count() % 60;
+	stream << (now - last_measurement) / 60000 % 60;
 	stream << ':';
 	stream << std::internal << std::setfill('0') << std::setw(2);
-	stream << duration_cast<seconds>(now - last_measurement).count() % 60;
+	stream << (now - last_measurement) / 1000 % 60;
 	stream << '.';
 	stream << std::internal << std::setfill('0') << std::setw(3);
-	stream << duration_cast<milliseconds>(now - last_measurement).count() % 1000;
+	stream << (now - last_measurement) % 1000;
 	return stream.str();
 }
 
@@ -345,3 +395,4 @@ void registerStaticHandler(const char *uri, const char *content_type,
 				return 200;
 			});
 }
+#endif /* ENABLE_WEB_SERVER */

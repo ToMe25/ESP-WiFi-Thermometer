@@ -32,6 +32,9 @@ static const IPAddress SUBNET = INADDR_NONE;
 static const IPAddress STATIC_IP = INADDR_NONE;
 
 // Web Server options
+// Whether or not to enable the web server on the esp32.
+// Set to 1 to enable and to 0 to disable.
+#define ENABLE_WEB_SERVER 1
 // The port on which to open the web server that shows the measurements.
 // The default web server port is 80.
 static const uint16_t WEB_SERVER_PORT = 80;
@@ -60,7 +63,7 @@ static const uint16_t ARDUINO_OTA_PORT = 3232;
 // Whether the esp should automatically push measurements to a prometheus-pushgateway.
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
-#define ENABLE_PROMETHEUS_PUSH 0
+#define ENABLE_PROMETHEUS_PUSH 1
 // The address of the prometheus pushgateway to push the data to.
 // Can be an IP address, a hostname, or a domain.
 static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.230";
@@ -68,6 +71,7 @@ static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.230";
 static const uint16_t PROMETHEUS_PUSH_PORT = 9091;
 // The time between two HTTP post requests sent to the pushgateway.
 // Specified in seconds.
+// Ignored in deep sleep mode.
 // Prometheus default scrape interval is every 30 seconds.
 static const uint16_t PROMETHEUS_PUSH_INTERVAL = 30;
 // The name of the job to use for the prometheus metrics when pushing.
@@ -79,5 +83,39 @@ static constexpr char PROMETHEUS_PUSH_INSTANCE[] = "";
 // The name of the namespace to use for the prometheus metrics when pushing.
 // Leave empty to not send namespace information.
 static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
+
+// Deep sleep mode options
+// Deep sleep mode makes the esp go into deep sleep for a fixed time before makeing a measurement, pushing it,
+// and going into deep sleep again.
+// Set to 1 to enable and to 0 to disable.
+// The ifndef is there to allow setting deep sleep mode using the command line.
+#ifndef ENABLE_DEEP_SLEEP_MODE
+#define ENABLE_DEEP_SLEEP_MODE 0
+#endif
+// The time between two measurements in deep sleep mode.
+// Specified in seconds.
+// Default is 5 minutes, or 300 seconds.
+static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
+
+
+/*
+ * Below this are automatic overrides for required things, for example the scrape support needs the web server,
+ * so it enables it automatically.
+ */
+#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+#undef ENABLE_WEB_SERVER
+#define ENABLE_WEB_SERVER 1
+#endif
+
+#if ENABLE_DEEP_SLEEP_MODE == 1
+#undef ENABLE_WEB_SERVER
+#define ENABLE_WEB_SERVER 0
+#undef ENABLE_ARDUINO_OTA
+#define ENABLE_ARDUINO_OTA 0
+#undef ENABLE_PROMETHEUS_SCRAPE_SUPPORT
+#define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 0
+#undef ENABLE_PROMETHEUS_PUSH
+#define ENABLE_PROMETHEUS_PUSH 1
+#endif
 
 #endif /* SRC_CONFIG_H_ */
