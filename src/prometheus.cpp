@@ -61,23 +61,23 @@ void prom::connect() {
 
 std::string prom::getMetrics() {
 	std::ostringstream metrics;
-	metrics << "# HELP environment_temperature The current measured external temperature in degrees celsius."
+	metrics << F("# HELP environment_temperature The current measured external temperature in degrees celsius.")
 			<< std::endl;
 	metrics << "# TYPE environment_temperature gauge" << std::endl;
 	metrics << "environment_temperature " << std::setprecision(3) << temperature << std::endl;
 
-	metrics << "# HELP environment_humidity The current measured external relative humidity in percent."
+	metrics << F("# HELP environment_humidity The current measured external relative humidity in percent.")
 			<< std::endl;
 	metrics << "# TYPE environment_humidity gauge" << std::endl;
 	metrics << "environment_humidity " << std::setprecision(3) << humidity << std::endl;
 
-	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP in bytes."
+	metrics << F("# HELP process_heap_bytes The amount of heap used on the ESP in bytes.")
 			<< std::endl;
 	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
 	metrics << "process_heap_bytes " << used_heap << std::endl;
 
 #if ENABLE_WEB_SERVER == 1
-	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
+	metrics << F("# HELP http_requests_total The total number of http requests handled by this server.")
 			<< std::endl;
 	metrics << "# TYPE http_requests_total counter" << std::endl;
 
