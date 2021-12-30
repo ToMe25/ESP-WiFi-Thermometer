@@ -13,6 +13,9 @@
 
 #include "config.h"
 #include <ESPAsyncWebServer.h>
+// It would be possible to always only include one, but that makes it a pain when switching between them.
+// Especially when doing it repeatedly for testing.
+#include <DallasTemperature.h>
 #include <DHT.h>
 
 // includes the content of the file "wifissid.txt" in the project root.
@@ -39,8 +42,13 @@ extern IPv6Address localhost_ipv6;
 // Web Server variables
 extern AsyncWebServer server;
 
-//DHT22 variables
+//Sensor variables
+#if SENSOR_TYPE == SENSOR_TYPE_DHT
 extern DHT dht;
+#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
+extern OneWire wire;
+extern DallasTemperature sensors;
+#endif
 
 extern float temperature;
 extern float humidity;
@@ -122,5 +130,13 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 void registerStaticHandler(const char *uri, const char *content_type,
 		const char *page);
 #endif /* ENABLE_WEB_SERVER */
+
+/**
+ * Converts the given temperature from degrees celsius to degrees fahrenheit.
+ *
+ * @param celsius	The temperature to convert in celsius.
+ * @return	The converted temperature in fahrenheit.
+ */
+float celsiusToFahrenheit(float celsius);
 
 #endif /* SRC_MAIN_H_ */

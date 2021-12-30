@@ -14,7 +14,7 @@
       }
     ]
   },
-  "description": "Shows the Temperature and Relative Humidity as measures using a DHT22 attached to an ESP32",
+  "description": "Shows the Temperature and Relative Humidity as measured by the ESP",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 0,
@@ -27,7 +27,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "prometheus",
-      "description": "The ambient temperature measured by a DHT22.",
+      "description": "The ambient temperature measured by the ESP.",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -70,7 +70,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "environment_temperature",
+          "expr": "environment_temperature{job=\"esp-wifi-thermometer\"}",
           "interval": "",
           "legendFormat": "Temperature (C)",
           "refId": "A"
@@ -123,7 +123,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "prometheus",
-      "description": "The ambient relative humidity measured by a DHT22.",
+      "description": "The ambient relative humidity measured by the ESP.",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -166,7 +166,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "environment_humidity",
+          "expr": "environment_humidity{job=\"esp-wifi-thermometer\"}",
           "interval": "",
           "legendFormat": "Relative Humidity (%)",
           "refId": "A"
@@ -219,7 +219,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "prometheus",
-      "description": "The number of HTTP requests the ESP32 handled per path and returned HTTP status code.",
+      "description": "The number of HTTP requests the ESP handled per path and returned HTTP status code.",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -262,7 +262,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "rate(http_requests_total{job=\"esp32-dht22\"}[2m])",
+          "expr": "rate(http_requests_total{job=\"esp-wifi-thermometer\"}[2m])",
           "interval": "",
           "legendFormat": "Path: {{ path }} Statuscode: {{ code }}",
           "refId": "A"
@@ -335,7 +335,7 @@
     ]
   },
   "timezone": "",
-  "title": "ESP32 DHT22 Temperature and Relative Humidity",
-  "uid": "MBA9A_57k",
+  "title": "ESP WiFi Thermometer Temperature and Relative Humidity",
+  "uid": "MBA9A_57s",
   "version": 2
 }

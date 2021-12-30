@@ -18,7 +18,7 @@
 // The hostname with which the esp can be reached.
 // This value is used for both the actual hostname, as well as the mDNS hostname(mDNS names end with .local).
 // While the normal hostname doesn't work with a static IP, mDNS still works.
-static constexpr char HOSTNAME[] = "esp32-dht22";
+static constexpr char HOSTNAME[] = "esp-wifi-thermometer";
 // The WiFi gateway IP.
 // Set to INADDR_NONE to use the standard gateway of the WLAN.
 // Usually your router.
@@ -32,19 +32,27 @@ static const IPAddress SUBNET = INADDR_NONE;
 static const IPAddress STATIC_IP = INADDR_NONE;
 
 // Web Server options
-// Whether or not to enable the web server on the esp32.
+// Whether or not to enable the web server on the esp.
 // Set to 1 to enable and to 0 to disable.
 #define ENABLE_WEB_SERVER 1
 // The port on which to open the web server that shows the measurements.
 // The default web server port is 80.
 static const uint16_t WEB_SERVER_PORT = 80;
 
-// DHT options
+// Sensor options
+// Valid sensor types
+#define SENSOR_TYPE_DHT 1
+#define SENSOR_TYPE_DALLAS 2
+// The type of sensor in use.
+// Supported values: SENSOR_TYPE_DHT and SENSOR_TYPE_DALLAS.
+#define SENSOR_TYPE SENSOR_TYPE_DHT
 // The type of DHT sensor in use.
+// Only used if SENSOR_TYPE is SENSOR_TYPE_DHT.
 // Valid types are 11, 12, 21, and 22.
 static const uint8_t DHT_TYPE = 22;
-// The gpio pin to which the data pin of the DHT is connected.
-static const uint8_t DHT_PIN = 5;
+// The gpio pin to which the data pin of the sensor is connected.
+// Default is 5.
+static const uint8_t SENSOR_PIN = 5;
 
 // Arduino OTA options
 // Whether to enable the Arduino OTA server.

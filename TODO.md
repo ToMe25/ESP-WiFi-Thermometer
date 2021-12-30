@@ -9,6 +9,7 @@ Not all of these are necessarily going to be implemented at all.
 ## Web Interface
  * Add error message to log and web interface if measurement fails
  * Add a javescript temperature and humidity graph to the web interface?
+ * Remove not measured values(for example humidity for the DS18B20)
 
 ## Integration
  * Find a way to make the kubernetes service(for prometheus) automatically point to the esp(mDNS?)

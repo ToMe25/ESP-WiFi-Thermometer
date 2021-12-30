@@ -61,17 +61,17 @@ void prom::connect() {
 
 std::string prom::getMetrics() {
 	std::ostringstream metrics;
-	metrics << "# HELP environment_temperature The current external temperature measured using a DHT22."
+	metrics << "# HELP environment_temperature The current measured external temperature in degrees celsius."
 			<< std::endl;
 	metrics << "# TYPE environment_temperature gauge" << std::endl;
 	metrics << "environment_temperature " << std::setprecision(3) << temperature << std::endl;
 
-	metrics << "# HELP environment_humidity The current external relative humidity measured using a DHT22."
+	metrics << "# HELP environment_humidity The current measured external relative humidity in percent."
 			<< std::endl;
 	metrics << "# TYPE environment_humidity gauge" << std::endl;
 	metrics << "environment_humidity " << std::setprecision(3) << humidity << std::endl;
 
-	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP32 in bytes."
+	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP in bytes."
 			<< std::endl;
 	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
 	metrics << "process_heap_bytes " << used_heap << std::endl;

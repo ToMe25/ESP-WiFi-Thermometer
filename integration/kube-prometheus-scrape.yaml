@@ -1,10 +1,10 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: esp32-dht22
+  name: esp-wifi-thermometer
   namespace: monitoring
   labels:
-    k8s-app: esp32-dht22
+    k8s-app: esp-wifi-thermometer
 spec:
   type: ExternalName
   externalName: 192.168.2.101
@@ -19,10 +19,10 @@ spec:
 apiVersion: v1
 kind: Endpoints
 metadata:
-  name: esp32-dht22
+  name: esp-wifi-thermometer
   namespace: monitoring
   labels:
-    k8s-app: esp32-dht22
+    k8s-app: esp-wifi-thermometer
 subsets:
 - addresses:
   - ip: 192.168.2.101
@@ -36,18 +36,18 @@ subsets:
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: esp32-dht22-sm
+  name: esp-wifi-thermometer-sm
   namespace: monitoring
   labels:
-    k8s-app: esp32-dht22
+    k8s-app: esp-wifi-thermometer
 spec:
   selector:
     matchLabels:
-      k8s-app: esp32-dht22
+      k8s-app: esp-wifi-thermometer
   namespaceSelector:
     matchNames:
     - monitoring
-  jobLabel: esp32-dht22-exporter
+  jobLabel: esp-wifi-thermometer-exporter
   endpoints:
   - interval: 10s
     port: metrics

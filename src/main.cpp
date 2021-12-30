@@ -20,7 +20,12 @@
 IPAddress localhost = STATIC_IP;
 IPv6Address localhost_ipv6;
 AsyncWebServer server(WEB_SERVER_PORT);
-DHT dht(DHT_PIN, DHT_TYPE);
+#if SENSOR_TYPE == SENSOR_TYPE_DHT
+DHT dht(SENSOR_PIN, DHT_TYPE);
+#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
+OneWire wire(SENSOR_PIN);
+DallasTemperature sensors(&wire);
+#endif
 float temperature = 0;
 float humidity = 0;
 uint64_t last_measurement = 0;
@@ -31,7 +36,12 @@ uint64_t start = 0;
 void setup() {
 	start = millis();
 	Serial.begin(115200);
+
+#if SENSOR_TYPE == SENSOR_TYPE_DHT
 	dht.begin();
+#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
+	sensors.begin();
+#endif
 
 	setupWiFi();
 #if ENABLE_ARDUINO_OTA == 1
@@ -251,12 +261,17 @@ uint16_t getJson(AsyncWebServerRequest *request) {
 bool handle_serial_input(std::string input) {
 	if (input == "temperature" || input == "temp") {
 		Serial.println();
-		Serial.printf("Temperature: %f°C, %f°F\n", temperature,
-				dht.convertCtoF(temperature));
+		Serial.print("Temperature: ");
+		Serial.print(temperature);
+		Serial.print("°C, ");
+		Serial.print(celsiusToFahrenheit(temperature));
+		Serial.println("°F");
 		return true;
 	} else if (input == "humidity") {
 		Serial.println();
-		Serial.printf("Relative Humidity: %f%%\n", humidity);
+		Serial.print("Relative humidity: ");
+		Serial.print(humidity);
+		Serial.println('%');
 		return true;
 	} else if (input == "ip") {
 		Serial.println();
@@ -273,7 +288,7 @@ bool handle_serial_input(std::string input) {
 		return true;
 	} else if (input == "help") {
 		Serial.println();
-		Serial.println("ESP32-DHT22 help:");
+		Serial.println("ESP-WiFi-Thermometer help:");
 		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
 		Serial.println("humidity:              Prints the relative humidity in %.");
 		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
@@ -294,10 +309,14 @@ void loop() {
 		if (loop_iterations % 20 == 0 && millis() - last_measurement < 10000) {
 			Serial.print("Temperature: ");
 			Serial.print(temperature);
-			Serial.println("°C");
-			Serial.print("Humidity: ");
-			Serial.print(humidity);
-			Serial.println('%');
+			Serial.print("°C, ");
+			Serial.print(celsiusToFahrenheit(temperature));
+			Serial.println("°F");
+			if (humidity != 0) {
+				Serial.print("Humidity: ");
+				Serial.print(humidity);
+				Serial.println('%');
+			}
 		}
 	}
 
@@ -341,10 +360,11 @@ void loop() {
 
 	loop_iterations++;
 	uint64_t end = millis();
-	delay(max(0, 500 - int16_t(start - end)));
+	delay(max(0, 500 - int16_t(end - start)));
 }
 
 void measure() {
+#if SENSOR_TYPE == SENSOR_TYPE_DHT
 	float temp = dht.readTemperature();
 	if (!isnan(temp)) {
 		temperature = temp;
@@ -358,6 +378,14 @@ void measure() {
 	if (!isnan(temp) && !isnan(humid)) {
 		last_measurement = millis();
 	}
+#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
+	sensors.requestTemperatures();
+	float temp = sensors.getTempCByIndex(0);
+	if (temp != DEVICE_DISCONNECTED_C) {
+		temperature = temp;
+		last_measurement = millis();
+	}
+#endif
 }
 
 #if ENABLE_WEB_SERVER == 1
@@ -396,3 +424,7 @@ void registerStaticHandler(const char *uri, const char *content_type,
 			});
 }
 #endif /* ENABLE_WEB_SERVER */
+
+float celsiusToFahrenheit(float celsius) {
+	return celsius * 1.8 + 32;
+}
