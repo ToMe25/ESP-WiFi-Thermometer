@@ -17,9 +17,9 @@ function update() {
 		.then((res) => {
 			return res.json()
 		}).then((out) => {
-			temperature.innerHTML = out.temperature
-			humidity.innerHTML = out.humidity
-			time.innerHTML = time.dateTime = out.time
+			temperature.innerText = out.temperature
+			humidity.innerText = out.humidity
+			time.innerText = time.dateTime = out.time
 		}).catch((err) => {
 			throw err
 		})
@@ -27,8 +27,8 @@ function update() {
 
 function timer() {
 	var date = new Date()
-	var split = time.innerHTML.split('.')[0].split(':')
-	date.setHours(split[0], split[1], split[2], time.innerHTML.split('.')[1])
+	var split = time.innerText.split('.')[0].split(':')
+	date.setHours(split[0], split[1], split[2], time.innerText.split('.')[1])
 	date.setSeconds(date.getSeconds() + 1)
 
 	var hours = date.getHours() % 24
@@ -58,5 +58,5 @@ function timer() {
 		}
 	}
 	timeStr += milliseconds
-	time.innerHTML = time.dateTime = timeStr
+	time.innerText = time.dateTime = timeStr
 }
