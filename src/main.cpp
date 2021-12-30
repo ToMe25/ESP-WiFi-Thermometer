@@ -186,20 +186,6 @@ void setupOTA() {
 #endif /* ENABLE_ARDUINO_OTA */
 
 #if ENABLE_WEB_SERVER == 1
-uint16_t getIndex(AsyncWebServerRequest *request) {
-	std::string page = INDEX_HTML;
-	std::ostringstream converter;
-	converter << std::setprecision(3) << temperature;
-	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
-	converter.clear();
-	converter.str("");
-	converter << std::setprecision(3) << humidity;
-	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
-	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
-	request->send(200, "text/html", page.c_str());
-	return 200;
-}
-
 void setupWebServer() {
 	registerRequestHandler("/", HTTP_GET, getIndex);
 	registerRequestHandler("/index.html", HTTP_GET, getIndex);
@@ -225,6 +211,14 @@ void setupWebServer() {
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
 
+	registerRequestHandler("/favicon.ico", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> uint16_t {
+				AsyncProgmemResponse response(200, "image/x-icon",
+						FAVICON_ICO_START, FAVICON_ICO_END - FAVICON_ICO_START);
+				request->send(&response);
+				return 200;
+			});
+
 	server.onNotFound(
 			[](AsyncWebServerRequest *request) {
 				request->send(404, "text/html", NOT_FOUND_HTML);
@@ -242,6 +236,20 @@ void setupWebServer() {
 #endif
 
 	MDNS.addService("http", "tcp", 80);
+}
+
+uint16_t getIndex(AsyncWebServerRequest *request) {
+	std::string page = INDEX_HTML;
+	std::ostringstream converter;
+	converter << std::setprecision(3) << temperature;
+	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
+	converter.clear();
+	converter.str("");
+	converter << std::setprecision(3) << humidity;
+	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
+	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
+	request->send(200, "text/html", page.c_str());
+	return 200;
 }
 
 uint16_t getJson(AsyncWebServerRequest *request) {
