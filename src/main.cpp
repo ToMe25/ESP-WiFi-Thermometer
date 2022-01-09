@@ -211,15 +211,16 @@ void setupWebServer() {
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
 
-	registerRequestHandler("/favicon.ico", HTTP_GET,
-			[](AsyncWebServerRequest *request) -> uint16_t {
-				AsyncWebServerResponse *response = request->beginResponse_P(200,
-						"image/x-icon", FAVICON_ICO_START,
-						FAVICON_ICO_END - FAVICON_ICO_START);
-				response->addHeader("Content-Encoding", "gzip");
-				request->send(response);
-				return 200;
-			});
+	registerImageHandler("/favicon.ico", "image/x-icon", FAVICON_ICO_GZ_START,
+			FAVICON_ICO_GZ_END);
+	registerImageHandler("/favicon16.png", "image/png", FAVICON16_PNG_GZ_START,
+			FAVICON16_PNG_GZ_END);
+	registerImageHandler("/favicon32.png", "image/png", FAVICON32_PNG_GZ_START,
+			FAVICON32_PNG_GZ_END);
+	registerImageHandler("/favicon48.png", "image/png", FAVICON48_PNG_GZ_START,
+			FAVICON48_PNG_GZ_END);
+	registerImageHandler("/favicon64.png", "image/png", FAVICON64_PNG_GZ_START,
+			FAVICON64_PNG_GZ_END);
 
 	server.onNotFound(
 			[](AsyncWebServerRequest *request) {
@@ -267,48 +268,6 @@ uint16_t getJson(AsyncWebServerRequest *request) {
 	return 200;
 }
 #endif /* ENABLE_WEB_SERVER */
-
-bool handle_serial_input(std::string input) {
-	if (input == "temperature" || input == "temp") {
-		Serial.println();
-		Serial.print("Temperature: ");
-		Serial.print(temperature);
-		Serial.print("°C, ");
-		Serial.print(celsiusToFahrenheit(temperature));
-		Serial.println("°F");
-		return true;
-	} else if (input == "humidity") {
-		Serial.println();
-		Serial.print("Relative humidity: ");
-		Serial.print(humidity);
-		Serial.println('%');
-		return true;
-	} else if (input == "ip") {
-		Serial.println();
-		Serial.println("IP Address: ");
-		Serial.print("IPv6: ");
-		Serial.println(localhost_ipv6);
-		Serial.print("IPv4: ");
-		Serial.println(localhost);
-		return true;
-	} else if (input == "scan") {
-		Serial.println();
-		Serial.println("Starting WiFi scan...");
-		WiFi.scanNetworks(true, true);
-		return true;
-	} else if (input == "help") {
-		Serial.println();
-		Serial.println("ESP-WiFi-Thermometer help:");
-		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
-		Serial.println("humidity:              Prints the relative humidity in %.");
-		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
-		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
-		Serial.println("help:                  Prints this help text.");
-		return true;
-	} else {
-		return false;
-	}
-}
 
 void loop() {
 	uint64_t start = millis();
@@ -373,6 +332,48 @@ void loop() {
 	delay(max(0, 500 - int16_t(end - start)));
 }
 
+bool handle_serial_input(const std::string &input) {
+	if (input == "temperature" || input == "temp") {
+		Serial.println();
+		Serial.print("Temperature: ");
+		Serial.print(temperature);
+		Serial.print("°C, ");
+		Serial.print(celsiusToFahrenheit(temperature));
+		Serial.println("°F");
+		return true;
+	} else if (input == "humidity") {
+		Serial.println();
+		Serial.print("Relative humidity: ");
+		Serial.print(humidity);
+		Serial.println('%');
+		return true;
+	} else if (input == "ip") {
+		Serial.println();
+		Serial.println("IP Address: ");
+		Serial.print("IPv6: ");
+		Serial.println(localhost_ipv6);
+		Serial.print("IPv4: ");
+		Serial.println(localhost);
+		return true;
+	} else if (input == "scan") {
+		Serial.println();
+		Serial.println("Starting WiFi scan...");
+		WiFi.scanNetworks(true, true);
+		return true;
+	} else if (input == "help") {
+		Serial.println();
+		Serial.println("ESP-WiFi-Thermometer help:");
+		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
+		Serial.println("humidity:              Prints the relative humidity in %.");
+		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
+		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
+		Serial.println("help:                  Prints this help text.");
+		return true;
+	} else {
+		return false;
+	}
+}
+
 void measure() {
 #if SENSOR_TYPE == SENSOR_TYPE_DHT
 	float temp = dht.readTemperature();
@@ -433,8 +434,21 @@ void registerStaticHandler(const char *uri, const char *content_type,
 				return 200;
 			});
 }
+
+void registerImageHandler(const char *uri, const char *content_type,
+		const uint8_t *start, const uint8_t *end) {
+	registerRequestHandler(uri, HTTP_GET,
+			[content_type, start, end](
+					AsyncWebServerRequest *request) -> uint16_t {
+				AsyncWebServerResponse *response = request->beginResponse_P(200,
+						content_type, start, end - start);
+				response->addHeader("Content-Encoding", "gzip");
+				request->send(response);
+				return 200;
+			});
+}
 #endif /* ENABLE_WEB_SERVER */
 
-float celsiusToFahrenheit(float celsius) {
+float celsiusToFahrenheit(const float celsius) {
 	return celsius * 1.8 + 32;
 }
