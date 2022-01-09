@@ -8,7 +8,6 @@
 #include "prometheus.h"
 #include "main.h"
 #include <iomanip>
-#include <iostream>
 #include <sstream>
 
 uint32_t prom::used_heap = 0;

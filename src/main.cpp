@@ -213,8 +213,11 @@ void setupWebServer() {
 
 	registerRequestHandler("/favicon.ico", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
-				request->send_P(200, "image/x-icon", FAVICON_ICO_START,
+				AsyncWebServerResponse *response = request->beginResponse_P(200,
+						"image/x-icon", FAVICON_ICO_START,
 						FAVICON_ICO_END - FAVICON_ICO_START);
+				response->addHeader("Content-Encoding", "gzip");
+				request->send(response);
 				return 200;
 			});
 

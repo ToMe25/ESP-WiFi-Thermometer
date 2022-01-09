@@ -32,8 +32,8 @@ extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
 extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
 extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
-extern const uint8_t FAVICON_ICO_START[] asm("_binary_src_html_favicon_ico_start");
-extern const uint8_t FAVICON_ICO_END[] asm("_binary_src_html_favicon_ico_end");
+extern const uint8_t FAVICON_ICO_START[] asm("_binary_src_html_favicon_ico_gz_start");
+extern const uint8_t FAVICON_ICO_END[] asm("_binary_src_html_favicon_ico_gz_end");
 
 typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
 
