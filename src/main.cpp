@@ -31,10 +31,10 @@ float humidity = 0;
 uint64_t last_measurement = 0;
 std::string command;
 uint8_t loop_iterations = 0;
-uint64_t start = 0;
+uint64_t start_ms = 0;
 
 void setup() {
-	start = millis();
+	start_ms = millis();
 	Serial.begin(115200);
 
 #if SENSOR_TYPE == SENSOR_TYPE_DHT
@@ -71,7 +71,7 @@ void setup() {
 	}
 
 	WiFi.disconnect(1, 1);
-	esp_sleep_enable_timer_wakeup(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start * 1000));
+	esp_sleep_enable_timer_wakeup(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
 	esp_deep_sleep_start();
 #endif
 
@@ -95,7 +95,7 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		delay(10);// if not doing this the additional logging causes the next log entry to not work.
 #endif
 		Serial.print("WiFi ready ");
-		Serial.print(millis() - start);
+		Serial.print(millis() - start_ms);
 		Serial.println("ms after start.");
 		Serial.print("STA IP: ");
 		Serial.println(localhost = WiFi.localIP());
@@ -213,14 +213,10 @@ void setupWebServer() {
 
 	registerImageHandler("/favicon.ico", "image/x-icon", FAVICON_ICO_GZ_START,
 			FAVICON_ICO_GZ_END);
-	registerImageHandler("/favicon16.png", "image/png", FAVICON16_PNG_GZ_START,
-			FAVICON16_PNG_GZ_END);
-	registerImageHandler("/favicon32.png", "image/png", FAVICON32_PNG_GZ_START,
-			FAVICON32_PNG_GZ_END);
-	registerImageHandler("/favicon48.png", "image/png", FAVICON48_PNG_GZ_START,
-			FAVICON48_PNG_GZ_END);
-	registerImageHandler("/favicon64.png", "image/png", FAVICON64_PNG_GZ_START,
-			FAVICON64_PNG_GZ_END);
+	registerImageHandler("/favicon.png", "image/png", FAVICON_PNG_GZ_START,
+			FAVICON_PNG_GZ_END);
+	registerImageHandler("/favicon.svg", "image/svg+xml", FAVICON_SVG_GZ_START,
+			FAVICON_SVG_GZ_END);
 
 	server.onNotFound(
 			[](AsyncWebServerRequest *request) {

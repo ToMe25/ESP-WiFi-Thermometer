@@ -100,9 +100,9 @@ uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
 #if ENABLE_PROMETHEUS_PUSH == 1
 void prom::metricPusher(void *param) {
 	while (true) {
-		uint64_t start = millis();
+		uint64_t push_start_ms = millis();
 		pushMetrics();
-		delay(std::max((uint32_t) 0, (uint32_t) (PROMETHEUS_PUSH_INTERVAL * 1000 + start - millis())));
+		delay(std::max((uint32_t) 0, (uint32_t) (PROMETHEUS_PUSH_INTERVAL * 1000 + push_start_ms - millis())));
 	}
 }
 

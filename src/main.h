@@ -34,14 +34,10 @@ extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
 extern const uint8_t FAVICON_ICO_GZ_START[] asm("_binary_src_html_favicon_ico_gz_start");
 extern const uint8_t FAVICON_ICO_GZ_END[] asm("_binary_src_html_favicon_ico_gz_end");
-extern const uint8_t FAVICON16_PNG_GZ_START[] asm("_binary_src_html_favicon16_png_gz_start");
-extern const uint8_t FAVICON16_PNG_GZ_END[] asm("_binary_src_html_favicon16_png_gz_end");
-extern const uint8_t FAVICON32_PNG_GZ_START[] asm("_binary_src_html_favicon32_png_gz_start");
-extern const uint8_t FAVICON32_PNG_GZ_END[] asm("_binary_src_html_favicon32_png_gz_end");
-extern const uint8_t FAVICON48_PNG_GZ_START[] asm("_binary_src_html_favicon48_png_gz_start");
-extern const uint8_t FAVICON48_PNG_GZ_END[] asm("_binary_src_html_favicon48_png_gz_end");
-extern const uint8_t FAVICON64_PNG_GZ_START[] asm("_binary_src_html_favicon64_png_gz_start");
-extern const uint8_t FAVICON64_PNG_GZ_END[] asm("_binary_src_html_favicon64_png_gz_end");
+extern const uint8_t FAVICON_PNG_GZ_START[] asm("_binary_src_html_favicon_png_gz_start");
+extern const uint8_t FAVICON_PNG_GZ_END[] asm("_binary_src_html_favicon_png_gz_end");
+extern const uint8_t FAVICON_SVG_GZ_START[] asm("_binary_src_html_favicon_svg_gz_start");
+extern const uint8_t FAVICON_SVG_GZ_END[] asm("_binary_src_html_favicon_svg_gz_end");
 
 typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
 
@@ -69,7 +65,7 @@ extern std::string command;
 
 extern uint8_t loop_iterations;
 
-extern uint64_t start;
+extern uint64_t start_ms;
 
 // Methods
 /**
