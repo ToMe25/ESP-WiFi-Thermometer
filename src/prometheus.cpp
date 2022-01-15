@@ -13,7 +13,7 @@
 uint32_t prom::used_heap = 0;
 std::map<std::pair<std::string, uint16_t>, uint64_t> prom::http_requests_total;
 uint64_t prom::last_push = 0;
-TaskHandle_t *prom::metrics_pusher;
+TaskHandle_t prom::metrics_pusher;
 HTTPClient prom::http;
 std::string prom::push_url;
 
@@ -23,7 +23,7 @@ void prom::setup() {
 #endif
 
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
-	xTaskCreate(metricPusher, "Metrics Pusher", 3000, NULL, 1, metrics_pusher);
+	xTaskCreate(metricPusher, "Metrics Pusher", 3000, NULL, 1, &metrics_pusher);
 #endif
 }
 

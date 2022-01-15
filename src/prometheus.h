@@ -20,7 +20,7 @@ namespace prom {
 extern uint32_t used_heap;
 extern std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
 extern uint64_t last_push;
-extern TaskHandle_t *metrics_pusher;
+extern TaskHandle_t metrics_pusher;
 extern HTTPClient http;
 extern std::string push_url;
 
