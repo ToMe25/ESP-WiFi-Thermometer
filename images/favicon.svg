@@ -6,36 +6,37 @@
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
    xmlns:xlink="http://www.w3.org/1999/xlink"
-   width="32"
-   height="32"
-   viewBox="0 0 8.4666666 8.4666666"
+   shape-rendering="crispEdges"
+   id="svg8"
    version="1.1"
-   id="svg8">
+   viewBox="0 0 8.4666666 8.4666666"
+   height="32"
+   width="32">
   <defs
      id="defs2">
     <marker
-       style="overflow:visible"
-       id="marker1116"
-       refX="0"
+       orient="auto"
        refY="0"
-       orient="auto">
+       refX="0"
+       id="marker1116"
+       style="overflow:visible">
       <path
-         transform="matrix(0.8,0,0,0.8,10,0)"
-         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt"
+         id="path1114"
          d="M 0,0 5,-5 -12.5,0 5,5 Z"
-         id="path1114" />
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt"
+         transform="matrix(0.8,0,0,0.8,10,0)" />
     </marker>
     <marker
-       style="overflow:visible"
-       id="Arrow1Lstart"
-       refX="0"
+       orient="auto"
        refY="0"
-       orient="auto">
+       refX="0"
+       id="Arrow1Lstart"
+       style="overflow:visible">
       <path
-         transform="matrix(0.8,0,0,0.8,10,0)"
-         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt"
+         id="path844"
          d="M 0,0 5,-5 -12.5,0 5,5 Z"
-         id="path844" />
+         style="fill-rule:evenodd;stroke:#000000;stroke-width:1.00000003pt"
+         transform="matrix(0.8,0,0,0.8,10,0)" />
     </marker>
   </defs>
   <metadata
@@ -51,61 +52,61 @@
     </rdf:RDF>
   </metadata>
   <g
-     id="layer1"
-     transform="matrix(0.12500032,0,0,0.12500032,-0.00238899,-28.69317)">
+     transform="matrix(0.12500032,0,0,0.12500032,-0.00238899,-28.69317)"
+     id="layer1">
     <path
-       transform="matrix(5.1428571,0,0,5.1428571,1.1307019,-1232.7744)"
-       id="path969-35"
+       style="opacity:1;fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.52912992;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="m 6.369026,284.92744 c -0.010331,0 -0.02067,1.1e-4 -0.031015,3.5e-4 -0.2216832,0.005 -0.4384768,0.0663 -0.6304524,0.17726 -0.4092697,0.23631 -0.6614107,0.67302 -0.6614583,1.14566 v 3.97447 c -0.4115049,0.17405 -0.7980088,0.42591 -1.1092297,0.73713 -0.6224415,0.62244 -1.0074317,1.48234 -1.007437,2.43215 1.09e-5,1.89963 1.5399602,3.43958 3.4395833,3.43958 3e-6,0 6e-6,0 9e-6,0 3e-6,0 6e-6,0 9e-6,0 1.8996231,0 3.4395724,-1.53995 3.4395833,-3.43958 -5.3e-6,-0.94981 -0.3849955,-1.80971 -1.007437,-2.43215 -0.3112209,-0.31122 -0.6977248,-0.56308 -1.1092297,-0.73713 v -3.97447 c -4.76e-5,-0.47264 -0.2521886,-0.90935 -0.6614583,-1.14566 -0.1919756,-0.11096 -0.4087692,-0.17226 -0.6304524,-0.17726 -0.010345,-2.4e-4 -0.020684,-3.5e-4 -0.031015,-3.5e-4 z"
-       style="opacity:1;fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.52912992;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       id="path969-35"
+       transform="matrix(5.1428571,0,0,5.1428571,1.1307019,-1232.7744)" />
     <path
-       transform="matrix(5.1428571,0,0,5.1428571,1.1307019,-1232.7744)"
-       id="path969-35-1"
+       style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:#ff2a2a;stroke-width:0.45355719;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
        d="M 6.369026,288.45795 H 5.5223683 v 2.02608 c -0.5166864,0.20881 -0.9712827,0.55895 -1.2380441,0.82571 -0.5335226,0.53353 -0.8635151,1.27059 -0.8635196,2.0847 9e-6,1.62827 1.319969,2.94823 2.9482214,2.94823 1.6282524,0 2.9482124,-1.31996 2.9482214,-2.94823 -4.5e-6,-0.81411 -0.329997,-1.55117 -0.8635196,-2.0847 -0.2667614,-0.26676 -0.7213577,-0.6169 -1.2380441,-0.82571 v -2.02608 z"
-       style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:#ff2a2a;stroke-width:0.45355719;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       id="path969-35-1"
+       transform="matrix(5.1428571,0,0,5.1428571,1.1307019,-1232.7744)" />
     <path
-       id="path40"
-       d="m 27.800276,238.85502 h 7.372457"
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:1.85208333;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2.11666131;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="m 27.800276,238.01142 h 7.372457"
+       id="path40" />
     <use
-       transform="translate(-2.8328125e-7,7.8137338)"
-       height="100%"
-       width="100%"
+       x="0"
+       y="0"
+       xlink:href="#path40"
        id="use876"
-       xlink:href="#path40"
-       y="0"
-       x="0" />
-    <use
-       height="100%"
        width="100%"
-       transform="translate(0,7.8137258)"
+       height="100%"
+       transform="translate(-2.8328125e-7,8.4666422)" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use876"
        id="use878"
-       xlink:href="#use876"
-       y="0"
-       x="0" />
-    <use
-       height="100%"
+       transform="translate(0,8.4666449)"
        width="100%"
-       transform="translate(0,3.906863)"
+       height="100%" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use876"
        id="use880"
-       xlink:href="#use876"
-       y="0"
-       x="0" />
-    <use
-       height="100%"
+       transform="translate(0,4.2333224)"
        width="100%"
-       transform="translate(0,11.720588)"
+       height="100%" />
+    <use
+       x="0"
+       y="0"
+       xlink:href="#use876"
        id="use882"
-       xlink:href="#use876"
-       y="0"
-       x="0" />
-    <use
-       height="100%"
+       transform="translate(0,12.699967)"
        width="100%"
-       transform="translate(0,3.9068635)"
-       id="use886"
-       xlink:href="#path40"
+       height="100%" />
+    <use
+       x="0"
        y="0"
-       x="0" />
+       xlink:href="#path40"
+       id="use886"
+       transform="translate(0,4.2333197)"
+       width="100%"
+       height="100%" />
   </g>
 </svg>
