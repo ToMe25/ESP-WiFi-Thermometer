@@ -15,10 +15,16 @@
 #include <sstream>
 #include <Adafruit_Sensor.h>
 #include <ArduinoOTA.h>
+#ifdef ESP32
 #include <ESPmDNS.h>
+#elif defined(ESP8266)
+#include <ESP8266mDNS.h>
+#endif
 
 IPAddress localhost = STATIC_IP;
+#ifdef ESP32
 IPv6Address localhost_ipv6;
+#endif
 AsyncWebServer server(WEB_SERVER_PORT);
 #if SENSOR_TYPE == SENSOR_TYPE_DHT
 DHT dht(SENSOR_PIN, DHT_TYPE);
@@ -70,67 +76,12 @@ void setup() {
 		Serial.println("Failed to connect to WiFi!");
 	}
 
-	WiFi.disconnect(1, 1);
+	WiFi.disconnect(1);
 	esp_sleep_enable_timer_wakeup(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
 	esp_deep_sleep_start();
 #endif
 
 	prom::setup();
-}
-
-void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
-	switch (id) {
-	case SYSTEM_EVENT_STA_START:
-		WiFi.setHostname(HOSTNAME);
-		break;
-	case SYSTEM_EVENT_STA_CONNECTED:
-		WiFi.enableIpV6();
-		break;
-	case SYSTEM_EVENT_GOT_IP6:
-		Serial.print("STA IPv6: ");
-		Serial.println(localhost_ipv6 = WiFi.localIPv6());
-		break;
-	case SYSTEM_EVENT_STA_GOT_IP:
-#if CORE_DEBUG_LEVEL == 5
-		delay(10);// if not doing this the additional logging causes the next log entry to not work.
-#endif
-		Serial.print("WiFi ready ");
-		Serial.print(millis() - start_ms);
-		Serial.println("ms after start.");
-		Serial.print("STA IP: ");
-		Serial.println(localhost = WiFi.localIP());
-		prom::connect();
-		break;
-	case SYSTEM_EVENT_STA_DISCONNECTED:
-		WiFi.reconnect();
-		break;
-	case SYSTEM_EVENT_SCAN_DONE:
-		Serial.println("WiFi scan results: ");
-		Serial.print("Found ");
-		Serial.print((uint16_t) info.scan_done.number);
-		Serial.println(" WiFi networks.");
-		for (uint8_t i = 0; i < info.scan_done.number; i++) {
-			String SSID;
-			uint8_t encryptionType;
-			int32_t RSSI;
-			uint8_t *BSSID;
-			int32_t channel;
-			WiFi.getNetworkInfo(i, SSID, encryptionType, RSSI, BSSID, channel);
-			Serial.print("network ");
-			Serial.print(i + 1);
-			Serial.print(": ssid = ");
-			Serial.print(SSID);
-			Serial.print(", rssi = ");
-			Serial.print(RSSI);
-			Serial.print(", channel = ");
-			Serial.print(channel);
-			Serial.print(", encryptionType = ");
-			Serial.println(encryptionType);
-		}
-		break;
-	default:
-		break;
-	}
 }
 
 void setupWiFi() {
@@ -151,7 +102,9 @@ void setupWiFi() {
 #if ENABLE_ARDUINO_OTA == 1
 void setupOTA() {
 	ArduinoOTA.setHostname(HOSTNAME);
+#ifdef ARDUINO_OTA_PORT
 	ArduinoOTA.setPort(ARDUINO_OTA_PORT);
+#endif
 	ArduinoOTA.setPassword(OTA_PASS);
 
 	ArduinoOTA.onStart([]() {
@@ -265,6 +218,81 @@ uint16_t getJson(AsyncWebServerRequest *request) {
 }
 #endif /* ENABLE_WEB_SERVER */
 
+#ifdef ESP32
+void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
+	switch (id) {
+	case SYSTEM_EVENT_STA_START:
+		WiFi.setHostname(HOSTNAME);
+		break;
+	case SYSTEM_EVENT_STA_CONNECTED:
+		WiFi.enableIpV6();
+		break;
+	case SYSTEM_EVENT_GOT_IP6:
+		Serial.print("STA IPv6: ");
+		Serial.println(localhost_ipv6 = WiFi.localIPv6());
+		break;
+	case SYSTEM_EVENT_STA_GOT_IP:
+#if CORE_DEBUG_LEVEL == 5
+		delay(10);// if not doing this the additional logging causes the next log entry to not work.
+#endif
+		Serial.print("WiFi ready ");
+		Serial.print(millis() - start_ms);
+		Serial.println("ms after start.");
+		Serial.print("STA IP: ");
+		Serial.println(localhost = WiFi.localIP());
+		prom::connect();
+		break;
+	case SYSTEM_EVENT_STA_DISCONNECTED:
+		WiFi.reconnect();
+		break;
+	case SYSTEM_EVENT_SCAN_DONE:
+		Serial.println("WiFi scan results: ");
+		Serial.print("Found ");
+		Serial.print((uint16_t) info.scan_done.number);
+		Serial.println(" WiFi networks.");
+		for (uint8_t i = 0; i < info.scan_done.number; i++) {
+			String SSID;
+			uint8_t encryptionType;
+			int32_t RSSI;
+			uint8_t *BSSID;
+			int32_t channel;
+			WiFi.getNetworkInfo(i, SSID, encryptionType, RSSI, BSSID, channel);
+			Serial.print("network ");
+			Serial.print(i + 1);
+			Serial.print(": ssid = ");
+			Serial.print(SSID);
+			Serial.print(", rssi = ");
+			Serial.print(RSSI);
+			Serial.print(", channel = ");
+			Serial.print(channel);
+			Serial.print(", encryptionType = ");
+			Serial.println(encryptionType);
+		}
+		break;
+	default:
+		break;
+	}
+}
+#elif defined(ESP8266)
+void onWiFiEvent(WiFiEvent_t id) {
+	switch (id) {
+	case WIFI_EVENT_STAMODE_GOT_IP:
+		Serial.print("WiFi ready ");
+		Serial.print(millis() - start_ms);
+		Serial.println("ms after start.");
+		Serial.print("STA IP: ");
+		Serial.println(localhost = WiFi.localIP());
+		prom::connect();
+		break;
+	case WIFI_EVENT_STAMODE_DISCONNECTED:
+		WiFi.reconnect();
+		break;
+	default:
+		break;
+	}
+}
+#endif
+
 void loop() {
 	uint64_t start = millis();
 
@@ -346,15 +374,21 @@ bool handle_serial_input(const std::string &input) {
 	} else if (input == "ip") {
 		Serial.println();
 		Serial.println("IP Address: ");
+#ifdef ESP32
 		Serial.print("IPv6: ");
 		Serial.println(localhost_ipv6);
+#endif
 		Serial.print("IPv4: ");
 		Serial.println(localhost);
 		return true;
 	} else if (input == "scan") {
 		Serial.println();
+#ifdef ESP32
 		Serial.println("Starting WiFi scan...");
 		WiFi.scanNetworks(true, true);
+#elif defined(ESP8266)
+		Serial.println("WiFi scanning is not currently supported on ESP8266 hardware.");
+#endif
 		return true;
 	} else if (input == "help") {
 		Serial.println();
@@ -362,7 +396,9 @@ bool handle_serial_input(const std::string &input) {
 		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
 		Serial.println("humidity:              Prints the relative humidity in %.");
 		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
+#ifdef ESP32
 		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
+#endif
 		Serial.println("help:                  Prints this help text.");
 		return true;
 	} else {

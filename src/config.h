@@ -9,6 +9,11 @@
 #define SRC_CONFIG_H_
 
 #include <Arduino.h>
+#ifdef ESP32
+#include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
+#endif
 
 /**
  * This file contains a few variables and defines to be used as config values.
@@ -22,14 +27,14 @@ static constexpr char HOSTNAME[] = "esp-wifi-thermometer";
 // The WiFi gateway IP.
 // Set to INADDR_NONE to use the standard gateway of the WLAN.
 // Usually your router.
-static const IPAddress GATEWAY = INADDR_NONE;
+static const IPAddress GATEWAY = IPADDR_ANY;
 // The netmask of the subnet in which the esp is.
 // Set tp INADDR_NONE to dynamically determine this when connecting to the WiFi access point.
-static const IPAddress SUBNET = INADDR_NONE;
+static const IPAddress SUBNET = IPADDR_ANY;
 // If set to an actual IP rather then INADDR_NONE this will make the esp use that IP.
 // However setting this to anything but INADDR_NONE means the hostname wont work.
 // If this is set to INADDR_NONE the esp will get an IP address from the dhcp server.
-static const IPAddress STATIC_IP = INADDR_NONE;
+static const IPAddress STATIC_IP = IPADDR_ANY;
 
 // Web Server options
 // Whether or not to enable the web server on the esp.
@@ -59,8 +64,10 @@ static const uint8_t SENSOR_PIN = 5;
 // Set to 1 to enable and to 0 to disable.
 #define ENABLE_ARDUINO_OTA 1
 // The port on which to open an Arduino OTA server.
+// Uncomment to use a custom port.
 // 3232 is the default for ESP32s.
-static const uint16_t ARDUINO_OTA_PORT = 3232;
+// 8266 is the default for ESP8266s.
+// #define ARDUINO_OTA_PORT 3232
 
 // Prometheus options
 // Whether to enable the prometheus scrape endpoint.
@@ -71,7 +78,10 @@ static const uint16_t ARDUINO_OTA_PORT = 3232;
 // Whether the esp should automatically push measurements to a prometheus-pushgateway.
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
+// Doesn't work on the ESP8266 atm.
+#ifdef ESP32
 #define ENABLE_PROMETHEUS_PUSH 1
+#endif
 // The address of the prometheus pushgateway to push the data to.
 // Can be an IP address, a hostname, or a domain.
 static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.230";
@@ -97,6 +107,7 @@ static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 // and going into deep sleep again.
 // Set to 1 to enable and to 0 to disable.
 // The ifndef is there to allow setting deep sleep mode using the command line.
+// Doesn't work on the ESP8266 atm.
 #ifndef ENABLE_DEEP_SLEEP_MODE
 #define ENABLE_DEEP_SLEEP_MODE 0
 #endif
@@ -105,6 +116,10 @@ static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 // Default is 5 minutes, or 300 seconds.
 static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
 
+// Deep sleep mode doesn't work on the ESP8266 atm.
+#ifndef ESP32
+#define ENABLE_DEEP_SLEEP_MODE 0
+#endif
 
 /*
  * Below this are automatic overrides for required things, for example the scrape support needs the web server,

@@ -10,10 +10,14 @@
 #include <iomanip>
 #include <sstream>
 
+#ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 uint32_t prom::used_heap = 0;
+#endif
 std::map<std::pair<std::string, uint16_t>, uint64_t> prom::http_requests_total;
+#if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 uint64_t prom::last_push = 0;
 TaskHandle_t prom::metrics_pusher;
+#endif
 HTTPClient prom::http;
 std::string prom::push_url;
 
@@ -28,7 +32,9 @@ void prom::setup() {
 }
 
 void prom::loop() {
+#ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
+#endif
 }
 
 void prom::connect() {
@@ -70,10 +76,12 @@ std::string prom::getMetrics() {
 	metrics << "# TYPE environment_humidity gauge" << std::endl;
 	metrics << "environment_humidity " << std::setprecision(3) << humidity << std::endl;
 
+#ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP in bytes."
 			<< std::endl;
 	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
 	metrics << "process_heap_bytes " << used_heap << std::endl;
+#endif
 
 #if ENABLE_WEB_SERVER == 1
 	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
@@ -111,6 +119,7 @@ void prom::pushMetrics() {
 		return;
 	}
 
+#if ENABLE_DEEP_SLEEP_MODE != 1
 	uint64_t now = millis();
 
 	if (now - last_push >= PROMETHEUS_PUSH_INTERVAL) {
@@ -119,6 +128,7 @@ void prom::pushMetrics() {
 		if (PROMETHEUS_PUSH_INTERVAL < 10) {
 			http.setTimeout(PROMETHEUS_PUSH_INTERVAL * 500);
 		}
+#endif
 
 		http.begin(push_url.c_str());
 		int code = http.POST(getMetrics().c_str());
@@ -128,6 +138,8 @@ void prom::pushMetrics() {
 			Serial.print(code);
 			Serial.println(" when trying to push metrics.");
 		}
+#if ENABLE_DEEP_SLEEP_MODE != 1
 	}
+#endif
 }
 #endif

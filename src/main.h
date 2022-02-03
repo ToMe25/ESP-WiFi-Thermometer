@@ -43,7 +43,9 @@ typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandl
 
 // WiFi variables
 extern IPAddress localhost;
+#ifdef ESP32
 extern IPv6Address localhost_ipv6;
+#endif
 
 // Web Server variables
 extern AsyncWebServer server;
@@ -90,6 +92,23 @@ void setupOTA();
  * Initializes the Web Server and the mDNS entry for the web server.
  */
 void setupWebServer();
+#endif
+
+#ifdef ESP32
+/**
+ * The function handling the WiFi events that may occur.
+ *
+ * @param id	The id of the WiFi event.
+ * @param info	Info about the WiFi event.
+ */
+void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info);
+#elif defined(ESP8266)
+/**
+ * The function handling the WiFi events that may occur.
+ *
+ * @param id	The id of the WiFi event.
+ */
+void onWiFiEvent(WiFiEvent_t id);
 #endif
 
 /**

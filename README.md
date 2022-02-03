@@ -1,5 +1,5 @@
 # Description
-A program to measure the current temperature(and relative humidity, if supported by the sensor) using an ESP32.  
+A program to measure the current temperature(and relative humidity, if supported by the sensor) using an ESP32 or ESP8266.  
 This program shows the measurements on a simple web interface.  
 This web interface updates its values every 2 seconds using javascript.  
 A screenshot of the web interface:  
@@ -10,7 +10,8 @@ A list of supported microcontrollers and temperature sensors.
 
 ## Microcontrollers
 A list of supported microcontrollers.
- * ESP32devkitc
+ * ESP32DevKitC
+ * ESP8266DevKitC
 
 ## Temperature sensors
 A list of supported temperature sensors along with their required pull up resistor.  
@@ -19,7 +20,7 @@ Format: Sensor(Pull Up Resistor)
  * DS18B20(4.7KΩ)
 
 # Requirements
- 1. ESP32-devkitc
+ 1. A supported microcontroller
  2. A supported temperature sensor
  3. The Pull Up Resistor for said sensor
  4. USB-Micro-B tp USB-A cable
@@ -41,8 +42,8 @@ The steps to compile this project and flash it onto an esp.
  * Create a otapass.txt file containing the password for [ArduinoOta](https://www.arduino.cc/reference/en/libraries/arduinoota/), allowing your to upload modified versions over wifi.
  * Make sure these three files don't end with an empty line.
  * Attach the ESP to your PC using a USB-Micro-B tp USB-A cable.
- * Build this project and flash it to the ESP32 by running `pio run -t upload -e esp32dev` to upload over the cable connection.
- * To upload over WiFi after this project is installed run `pio run -t upload -e esp32dev_ota`.
+ * Build this project and flash it to the ESP by running `pio run -t upload -e esp32dev` for ESP32 or `pio run -t upload -e esp_wroom_02` for the ESP8266.
+ * To upload over WiFi after this project is installed run `pio run -t upload -e esp32dev_ota` for an ESP32 or `pio run -t upload -e esp_wroom_02_ota` for an ESP8266.
  * Run `pio device monitor` to open a serial connection.
  * Wait a few seconds for the ESP to finish booting.
  * Enter `ip` and press return to get the device ip.
