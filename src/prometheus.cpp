@@ -13,7 +13,7 @@
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 uint32_t prom::used_heap = 0;
 #endif
-std::map<std::pair<std::string, uint16_t>, uint64_t> prom::http_requests_total;
+std::map<std::pair<String, uint16_t>, uint64_t> prom::http_requests_total;
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 uint64_t prom::last_push = 0;
 #endif
@@ -84,9 +84,9 @@ std::string prom::getMetrics() {
 			<< std::endl;
 	metrics << "# TYPE http_requests_total counter" << std::endl;
 
-	for (std::pair<std::pair<std::string, uint16_t>, uint64_t> element : http_requests_total) {
+	for (std::pair<std::pair<String, uint16_t>, uint64_t> element : http_requests_total) {
 		metrics << "http_requests_total{method=\"get\",code=\""
-				<< element.first.second << "\",path=\"" << element.first.first
+				<< element.first.second << "\",path=\"" << element.first.first.c_str()
 				<< "\"} " << element.second << std::endl;
 	}
 #endif
@@ -125,14 +125,22 @@ void prom::pushMetrics() {
 		}
 
 		tcpClient = new AsyncClient();
+
+		if (tcpClient == NULL) {
+			Serial.println(F("Failed to allocate Async TCP Client!"));
+			return;
+		}
+
 		tcpClient->setAckTimeout(30);
 		tcpClient->setRxTimeout(30);
 		tcpClient->onError([](void *arg, AsyncClient *cli, int error) {
 			Serial.println(F("Connecting to the metrics server failed!"));
 			Serial.print(F("Connection Error: "));
 			Serial.println(error);
-			tcpClient = NULL;
-			delete cli;
+			if (tcpClient != NULL) {
+				tcpClient = NULL;
+				delete cli;
+			}
 		}, NULL);
 
 		tcpClient->onConnect([](void *arg, AsyncClient *cli) {
@@ -150,7 +158,7 @@ void prom::pushMetrics() {
 				uint8_t *d = (uint8_t*) data;
 
 				for (size_t i = 0; i < len; i++) {
-					if (*read > 8 && isDigit(d[i])) {
+					if (*read > 8 && isDigit(d[i]) && len > i + 2) {
 						char status_code[4] { 0 };
 						for (uint8_t j = 0; j < 3; j++) {
 							status_code[j] = d[i + j];
@@ -163,10 +171,12 @@ void prom::pushMetrics() {
 							Serial.println(F(" when trying to push metrics."));
 						}
 
-						tcpClient = NULL;
-						c->close(true);
-						delete c;
-						delete read;
+						if (tcpClient != NULL) {
+							tcpClient = NULL;
+							c->close(true);
+							delete c;
+							delete read;
+						}
 						return;
 					}
 					(*read)++;

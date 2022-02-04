@@ -177,8 +177,8 @@ void setupWebServer() {
 				Serial.print(F("A client tried to access the not existing file \""));
 				Serial.print(request->url().c_str());
 				Serial.println("\".");
-				prom::http_requests_total[std::pair<std::string, uint16_t>(
-						std::string(request->url().c_str()), 404)]++;
+				prom::http_requests_total[std::pair<String, uint16_t>(
+						request->url(), 404)]++;
 			});
 
 	server.begin();
@@ -453,7 +453,7 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 		HTTPRequestHandler handler) {
 	server.on(uri, method,
 			[uri, handler](AsyncWebServerRequest *request) {
-				prom::http_requests_total[std::pair<const char*, uint16_t>(uri,
+				prom::http_requests_total[std::pair<String, uint16_t>(uri,
 						handler(request))]++;
 			});
 }

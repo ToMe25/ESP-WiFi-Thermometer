@@ -24,7 +24,7 @@ namespace prom {
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 extern uint32_t used_heap;
 #endif
-extern std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
+extern std::map<std::pair<String, uint16_t>, uint64_t> http_requests_total;
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 extern uint64_t last_push;
 #endif
