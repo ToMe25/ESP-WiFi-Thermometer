@@ -78,13 +78,10 @@ static const uint8_t SENSOR_PIN = 5;
 // Whether the esp should automatically push measurements to a prometheus-pushgateway.
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
-// Doesn't work on the ESP8266 atm.
-#ifdef ESP32
 #define ENABLE_PROMETHEUS_PUSH 1
-#endif
 // The address of the prometheus pushgateway to push the data to.
 // Can be an IP address, a hostname, or a domain.
-static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.230";
+static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.114";
 // The port of the prometheus pushgateway.
 static const uint16_t PROMETHEUS_PUSH_PORT = 9091;
 // The time between two HTTP post requests sent to the pushgateway.

@@ -16,18 +16,13 @@ uint32_t prom::used_heap = 0;
 std::map<std::pair<std::string, uint16_t>, uint64_t> prom::http_requests_total;
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 uint64_t prom::last_push = 0;
-TaskHandle_t prom::metrics_pusher;
 #endif
-HTTPClient prom::http;
+AsyncClient *prom::tcpClient = NULL;
 std::string prom::push_url;
 
 void prom::setup() {
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	registerRequestHandler("/metrics", HTTP_GET, handleMetrics);
-#endif
-
-#if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
-	xTaskCreate(metricPusher, "Metrics Pusher", 3000, NULL, 1, &metrics_pusher);
 #endif
 }
 
@@ -35,14 +30,15 @@ void prom::loop() {
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
 #endif
+
+#if ENABLE_PROMETHEUS_PUSH == 1
+	pushMetrics();
+#endif
 }
 
 void prom::connect() {
 #if ENABLE_PROMETHEUS_PUSH == 1
 	std::ostringstream stream;
-	stream << "http://" << PROMETHEUS_PUSH_ADDR;
-	stream << ':' << PROMETHEUS_PUSH_PORT;
-
 	stream << "/metrics/job/";
 	if (strlen(PROMETHEUS_PUSH_JOB) > 0) {
 		stream << PROMETHEUS_PUSH_JOB;
@@ -106,14 +102,6 @@ uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
 #endif
 
 #if ENABLE_PROMETHEUS_PUSH == 1
-void prom::metricPusher(void *param) {
-	while (true) {
-		uint64_t push_start_ms = millis();
-		pushMetrics();
-		delay(std::max((uint32_t) 0, (uint32_t) (PROMETHEUS_PUSH_INTERVAL * 1000 + push_start_ms - millis())));
-	}
-}
-
 void prom::pushMetrics() {
 	if (!WiFi.isConnected()) {
 		return;
@@ -122,23 +110,98 @@ void prom::pushMetrics() {
 #if ENABLE_DEEP_SLEEP_MODE != 1
 	uint64_t now = millis();
 
-	if (now - last_push >= PROMETHEUS_PUSH_INTERVAL) {
+	if (now - last_push >= PROMETHEUS_PUSH_INTERVAL * 1000) {
 		last_push = now;
-
-		if (PROMETHEUS_PUSH_INTERVAL < 10) {
-			http.setTimeout(PROMETHEUS_PUSH_INTERVAL * 500);
-		}
 #endif
 
-		http.begin(push_url.c_str());
-		int code = http.POST(getMetrics().c_str());
-		http.end();
-		if (code != 200) {
-			Serial.print("Received http status code ");
-			Serial.print(code);
-			Serial.println(" when trying to push metrics.");
+		if (tcpClient != NULL) {
+			Serial.println(F("Closing already open push connection!"));
+			tcpClient->close(true);
+			if (tcpClient != NULL) {
+				AsyncClient *cli = tcpClient;
+				tcpClient = NULL;
+				delete cli;
+			}
 		}
-#if ENABLE_DEEP_SLEEP_MODE != 1
+
+		tcpClient = new AsyncClient();
+		tcpClient->setAckTimeout(30);
+		tcpClient->setRxTimeout(30);
+		tcpClient->onError([](void *arg, AsyncClient *cli, int error) {
+			Serial.println(F("Connecting to the metrics server failed!"));
+			Serial.print(F("Connection Error: "));
+			Serial.println(error);
+			tcpClient = NULL;
+			delete cli;
+		}, NULL);
+
+		tcpClient->onConnect([](void *arg, AsyncClient *cli) {
+			cli->onDisconnect([](void *arg, AsyncClient *c) {
+				if (tcpClient != NULL) {
+					Serial.println(F("Connection to prometheus pushgateway server was closed while reading or writing."));
+					tcpClient = NULL;
+					delete c;
+				}
+			}, NULL);
+
+			size_t *read = new size_t;
+			*read = 0;
+			cli->onData([read](void *arg, AsyncClient *c, void *data, size_t len) mutable {
+				uint8_t *d = (uint8_t*) data;
+
+				for (size_t i = 0; i < len; i++) {
+					if (*read > 8 && isDigit(d[i])) {
+						char status_code[4] { 0 };
+						for (uint8_t j = 0; j < 3; j++) {
+							status_code[j] = d[i + j];
+						}
+
+						uint32_t code = atoi(status_code);
+						if (code != 200) {
+							Serial.print(F("Received http status code "));
+							Serial.print(code);
+							Serial.println(F(" when trying to push metrics."));
+						}
+
+						tcpClient = NULL;
+						c->close(true);
+						delete c;
+						delete read;
+						return;
+					}
+					(*read)++;
+				}
+			}, NULL);
+
+			cli->write("POST ");
+			cli->write(push_url.c_str());
+			cli->write(" HTTP/1.0\r\nHost: ");
+			cli->write(PROMETHEUS_PUSH_ADDR);
+			cli->write("\r\n");
+			std::string metrics = getMetrics();
+			cli->write("Content-Type: application/x-www-form-urlencoded\r\n");
+			cli->write("Content-Length: ");
+			std::ostringstream converter;
+			converter << metrics.length();
+			cli->write(converter.str().c_str());
+			cli->write("\r\n\r\n");
+			cli->write(metrics.c_str());
+			cli->write("\r\n\r\n");
+		}, NULL);
+
+		if (!tcpClient->connect(PROMETHEUS_PUSH_ADDR, PROMETHEUS_PUSH_PORT)) {
+			Serial.println(F("Connecting to the metrics server failed!"));
+			if (tcpClient != NULL) {
+				AsyncClient *cli = tcpClient;
+				tcpClient = NULL;
+				delete cli;
+			}
+		}
+#if ENABLE_DEEP_SLEEP_MODE == 1
+		while (tcpClient != NULL) {
+			delay(10);
+		}
+#else
 	}
 #endif
 }

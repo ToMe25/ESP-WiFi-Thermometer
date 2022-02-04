@@ -11,9 +11,9 @@
 #include "config.h"
 #include <map>
 #ifdef ESP32
-#include <HTTPClient.h>
+#include <AsyncTCP.h>
 #elif defined(ESP8266)
-#include <ESP8266HTTPClient.h>
+#include <ESPAsyncTCP.h>
 #endif
 #include <ESPAsyncWebServer.h>
 
@@ -27,9 +27,8 @@ extern uint32_t used_heap;
 extern std::map<std::pair<std::string, uint16_t>, uint64_t> http_requests_total;
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 extern uint64_t last_push;
-extern TaskHandle_t metrics_pusher;
 #endif
-extern HTTPClient http;
+extern AsyncClient *tcpClient;
 extern std::string push_url;
 
 /**
@@ -65,14 +64,6 @@ uint16_t handleMetrics(AsyncWebServerRequest *request);
 #endif
 
 #if ENABLE_PROMETHEUS_PUSH == 1
-/**
- * This is the method run in the Metric Pusher task.
- * Should run forever delaying for as many seconds as specified in PROMETHEUS_PUSH_INTERVAL between pushMetrics calls.
- *
- * @param param	The task parameters. Should be empty.
- */
-void metricPusher(void *param);
-
 /**
  * This method pushes the prometheus metrics to the configured prometheus pushgateway server.
  */

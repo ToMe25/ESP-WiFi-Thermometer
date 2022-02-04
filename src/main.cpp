@@ -174,7 +174,7 @@ void setupWebServer() {
 	server.onNotFound(
 			[](AsyncWebServerRequest *request) {
 				request->send(404, "text/html", NOT_FOUND_HTML);
-				Serial.print("A client tried to access the not existing file \"");
+				Serial.print(F("A client tried to access the not existing file \""));
 				Serial.print(request->url().c_str());
 				Serial.println("\".");
 				prom::http_requests_total[std::pair<std::string, uint16_t>(
@@ -387,19 +387,19 @@ bool handle_serial_input(const std::string &input) {
 		Serial.println("Starting WiFi scan...");
 		WiFi.scanNetworks(true, true);
 #elif defined(ESP8266)
-		Serial.println("WiFi scanning is not currently supported on ESP8266 hardware.");
+		Serial.println(F("WiFi scanning is not currently supported on ESP8266 hardware."));
 #endif
 		return true;
 	} else if (input == "help") {
 		Serial.println();
-		Serial.println("ESP-WiFi-Thermometer help:");
-		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
-		Serial.println("humidity:              Prints the relative humidity in %.");
-		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
+		Serial.println(F("ESP-WiFi-Thermometer help:"));
+		Serial.println(F("temperature (or temp): Prints the last measured temperature in °C and °F."));
+		Serial.println(F("humidity:              Prints the relative humidity in %."));
+		Serial.println(F("ip:                    Prints the current IPv4 and IPv6 address of this device."));
 #ifdef ESP32
-		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
+		Serial.println(F("scan:                  Scans for WiFi networks in the area and prints the result."));
 #endif
-		Serial.println("help:                  Prints this help text.");
+		Serial.println(F("help:                  Prints this help text."));
 		return true;
 	} else {
 		return false;
