@@ -10,6 +10,7 @@ on:
       - test/**
       - include/**
       - platformio.ini
+      - .github/workflows/pio.yml
   pull_request:
     paths:
       - src/**
@@ -17,6 +18,7 @@ on:
       - test/**
       - include/**
       - platformio.ini
+      - .github/workflows/pio.yml
 
 jobs:
   build:
