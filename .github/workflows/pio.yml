@@ -37,6 +37,7 @@ jobs:
         with:
           path: |
             ~/.cache/pip
+            ~/.platformio
             .pio
           key: platformio-${{ hashFiles('platformio.ini') }}
 
