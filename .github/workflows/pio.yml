@@ -30,10 +30,10 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          version: 3.x
+          python-version: 3.x
 
       - name: Install Platform IO
-        run: python3 -c "$(curl -fsSL https://raw.githubusercontent.com/platformio/platformio/master/scripts/get-platformio.py)"
+        run: pip install -U platformio
 
       - name: Run Platform IO builds
         run: pio run
