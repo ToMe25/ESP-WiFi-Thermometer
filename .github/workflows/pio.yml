@@ -32,8 +32,22 @@ jobs:
         with:
           python-version: 3.x
 
+      - name: Cache pip packages and Platform IO build cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.cache/pip
+            .pio
+          key: platformio-${{ hashFiles('platformio.ini') }}
+
       - name: Install Platform IO
         run: pip install -U platformio
+
+      - name: Create crdential files
+        run: |
+          echo "OTA Password" > otapass.txt
+          echo "WiFi SSID" > wifissid.txt
+          echo "WiFi Passphrase" > wifipass.txt
 
       - name: Run Platform IO builds
         run: pio run
