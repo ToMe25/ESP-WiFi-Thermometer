@@ -104,6 +104,15 @@ uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
 #if ENABLE_PROMETHEUS_PUSH == 1
 void prom::pushMetrics() {
 	if (!WiFi.isConnected()) {
+		delay(20);
+		return;
+	}
+
+	if (tcpClient != NULL) { // Don't try pushing or setting the last_push time if the tcpClient isn't NULL.
+		if (tcpClient->connected() || tcpClient->connecting()) {
+			tcpClient->close(true);
+		}
+		delay(20);
 		return;
 	}
 
@@ -114,16 +123,6 @@ void prom::pushMetrics() {
 		last_push = now;
 #endif
 
-		if (tcpClient != NULL) {
-			Serial.println(F("Closing already open push connection!"));
-			tcpClient->close(true);
-			if (tcpClient != NULL) {
-				AsyncClient *cli = tcpClient;
-				tcpClient = NULL;
-				delete cli;
-			}
-		}
-
 		tcpClient = new AsyncClient();
 
 		if (tcpClient == NULL) {
@@ -131,8 +130,8 @@ void prom::pushMetrics() {
 			return;
 		}
 
-		tcpClient->setAckTimeout(30);
-		tcpClient->setRxTimeout(30);
+		tcpClient->setAckTimeout(PROMETHEUS_PUSH_INTERVAL * 0.75);
+		tcpClient->setRxTimeout(PROMETHEUS_PUSH_INTERVAL * 0.75);
 		tcpClient->onError([](void *arg, AsyncClient *cli, int error) {
 			Serial.println(F("Connecting to the metrics server failed!"));
 			Serial.print(F("Connection Error: "));
@@ -144,16 +143,18 @@ void prom::pushMetrics() {
 		}, NULL);
 
 		tcpClient->onConnect([](void *arg, AsyncClient *cli) {
-			cli->onDisconnect([](void *arg, AsyncClient *c) {
+			size_t *read = new size_t;
+			*read = 0;
+
+			cli->onDisconnect([read](void *arg, AsyncClient *c) {
 				if (tcpClient != NULL) {
-					Serial.println(F("Connection to prometheus pushgateway server was closed while reading or writing."));
 					tcpClient = NULL;
+					Serial.println(F("Connection to prometheus pushgateway server was closed while reading or writing."));
 					delete c;
+					delete read;
 				}
 			}, NULL);
 
-			size_t *read = new size_t;
-			*read = 0;
 			cli->onData([read](void *arg, AsyncClient *c, void *data, size_t len) mutable {
 				uint8_t *d = (uint8_t*) data;
 
@@ -173,7 +174,9 @@ void prom::pushMetrics() {
 
 						if (tcpClient != NULL) {
 							tcpClient = NULL;
-							c->close(true);
+							if (c->connected()) {
+								c->close(true);
+							}
 							delete c;
 							delete read;
 						}
@@ -207,6 +210,7 @@ void prom::pushMetrics() {
 				delete cli;
 			}
 		}
+
 #if ENABLE_DEEP_SLEEP_MODE == 1
 		while (tcpClient != NULL) {
 			delay(10);
