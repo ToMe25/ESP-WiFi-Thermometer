@@ -108,7 +108,7 @@ void prom::pushMetrics() {
 		return;
 	}
 
-	if (tcpClient != NULL) { // Don't try pushing or setting the last_push time if the tcpClient isn't NULL.
+	if (tcpClient) { // Don't try pushing if tcpClient isn't NULL.
 		if (tcpClient->connected() || tcpClient->connecting()) {
 			tcpClient->close(true);
 		}
@@ -118,14 +118,11 @@ void prom::pushMetrics() {
 
 #if ENABLE_DEEP_SLEEP_MODE != 1
 	uint64_t now = millis();
-
 	if (now - last_push >= PROMETHEUS_PUSH_INTERVAL * 1000) {
-		last_push = now;
 #endif
-
 		tcpClient = new AsyncClient();
 
-		if (tcpClient == NULL) {
+		if (!tcpClient) {
 			Serial.println(F("Failed to allocate Async TCP Client!"));
 			return;
 		}
@@ -143,18 +140,16 @@ void prom::pushMetrics() {
 		}, NULL);
 
 		tcpClient->onConnect([](void *arg, AsyncClient *cli) {
-			size_t *read = new size_t;
-			*read = 0;
 
-			cli->onDisconnect([read](void *arg, AsyncClient *c) {
+			cli->onDisconnect([](void *arg, AsyncClient *c) {
 				if (tcpClient != NULL) {
 					tcpClient = NULL;
 					Serial.println(F("Connection to prometheus pushgateway server was closed while reading or writing."));
 					delete c;
-					delete read;
 				}
 			}, NULL);
 
+			std::shared_ptr<size_t> read = std::make_shared<size_t>(0);
 			cli->onData([read](void *arg, AsyncClient *c, void *data, size_t len) mutable {
 				uint8_t *d = (uint8_t*) data;
 
@@ -166,7 +161,19 @@ void prom::pushMetrics() {
 						}
 
 						uint32_t code = atoi(status_code);
-						if (code != 200) {
+						if (code == 200) {
+#if ENABLE_DEEP_SLEEP_MODE != 1
+							uint64_t now = millis();
+
+							if (now - last_push >= (PROMETHEUS_PUSH_INTERVAL + 10) * 1000) {
+								Serial.print(F("Successfully pushed again after "));
+								Serial.print(now - last_push);
+								Serial.println("ms.");
+							}
+
+							last_push = now;
+#endif
+						} else {
 							Serial.print(F("Received http status code "));
 							Serial.print(code);
 							Serial.println(F(" when trying to push metrics."));
@@ -178,7 +185,6 @@ void prom::pushMetrics() {
 								c->close(true);
 							}
 							delete c;
-							delete read;
 						}
 						return;
 					}
