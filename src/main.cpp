@@ -77,9 +77,14 @@ void setup() {
 	}
 
 	WiFi.disconnect(1);
+
+#ifdef ESP32
 	esp_sleep_enable_timer_wakeup(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
 	esp_deep_sleep_start();
+#elif defined(ESP8266)
+	ESP.deepSleep(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
 #endif
+#endif /* ENABLE_DEEP_SLEEP_MODE */
 
 	prom::setup();
 }

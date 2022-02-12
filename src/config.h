@@ -104,7 +104,6 @@ static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 // and going into deep sleep again.
 // Set to 1 to enable and to 0 to disable.
 // The ifndef is there to allow setting deep sleep mode using the command line.
-// Doesn't work on the ESP8266 atm.
 #ifndef ENABLE_DEEP_SLEEP_MODE
 #define ENABLE_DEEP_SLEEP_MODE 0
 #endif
@@ -112,11 +111,6 @@ static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 // Specified in seconds.
 // Default is 5 minutes, or 300 seconds.
 static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
-
-// Deep sleep mode doesn't work on the ESP8266 atm.
-#ifndef ESP32
-#define ENABLE_DEEP_SLEEP_MODE 0
-#endif
 
 /*
  * Below this are automatic overrides for required things, for example the scrape support needs the web server,

@@ -1,9 +1,20 @@
 # Description
 A program to measure the current temperature(and relative humidity, if supported by the sensor) using an ESP32 or ESP8266.  
+This program has a default mode in which the ESP runs continuously and outputs data frequently,  
+and a Deep Sleep Mode in which it is off for most of the time and outputs data less frequently.
+
+## Web Interface  
 This program shows the measurements on a simple web interface.  
 This web interface updates its values every 2 seconds using javascript.  
 A screenshot of the web interface:  
 ![web interface](https://raw.githubusercontent.com/ToMe25/ESP-WiFi-Thermometer/master/images/web_interface.png)
+
+## Deep Sleep Mode
+Deep Sleep Mode is a operating mode where the ESP pushes metrics once, and then sleeps for a predefined time.  
+After that it wakes up and pushes metrics again.  
+This cycle is repeated indefinitely.  
+In this mode the Web Server and ArduinoOTA support are disabled.  
+Note: For this to work on the ESP8266 you need to connect the GPIO 16 to the RST pin.
 
 # Hardware support
 A list of supported microcontrollers and temperature sensors.
