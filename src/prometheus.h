@@ -10,10 +10,12 @@
 
 #include "config.h"
 #include <map>
+#if ENABLE_PROMETHEUS_PUSH == 1
 #ifdef ESP32
 #include <AsyncTCP.h>
 #elif defined(ESP8266)
 #include <ESPAsyncTCP.h>
+#endif
 #endif
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 #include <ESPAsyncWebServer.h>
@@ -26,12 +28,16 @@ namespace prom {
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 extern uint32_t used_heap;
 #endif
+#if ENABLE_WEB_SERVER == 1
 extern std::map<std::pair<String, uint16_t>, uint64_t> http_requests_total;
+#endif
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 extern uint64_t last_push;
 #endif
+#if ENABLE_PROMETHEUS_PUSH == 1
 extern AsyncClient *tcpClient;
 extern std::string push_url;
+#endif
 
 /**
  * Initializes the prometheus integration.

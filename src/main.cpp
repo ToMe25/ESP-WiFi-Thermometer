@@ -16,7 +16,9 @@
 #include <sstream>
 #endif
 #include <Adafruit_Sensor.h>
+#if ENABLE_ARDUINO_OTA == 1
 #include <ArduinoOTA.h>
+#endif
 #ifdef ESP32
 #include <ESPmDNS.h>
 #elif defined(ESP8266)
@@ -356,7 +358,9 @@ void loop() {
 		loop_iterations = 0;
 	}
 
+#if ENABLE_ARDUINO_OTA == 1
 	ArduinoOTA.handle();
+#endif
 
 	prom::loop();
 
