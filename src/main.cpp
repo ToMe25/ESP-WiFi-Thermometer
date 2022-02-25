@@ -11,8 +11,10 @@
 #include "main.h"
 #include "prometheus.h"
 #include <iomanip>
+#if ENABLE_WEB_SERVER == 1
 #include <regex>
 #include <sstream>
+#endif
 #include <Adafruit_Sensor.h>
 #include <ArduinoOTA.h>
 #ifdef ESP32
@@ -25,7 +27,9 @@ IPAddress localhost = STATIC_IP;
 #ifdef ESP32
 IPv6Address localhost_ipv6;
 #endif
+#if ENABLE_WEB_SERVER == 1
 AsyncWebServer server(WEB_SERVER_PORT);
+#endif
 #if SENSOR_TYPE == SENSOR_TYPE_DHT
 DHT dht(SENSOR_PIN, DHT_TYPE);
 #elif SENSOR_TYPE == SENSOR_TYPE_DALLAS

@@ -12,7 +12,9 @@
 #define SRC_MAIN_H_
 
 #include "config.h"
+#if ENABLE_WEB_SERVER == 1
 #include <ESPAsyncWebServer.h>
+#endif
 // It would be possible to always only include one, but that makes it a pain when switching between them.
 // Especially when doing it repeatedly for testing.
 #include <DallasTemperature.h>
@@ -28,6 +30,7 @@ extern const char WIFI_PASS[] asm("_binary_wifipass_txt_start");
 // Make sure this file doesn't end with an empty line.
 extern const char OTA_PASS[] asm("_binary_otapass_txt_start");
 
+#if ENABLE_WEB_SERVER == 1
 extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
 extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
 extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
@@ -40,6 +43,7 @@ extern const uint8_t FAVICON_SVG_GZ_START[] asm("_binary_src_html_favicon_svg_gz
 extern const uint8_t FAVICON_SVG_GZ_END[] asm("_binary_src_html_favicon_svg_gz_end");
 
 typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
+#endif
 
 // WiFi variables
 extern IPAddress localhost;
@@ -47,8 +51,10 @@ extern IPAddress localhost;
 extern IPv6Address localhost_ipv6;
 #endif
 
+#if ENABLE_WEB_SERVER == 1
 // Web Server variables
 extern AsyncWebServer server;
+#endif
 
 //Sensor variables
 #if SENSOR_TYPE == SENSOR_TYPE_DHT

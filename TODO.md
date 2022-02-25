@@ -8,6 +8,7 @@ Not all of these are necessarily going to be implemented at all.
  * Fix ESP8266 ipv6 support
  * Fix ESP8266 WiFi scan support
  * Disable ULP and RTC mem on ESP32 in Deep Sleep Mode
+ * Add degrees fahrenheit mode to web interface
 
 ## Web Interface
  * Add error message to log and web interface if measurement fails

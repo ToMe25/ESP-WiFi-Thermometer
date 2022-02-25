@@ -15,7 +15,9 @@
 #elif defined(ESP8266)
 #include <ESPAsyncTCP.h>
 #endif
+#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 #include <ESPAsyncWebServer.h>
+#endif
 
 /**
  * This header, and the source file with the same name, contain everything for the prometheus integration.
