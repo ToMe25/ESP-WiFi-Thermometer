@@ -224,7 +224,9 @@ uint16_t getJson(AsyncWebServerRequest *request) {
 	json << ", \"time\": \"";
 	json << getTimeSinceMeasurement();
 	json << "\"}";
-	request->send(200, "application/json", json.str().c_str());
+	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", json.str().c_str());
+	response->addHeader("Cache-Control", "no-cache");
+	request->send(response);
 	return 200;
 }
 #endif /* ENABLE_WEB_SERVER */

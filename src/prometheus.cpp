@@ -100,7 +100,9 @@ std::string prom::getMetrics() {
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
-	request->send(200, "text/plain", getMetrics().c_str());
+	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", getMetrics().c_str());
+	response->addHeader("Cache-Control", "no-cache");
+	request->send(response);
 	return 200;
 }
 #endif

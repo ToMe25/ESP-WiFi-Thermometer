@@ -8,12 +8,13 @@ Not all of these are necessarily going to be implemented at all.
  * Fix ESP8266 ipv6 support
  * Fix ESP8266 WiFi scan support
  * Disable ULP and RTC mem on ESP32 in Deep Sleep Mode
- * Add degrees fahrenheit mode to web interface
 
 ## Web Interface
  * Add error message to log and web interface if measurement fails
  * Add a javescript temperature and humidity graph to the web interface?
  * Remove not measured values(for example humidity for the DS18B20)
+ * Add degrees fahrenheit mode to web interface
+ * Allow caching of static resources using a hash of their content as an ETag
 
 ## Integration
  * Find a way to make the kubernetes service(for prometheus) automatically point to the esp(mDNS?)
