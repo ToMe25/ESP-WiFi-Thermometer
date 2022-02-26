@@ -21,14 +21,8 @@ on:
       - platformio.ini
       - .github/workflows/codeql.yml
   pull_request:
+    # The branches below must be a subset of the branches above
     branches: [ master ]
-    paths:
-      - src/**
-      - lib/**
-      - test/**
-      - include/**
-      - platformio.ini
-      - .github/workflows/codeql.yml
 
 jobs:
   analyze:
