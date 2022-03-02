@@ -76,7 +76,7 @@ jobs:
         echo "OTA Password" > otapass.txt
         echo "WiFi SSID" > wifissid.txt
         echo "WiFi Passphrase" > wifipass.txt
-        pio run -e esp32dev_debug
+        pio run -e ${{ matrix.env }}
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v1
