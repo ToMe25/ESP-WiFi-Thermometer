@@ -12,13 +12,7 @@ on:
       - platformio.ini
       - .github/workflows/pio.yml
   pull_request:
-    paths:
-      - src/**
-      - lib/**
-      - test/**
-      - include/**
-      - platformio.ini
-      - .github/workflows/pio.yml
+    branches: [ master ]
 
 jobs:
   build:
