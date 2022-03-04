@@ -76,6 +76,8 @@ jobs:
         echo "OTA Password" > otapass.txt
         echo "WiFi SSID" > wifissid.txt
         echo "WiFi Passphrase" > wifipass.txt
+        echo "MQTT Username" > mqttuser.txt
+        echo "MQTT Password" > mqttpass.txt
         pio run -e ${{ matrix.env }}
 
     - name: Perform CodeQL Analysis
