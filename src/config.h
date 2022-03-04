@@ -120,6 +120,10 @@ static const uint16_t MQTT_PUBLISH_INTERVAL = 15;
 // Also used as the name to open the MQTT connection.
 // Leave empty to use the device hostname.
 static constexpr char MQTT_TOPIC_NAMESPACE[] = "";
+// Whether MQTT publishing should be done anonymously.
+// If enabled the MQTT connection will be initialized without a username or password.
+// Set to 1 to enable and to 0 to disable.
+#define MQTT_PUBLISH_ANONYMOUS 0
 
 // Deep sleep mode options
 // Deep sleep mode makes the esp go into deep sleep for a fixed time before makeing a measurement, pushing it,

@@ -24,6 +24,13 @@ extern uint64_t last_publish;
 #endif
 #endif
 
+// Includes the content of the file "mqttuser.txt" in the project root.
+// Make sure this file doesn't end with an empty line.
+extern const char MQTT_USER[] asm("_binary_mqttuser_txt_start");
+// Includes the content of the file "mqttpass.txt" in the project root.
+// Make sure this file doesn't end with an empty line.
+extern const char MQTT_PASS[] asm("_binary_mqttpass_txt_start");
+
 /**
  * Initializes the MQTT integration.
  */

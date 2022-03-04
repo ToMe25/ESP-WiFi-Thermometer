@@ -25,6 +25,10 @@ void mqtt::setup() {
 	} else {
 		mqttClient.setClientId(HOSTNAME);
 	}
+
+#if MQTT_PUBLISH_ANONYMOUS != 1
+	mqttClient.setCredentials(MQTT_USER, MQTT_PASS);
+#endif
 #endif
 }
 

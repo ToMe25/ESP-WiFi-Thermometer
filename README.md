@@ -51,7 +51,11 @@ The steps to compile this project and flash it onto an esp.
  * Create a wifissid.txt file containing the SSID of the wifi to connect to.
  * Create a wifipass.txt file containing the Passphrase for the wifi to connect to.
  * Create a otapass.txt file containing the password for [ArduinoOta](https://www.arduino.cc/reference/en/libraries/arduinoota/), allowing your to upload modified versions over wifi.
- * Make sure these three files don't end with an empty line.
+ * Create a mqttuser.txt file containing the username to use to connect to the MQTT broker.  
+   For technical reasons this is required even if you do not use MQTT.
+ * Create a mqttpass.txt file containing the password for the MWTT broker.   
+   For technical reasons this is required even if you do not use MQTT.
+ * Make sure these five files don't end with an empty line.
  * Attach the ESP to your PC using a USB-Micro-B tp USB-A cable.
  * Build this project and flash it to the ESP by running `pio run -t upload -e esp32dev` for ESP32 or `pio run -t upload -e esp_wroom_02` for the ESP8266.
  * To upload over WiFi after this project is installed run `pio run -t upload -e esp32dev_ota` for an ESP32 or `pio run -t upload -e esp_wroom_02_ota` for an ESP8266.

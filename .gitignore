@@ -10,3 +10,5 @@
 wifissid.txt
 wifipass.txt
 otapass.txt
+mqttuser.txt
+mqttpass.txt

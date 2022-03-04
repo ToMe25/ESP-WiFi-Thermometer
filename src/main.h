@@ -20,13 +20,13 @@
 #include <DallasTemperature.h>
 #include <DHT.h>
 
-// includes the content of the file "wifissid.txt" in the project root.
+// Includes the content of the file "wifissid.txt" in the project root.
 // Make sure this file doesn't end with an empty line.
 extern const char WIFI_SSID[] asm("_binary_wifissid_txt_start");
-// includes the content of the file "wifipass.txt" in the project root.
+// Includes the content of the file "wifipass.txt" in the project root.
 // Make sure this file doesn't end with an empty line.
 extern const char WIFI_PASS[] asm("_binary_wifipass_txt_start");
-// includes the content of the file "otapass.txt" in the project root.
+// Includes the content of the file "otapass.txt" in the project root.
 // Make sure this file doesn't end with an empty line.
 extern const char OTA_PASS[] asm("_binary_otapass_txt_start");
 
