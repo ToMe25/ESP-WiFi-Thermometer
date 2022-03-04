@@ -7,7 +7,7 @@ Not all of these are necessarily going to be implemented at all.
  * Keep some history of measurements(required for some other todos)
  * Fix ESP8266 ipv6 support
  * Fix ESP8266 WiFi scan support
- * Disable ULP and RTC mem on ESP32 in Deep Sleep Mode
+ * Merge wifissid.txt and wifipass.txt into wificreds.txt and merge mqttuser.txt and mqttpass.txt into mqttcreds.txt
 
 ## Web Interface
  * Add error message to log and web interface if measurement fails
