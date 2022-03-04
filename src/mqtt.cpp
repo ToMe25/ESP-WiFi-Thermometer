@@ -11,8 +11,7 @@
 #include <sstream>
 
 #if ENABLE_MQTT_PUBLISH == 1
-WiFiClient mqtt::wifiClient;
-PubSubClient mqtt::mqttClient(wifiClient);
+AsyncMqttClient mqtt::mqttClient;
 #if ENABLE_DEEP_SLEEP_MODE != 1
 uint64_t mqtt::last_publish = 0;
 #endif
@@ -21,6 +20,11 @@ uint64_t mqtt::last_publish = 0;
 void mqtt::setup() {
 #if ENABLE_MQTT_PUBLISH == 1
 	mqttClient.setServer(MQTT_BROKER_ADDR, MQTT_BROKER_PORT);
+	if (strlen(MQTT_TOPIC_NAMESPACE) > 0) {
+		mqttClient.setClientId(MQTT_TOPIC_NAMESPACE);
+	} else {
+		mqttClient.setClientId(HOSTNAME);
+	}
 #endif
 }
 
@@ -37,11 +41,7 @@ void mqtt::connect() {
 #if ENABLE_MQTT_PUBLISH == 1
 void mqtt::publishMeasurements() {
 	if (WiFi.status() == WL_CONNECTED && !mqttClient.connected()) {
-		if (strlen(MQTT_TOPIC_NAMESPACE) > 0) {
-			mqttClient.connect(MQTT_TOPIC_NAMESPACE);
-		} else {
-			mqttClient.connect(HOSTNAME);
-		}
+		mqttClient.connect();
 	}
 
 	if (mqttClient.connected()) {
@@ -58,7 +58,7 @@ void mqtt::publishMeasurements() {
 
 			std::ostringstream converter;
 			converter << std::setprecision(3) << temperature;
-			if (!mqttClient.publish((ns + "/temperature").c_str(), converter.str().c_str())) {
+			if (!mqttClient.publish((ns + "/temperature").c_str(), 0, true, converter.str().c_str())) {
 				return;
 			}
 
@@ -67,7 +67,7 @@ void mqtt::publishMeasurements() {
 
 			converter << std::setprecision(3) << humidity;
 
-			if (!mqttClient.publish((ns + "/humidity").c_str(), converter.str().c_str())) {
+			if (!mqttClient.publish((ns + "/humidity").c_str(), 0, true, converter.str().c_str())) {
 				return;
 			}
 

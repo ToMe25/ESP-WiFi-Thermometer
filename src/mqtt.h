@@ -10,7 +10,7 @@
 
 #include "config.h"
 #if ENABLE_MQTT_PUBLISH == 1
-#include <PubSubClient.h>
+#include <AsyncMqttClient.h>
 #endif
 
 /**
@@ -18,8 +18,7 @@
  */
 namespace mqtt {
 #if ENABLE_MQTT_PUBLISH == 1
-extern WiFiClient wifiClient;
-extern PubSubClient mqttClient;
+extern AsyncMqttClient mqttClient;
 #if ENABLE_DEEP_SLEEP_MODE != 1
 extern uint64_t last_publish;
 #endif
