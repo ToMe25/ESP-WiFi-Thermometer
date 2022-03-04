@@ -10,6 +10,7 @@
 
 #include "main.h"
 #include "prometheus.h"
+#include "mqtt.h"
 #include <iomanip>
 #if ENABLE_WEB_SERVER == 1
 #include <regex>
@@ -93,6 +94,7 @@ void setup() {
 #endif /* ENABLE_DEEP_SLEEP_MODE */
 
 	prom::setup();
+	mqtt::setup();
 }
 
 void setupWiFi() {
@@ -254,6 +256,7 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		Serial.print("STA IP: ");
 		Serial.println(localhost = WiFi.localIP());
 		prom::connect();
+		mqtt::connect();
 		break;
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 		WiFi.reconnect();
@@ -296,6 +299,7 @@ void onWiFiEvent(WiFiEvent_t id) {
 		Serial.print("STA IP: ");
 		Serial.println(localhost = WiFi.localIP());
 		prom::connect();
+		mqtt::connect();
 		break;
 	case WIFI_EVENT_STAMODE_DISCONNECTED:
 		WiFi.reconnect();
@@ -365,6 +369,7 @@ void loop() {
 #endif
 
 	prom::loop();
+	mqtt::loop();
 
 	loop_iterations++;
 	uint64_t end = millis();

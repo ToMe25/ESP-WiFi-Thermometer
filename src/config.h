@@ -78,11 +78,12 @@ static const uint8_t SENSOR_PIN = 5;
 // Whether the esp should automatically push measurements to a prometheus-pushgateway.
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
-#define ENABLE_PROMETHEUS_PUSH 1
+#define ENABLE_PROMETHEUS_PUSH 0
 // The address of the prometheus pushgateway to push the data to.
-// Can be an IP address, a hostname, or a domain.
-static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.114";
+// Can be an IP address, a hostname, or a domain name.
+static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.203";
 // The port of the prometheus pushgateway.
+// The default prometheus pushgateway port is 9091.
 static const uint16_t PROMETHEUS_PUSH_PORT = 9091;
 // The time between two HTTP post requests sent to the pushgateway.
 // Specified in seconds.
@@ -98,6 +99,27 @@ static constexpr char PROMETHEUS_PUSH_INSTANCE[] = "";
 // The name of the namespace to use for the prometheus metrics when pushing.
 // Leave empty to not send namespace information.
 static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
+
+// MQTT options
+// Whether or not to enable the MQTT client.
+// This will publish the measurements to the MQTT broker configured below.
+// Set to 1 to enable and to 0 to disable.
+#define ENABLE_MQTT_PUBLISH 1
+// The address of the MQTT broker to publish the measurements to.
+// Can be an IP address, a hostname, or a domain name.
+static constexpr char MQTT_BROKER_ADDR[] = "192.168.2.203";
+// The port of the MQTT broker to publish to.
+// The default MQTT broker port is 1883.
+static const uint16_t MQTT_BROKER_PORT = 1883;
+// The time between two MQTT pushes.
+// Specified in seconds.
+// Ignored in deep sleep mode.
+static const uint16_t MQTT_PUBLISH_INTERVAL = 15;
+// The namespace of the measurement topics.
+// The MQTT topics published are structured like this: "namespace/measurement value".
+// Also used as the name to open the MQTT connection.
+// Leave empty to use the device hostname.
+static constexpr char MQTT_TOPIC_NAMESPACE[] = "";
 
 // Deep sleep mode options
 // Deep sleep mode makes the esp go into deep sleep for a fixed time before makeing a measurement, pushing it,

@@ -31,10 +31,10 @@ extern uint32_t used_heap;
 #if ENABLE_WEB_SERVER == 1
 extern std::map<std::pair<String, uint16_t>, uint64_t> http_requests_total;
 #endif
-#if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
+#if ENABLE_PROMETHEUS_PUSH == 1
+#if ENABLE_DEEP_SLEEP_MODE != 1
 extern uint64_t last_push;
 #endif
-#if ENABLE_PROMETHEUS_PUSH == 1
 extern AsyncClient *tcpClient;
 extern std::string push_url;
 #endif
