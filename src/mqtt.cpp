@@ -48,6 +48,12 @@ void mqtt::publishMeasurements() {
 		mqttClient.connect();
 	}
 
+#if ENABLE_DEEP_SLEEP_MODE == 1
+	while (!mqttClient.connected()) {
+		delay(10);
+	}
+#endif
+
 	if (mqttClient.connected()) {
 #if ENABLE_DEEP_SLEEP_MODE != 1
 		uint64_t now = millis();
@@ -75,7 +81,20 @@ void mqtt::publishMeasurements() {
 				return;
 			}
 
-#if ENABLE_DEEP_SLEEP_MODE != 1
+#if ENABLE_DEEP_SLEEP_MODE == 1
+			mqttClient.disconnect(false);
+
+			std::shared_ptr<bool> connected = std::make_shared<bool>(true);
+
+			mqttClient.onDisconnect(
+					[connected](AsyncMqttClientDisconnectReason reason) {
+				*connected = false;
+			});
+
+			while (*connected) {
+				delay(10);
+			}
+#else
 			last_publish = now;
 		}
 #endif

@@ -65,6 +65,9 @@ void setup() {
 	setupWebServer();
 #endif
 
+	prom::setup();
+	mqtt::setup();
+
 #if ENABLE_DEEP_SLEEP_MODE == 1
 	measure();
 
@@ -79,6 +82,9 @@ void setup() {
 #if ENABLE_PROMETHEUS_PUSH == 1
 		prom::pushMetrics();
 #endif
+#if ENABLE_MQTT_PUBLISH == 1
+		mqtt::publishMeasurements();
+#endif
 	} else {
 		Serial.println("Failed to connect to WiFi!");
 	}
@@ -92,9 +98,6 @@ void setup() {
 	ESP.deepSleep(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
 #endif
 #endif /* ENABLE_DEEP_SLEEP_MODE */
-
-	prom::setup();
-	mqtt::setup();
 }
 
 void setupWiFi() {
