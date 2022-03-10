@@ -24,6 +24,10 @@
 // This value is used for both the actual hostname, as well as the mDNS hostname(mDNS names end with .local).
 // While the normal hostname doesn't work with a static IP, mDNS still works.
 static constexpr char HOSTNAME[] = "esp-wifi-thermometer";
+// If set to an actual IP rather then INADDR_NONE this will make the esp use that IP.
+// However setting this to anything but INADDR_NONE means the hostname wont work.
+// If this is set to INADDR_NONE the esp will get an IP address from the dhcp server.
+static const IPAddress STATIC_IP = IPADDR_ANY;
 // The WiFi gateway IP.
 // Set to INADDR_NONE to use the standard gateway of the WLAN.
 // Usually your router.
@@ -31,10 +35,6 @@ static const IPAddress GATEWAY = IPADDR_ANY;
 // The netmask of the subnet in which the esp is.
 // Set tp INADDR_NONE to dynamically determine this when connecting to the WiFi access point.
 static const IPAddress SUBNET = IPADDR_ANY;
-// If set to an actual IP rather then INADDR_NONE this will make the esp use that IP.
-// However setting this to anything but INADDR_NONE means the hostname wont work.
-// If this is set to INADDR_NONE the esp will get an IP address from the dhcp server.
-static const IPAddress STATIC_IP = IPADDR_ANY;
 
 // Web Server options
 // Whether or not to enable the web server on the esp.

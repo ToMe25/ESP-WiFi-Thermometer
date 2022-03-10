@@ -26,7 +26,7 @@
 #include <ESP8266mDNS.h>
 #endif
 
-IPAddress localhost = STATIC_IP;
+IPAddress localhost;
 #ifdef ESP32
 IPv6Address localhost_ipv6;
 #endif
@@ -107,9 +107,13 @@ void setupWiFi() {
 #endif
 	WiFi.onEvent(onWiFiEvent);
 
-	if (!WiFi.config(localhost, GATEWAY, SUBNET)) {
-		Serial.println("Configuring WiFi failed!");
-		return;
+	if (STATIC_IP != IPADDR_ANY || GATEWAY != IPADDR_ANY || SUBNET != IPADDR_ANY) {
+		if (!WiFi.config(STATIC_IP, GATEWAY, SUBNET)) {
+			Serial.println("Configuring WiFi failed!");
+			return;
+		}
+
+		localhost = STATIC_IP;
 	}
 
 	WiFi.begin(WIFI_SSID, WIFI_PASS);
@@ -244,6 +248,16 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		break;
 	case SYSTEM_EVENT_STA_CONNECTED:
 		WiFi.enableIpV6();
+
+		if (STATIC_IP != IPADDR_ANY) {
+			Serial.print("WiFi ready ");
+			Serial.print(millis() - start_ms);
+			Serial.println("ms after start.");
+			Serial.print("STA IP: ");
+			Serial.println(localhost = WiFi.localIP());
+			prom::connect();
+			mqtt::connect();
+		}
 		break;
 	case SYSTEM_EVENT_GOT_IP6:
 		Serial.print("STA IPv6: ");
