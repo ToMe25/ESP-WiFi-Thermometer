@@ -82,14 +82,14 @@ void mqtt::publishMeasurements() {
 			}
 
 #if ENABLE_DEEP_SLEEP_MODE == 1
-			mqttClient.disconnect(false);
-
 			std::shared_ptr<bool> connected = std::make_shared<bool>(true);
 
 			mqttClient.onDisconnect(
 					[connected](AsyncMqttClientDisconnectReason reason) {
 				*connected = false;
 			});
+
+			mqttClient.disconnect(false);
 
 			while (*connected) {
 				delay(10);

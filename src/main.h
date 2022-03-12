@@ -198,6 +198,14 @@ void registerImageHandler(const char *uri, const char *content_type,
 #endif /* ENABLE_WEB_SERVER */
 
 /**
+ * Print the given temperature in degrees celsius and degrees fahrenheit.
+ *
+ * @param out	The print object to print to.
+ * @param temp	The temperature to print. In degrees celsius.
+ */
+void printTemperature(Print &out, const float temp);
+
+/**
  * Converts the given temperature from degrees celsius to degrees fahrenheit.
  *
  * @param celsius	The temperature to convert in celsius.

@@ -71,9 +71,7 @@ void setup() {
 #if ENABLE_DEEP_SLEEP_MODE == 1
 	measure();
 
-	Serial.print("Temperature: ");
-	Serial.print(temperature);
-	Serial.println("°C");
+	printTemperature(Serial, temperature);
 	Serial.print("Humidity: ");
 	Serial.print(humidity);
 	Serial.println('%');
@@ -207,7 +205,7 @@ void setupWebServer() {
 	MDNS.begin(HOSTNAME);
 #endif
 
-	MDNS.addService("http", "tcp", 80);
+	MDNS.addService("http", "tcp", WEB_SERVER_PORT);
 }
 
 uint16_t getIndex(AsyncWebServerRequest *request) {
@@ -334,11 +332,7 @@ void loop() {
 		measure();
 
 		if (loop_iterations % 20 == 0 && millis() - last_measurement < 10000) {
-			Serial.print("Temperature: ");
-			Serial.print(temperature);
-			Serial.print("°C, ");
-			Serial.print(celsiusToFahrenheit(temperature));
-			Serial.println("°F");
+			printTemperature(Serial, temperature);
 			if (humidity != 0) {
 				Serial.print("Humidity: ");
 				Serial.print(humidity);
@@ -396,11 +390,7 @@ void loop() {
 bool handle_serial_input(const std::string &input) {
 	if (input == "temperature" || input == "temp") {
 		Serial.println();
-		Serial.print("Temperature: ");
-		Serial.print(temperature);
-		Serial.print("°C, ");
-		Serial.print(celsiusToFahrenheit(temperature));
-		Serial.println("°F");
+		printTemperature(Serial, temperature);
 		return true;
 	} else if (input == "humidity") {
 		Serial.println();
@@ -459,7 +449,10 @@ void measure() {
 		last_measurement = millis();
 	}
 #elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
-	sensors.requestTemperatures();
+	if (sensors.getDeviceCount() == 0) {
+		sensors.begin();
+	}
+	sensors.requestTemperaturesByIndex(0);
 	float temp = sensors.getTempCByIndex(0);
 	if (temp != DEVICE_DISCONNECTED_C) {
 		temperature = temp;
@@ -517,6 +510,14 @@ void registerImageHandler(const char *uri, const char *content_type,
 			});
 }
 #endif /* ENABLE_WEB_SERVER */
+
+void printTemperature(Print &out, const float temp) {
+	out.print("Temperature: ");
+	out.print(temperature);
+	out.print("°C, ");
+	out.print(celsiusToFahrenheit(temperature));
+	out.println("°F");
+}
 
 float celsiusToFahrenheit(const float celsius) {
 	return celsius * 1.8 + 32;
