@@ -34,7 +34,7 @@ Format: Sensor(Pull Up Resistor)
  1. A supported microcontroller
  2. A supported temperature sensor
  3. The Pull Up Resistor for said sensor
- 4. USB-Micro-B tp USB-A cable
+ 4. USB-Micro-B to USB-A cable
  5. PC with a working [platformio](https://platformio.org/) installation
 
 # Getting Started
