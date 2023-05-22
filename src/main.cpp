@@ -161,8 +161,8 @@ void setupWebServer() {
 	registerRequestHandler("/", HTTP_GET, getIndex);
 	registerRequestHandler("/index.html", HTTP_GET, getIndex);
 
-	registerStaticHandler("/main.css", "text/css", MAIN_CSS);
-	registerStaticHandler("/index.js", "text/javascript", INDEX_JS);
+	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START, MAIN_CSS_END);
+	registerCompressedStaticHandler("/index.js", "text/javascript", INDEX_JS_START, INDEX_JS_END);
 
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
@@ -182,11 +182,11 @@ void setupWebServer() {
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
 
-	registerImageHandler("/favicon.ico", "image/x-icon", FAVICON_ICO_GZ_START,
+	registerCompressedStaticHandler("/favicon.ico", "image/x-icon", FAVICON_ICO_GZ_START,
 			FAVICON_ICO_GZ_END);
-	registerImageHandler("/favicon.png", "image/png", FAVICON_PNG_GZ_START,
+	registerCompressedStaticHandler("/favicon.png", "image/png", FAVICON_PNG_GZ_START,
 			FAVICON_PNG_GZ_END);
-	registerImageHandler("/favicon.svg", "image/svg+xml", FAVICON_SVG_GZ_START,
+	registerCompressedStaticHandler("/favicon.svg", "image/svg+xml", FAVICON_SVG_GZ_START,
 			FAVICON_SVG_GZ_END);
 
 	server.onNotFound(
@@ -497,7 +497,7 @@ void registerStaticHandler(const char *uri, const char *content_type,
 			});
 }
 
-void registerImageHandler(const char *uri, const char *content_type,
+void registerCompressedStaticHandler(const char *uri, const char *content_type,
 		const uint8_t *start, const uint8_t *end) {
 	registerRequestHandler(uri, HTTP_GET,
 			[content_type, start, end](

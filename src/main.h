@@ -32,15 +32,18 @@ extern const char OTA_PASS[] asm("_binary_otapass_txt_start");
 
 #if ENABLE_WEB_SERVER == 1
 extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
-extern const char MAIN_CSS[] asm("_binary_src_html_main_css_start");
-extern const char INDEX_JS[] asm("_binary_src_html_index_js_start");
+extern const uint8_t MAIN_CSS_START[] asm("_binary_data_gzip_main_css_gz_start");
+extern const uint8_t MAIN_CSS_END[] asm("_binary_data_gzip_main_css_gz_end");
+extern const uint8_t INDEX_JS_START[] asm("_binary_data_gzip_index_js_gz_start");
+extern const uint8_t INDEX_JS_END[] asm("_binary_data_gzip_index_js_gz_end");
 extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
-extern const uint8_t FAVICON_ICO_GZ_START[] asm("_binary_src_html_favicon_ico_gz_start");
-extern const uint8_t FAVICON_ICO_GZ_END[] asm("_binary_src_html_favicon_ico_gz_end");
-extern const uint8_t FAVICON_PNG_GZ_START[] asm("_binary_src_html_favicon_png_gz_start");
-extern const uint8_t FAVICON_PNG_GZ_END[] asm("_binary_src_html_favicon_png_gz_end");
-extern const uint8_t FAVICON_SVG_GZ_START[] asm("_binary_src_html_favicon_svg_gz_start");
-extern const uint8_t FAVICON_SVG_GZ_END[] asm("_binary_src_html_favicon_svg_gz_end");
+extern const uint8_t NOT_FOUND_HTML_END[] asm("_binary_data_gzip_not_found_html_gz_end");
+extern const uint8_t FAVICON_ICO_GZ_START[] asm("_binary_data_gzip_favicon_ico_gz_start");
+extern const uint8_t FAVICON_ICO_GZ_END[] asm("_binary_data_gzip_favicon_ico_gz_end");
+extern const uint8_t FAVICON_PNG_GZ_START[] asm("_binary_data_gzip_favicon_png_gz_start");
+extern const uint8_t FAVICON_PNG_GZ_END[] asm("_binary_data_gzip_favicon_png_gz_end");
+extern const uint8_t FAVICON_SVG_GZ_START[] asm("_binary_data_gzip_favicon_svg_gz_start");
+extern const uint8_t FAVICON_SVG_GZ_END[] asm("_binary_data_gzip_favicon_svg_gz_end");
 
 typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
 #endif
@@ -185,15 +188,15 @@ void registerStaticHandler(const char *uri, const char *content_type,
 		const char *page);
 
 /**
- * Registers a request handler that returns an image.
- * Expects the image to be gzip compressed, and compiled into the program.
+ * Registers a request handler that returns the given content each time it is called.
+ * Expects the content to be a gzip compressed binary.
  *
- * @param uri			The path on which the image can be found.
- * @param content_type	The content type for the image.
- * @param start			The pointer for the start of the image.
- * @param end			The pointer for the end of the image.
+ * @param uri			The path on which the file can be found.
+ * @param content_type	The content type for the file.
+ * @param start			The pointer for the start of the file.
+ * @param end			The pointer for the end of the file.
  */
-void registerImageHandler(const char *uri, const char *content_type,
+void registerCompressedStaticHandler(const char *uri, const char *content_type,
 		const uint8_t *start, const uint8_t *end);
 #endif /* ENABLE_WEB_SERVER */
 

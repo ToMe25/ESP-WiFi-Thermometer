@@ -4,6 +4,7 @@
 # Eclipse
 .project
 .cproject
+.pydevproject
 .settings/
 
 # Credentials
