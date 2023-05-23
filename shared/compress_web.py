@@ -14,6 +14,7 @@ input_binary_files = [ 'images/favicon.ico', 'images/favicon.svg', 'images/favic
 # The javascript keywords that require a space after them.
 js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends', 'function', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'static', 'throw', 'typeof', 'var', 'void', 'yield' ]
 
+
 def remove_whitespaces(lines_in):
     """Removes whitespaces and comments from text.
     
@@ -71,6 +72,7 @@ def remove_whitespaces(lines_in):
 
     return lines_out
 
+
 def gzip_file(input, output):
     """GZIP compresses the file from the given input path to the given output path.
     
@@ -82,9 +84,10 @@ def gzip_file(input, output):
         The target path to write the compressed file to.
     """
 
-    with open(input, 'rb') as src, gzip.open(output, 'wb', 9) as dst:
-        for chunk in iter( lambda: src.read(4096), b"" ):
+    with open(input, 'rb') as src, gzip.GzipFile(filename=path.basename(output), mode='wb', compresslevel=9, fileobj=open(output, 'wb'), mtime=0) as dst:
+        for chunk in iter(lambda: src.read(4096), b""):
             dst.write(chunk)
+
 
 def compress_file(input, text):
     """Compresses the input file to data/gzip/filename.

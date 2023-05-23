@@ -13,7 +13,6 @@
 #include "mqtt.h"
 #include <iomanip>
 #if ENABLE_WEB_SERVER == 1
-#include <regex>
 #include <sstream>
 #endif
 #include <Adafruit_Sensor.h>
@@ -158,8 +157,8 @@ void setupOTA() {
 
 #if ENABLE_WEB_SERVER == 1
 void setupWebServer() {
-	registerRequestHandler("/", HTTP_GET, getIndex);
-	registerRequestHandler("/index.html", HTTP_GET, getIndex);
+	registerProcessedStaticHandler("/", "text/html", INDEX_HTML, processIndexTemplates);
+	registerProcessedStaticHandler("/index.html", "text/html", INDEX_HTML, processIndexTemplates);
 
 	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START, MAIN_CSS_END);
 	registerCompressedStaticHandler("/index.js", "text/javascript", INDEX_JS_START, INDEX_JS_END);
@@ -208,18 +207,20 @@ void setupWebServer() {
 	MDNS.addService("http", "tcp", WEB_SERVER_PORT);
 }
 
-uint16_t getIndex(AsyncWebServerRequest *request) {
-	std::string page = INDEX_HTML;
-	std::ostringstream converter;
-	converter << std::setprecision(3) << temperature;
-	page = std::regex_replace(page, std::regex("\\$temp"), converter.str());
-	converter.clear();
-	converter.str("");
-	converter << std::setprecision(3) << humidity;
-	page = std::regex_replace(page, std::regex("\\$humid"), converter.str());
-	page = std::regex_replace(page, std::regex("\\$time"), getTimeSinceMeasurement());
-	request->send(200, "text/html", page.c_str());
-	return 200;
+String processIndexTemplates(const String &temp) {
+	if (temp == "TEMP") {
+		std::ostringstream converter;
+		converter << std::setprecision(3) << temperature;
+		return converter.str().c_str();
+	} else if (temp == "HUMID") {
+		std::ostringstream converter;
+		converter << std::setprecision(3) << humidity;
+		return converter.str().c_str();
+	} else if (temp == "TIME") {
+		return getTimeSinceMeasurement().c_str();
+	} else {
+		return "Error";
+	}
 }
 
 uint16_t getJson(AsyncWebServerRequest *request) {
@@ -492,10 +493,20 @@ void registerStaticHandler(const char *uri, const char *content_type,
 		const char *page) {
 	registerRequestHandler(uri, HTTP_GET,
 			[content_type, page](AsyncWebServerRequest *request) -> uint16_t {
-				request->send(200, content_type, page);
+				request->send_P(200, content_type, page);
 				return 200;
 			});
 }
+
+void registerProcessedStaticHandler(const char *uri, const char *content_type,
+		const char *page, const AwsTemplateProcessor processor) {
+	registerRequestHandler(uri, HTTP_GET,
+			[content_type, page, processor](AsyncWebServerRequest *request) -> uint16_t {
+				request->send_P(200, content_type, page, processor);
+				return 200;
+			});
+}
+
 
 void registerCompressedStaticHandler(const char *uri, const char *content_type,
 		const uint8_t *start, const uint8_t *end) {

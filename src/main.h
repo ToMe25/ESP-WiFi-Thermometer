@@ -139,12 +139,12 @@ void measure();
 
 #if ENABLE_WEB_SERVER == 1
 /**
- * The request handler for / and /index.html.
+ * Process the templates for the index page.
  *
- * @param request	The request to respond to.
- * @return	The response http status code.
+ * @param temp	The template to replace.
+ * @return	The value replacing the template.
  */
-uint16_t getIndex(AsyncWebServerRequest *request);
+String processIndexTemplates(const String &temp);
 
 /**
  * The request handler for /data.json.
@@ -188,7 +188,22 @@ void registerStaticHandler(const char *uri, const char *content_type,
 		const char *page);
 
 /**
+ * Registers a request handler that returns the given content type and web page each time it is called.
+ * Also registers the given template processor.
+ * Expects request type get.
+ * Also increments the request counter.
+ *
+ * @param uri			The path on which the page can be found.
+ * @param content_type	The content type for the page.
+ * @param page			The content for the page to be sent to the client.
+ */
+void registerProcessedStaticHandler(const char *uri, const char *content_type,
+		const char *page, const AwsTemplateProcessor processor);
+
+/**
  * Registers a request handler that returns the given content each time it is called.
+ * Expects request type get.
+ * Also increments the request counter.
  * Expects the content to be a gzip compressed binary.
  *
  * @param uri			The path on which the file can be found.
