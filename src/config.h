@@ -24,16 +24,16 @@
 // This value is used for both the actual hostname, as well as the mDNS hostname(mDNS names end with .local).
 // While the normal hostname doesn't work with a static IP, mDNS still works.
 static constexpr char HOSTNAME[] = "esp-wifi-thermometer";
-// If set to an actual IP rather then INADDR_NONE this will make the esp use that IP.
-// However setting this to anything but INADDR_NONE means the hostname wont work.
-// If this is set to INADDR_NONE the esp will get an IP address from the dhcp server.
+// If set to an actual IP rather then IPADDR_ANY this will make the esp use that IP.
+// However setting this to anything but IPADDR_ANY means the hostname wont work.
+// If this is set to IPADDR_ANY the esp will get an IP address from the dhcp server.
 static const IPAddress STATIC_IP = IPADDR_ANY;
 // The WiFi gateway IP.
-// Set to INADDR_NONE to use the standard gateway of the WLAN.
 // Usually your router.
+// Set to IPADDR_ANY to use the standard gateway of the WLAN.
 static const IPAddress GATEWAY = IPADDR_ANY;
 // The netmask of the subnet in which the esp is.
-// Set tp INADDR_NONE to dynamically determine this when connecting to the WiFi access point.
+// Set to IPADDR_ANY to dynamically determine this when connecting to the WiFi access point.
 static const IPAddress SUBNET = IPADDR_ANY;
 
 // Web Server options
@@ -43,6 +43,9 @@ static const IPAddress SUBNET = IPADDR_ANY;
 // The port on which to open the web server that shows the measurements.
 // The default web server port is 80.
 static const uint16_t WEB_SERVER_PORT = 80;
+// The value for the Server header of all http responses sent by the webserver.
+// The default value is "ESP-WiFi-Thermometer".
+static const char SERVER_HEADER[] = "ESP-WiFi-Thermometer";
 
 // Sensor options
 // Valid sensor types

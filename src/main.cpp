@@ -198,6 +198,7 @@ void setupWebServer() {
 						request->url(), 404)]++;
 			});
 
+	DefaultHeaders::Instance().addHeader("Server", SERVER_HEADER);
 	server.begin();
 
 #if ENABLE_ARDUINO_OTA != 1
