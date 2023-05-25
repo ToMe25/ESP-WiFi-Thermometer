@@ -44,8 +44,12 @@ static const IPAddress SUBNET = IPADDR_ANY;
 // The default web server port is 80.
 static const uint16_t WEB_SERVER_PORT = 80;
 // The value for the Server header of all http responses sent by the webserver.
+// The hardware name may be added to the server header.
 // The default value is "ESP-WiFi-Thermometer".
-static const char SERVER_HEADER[] = "ESP-WiFi-Thermometer";
+#define SERVER_HEADER_PROGRAM "ESP-WiFi-Thermometer"
+// Whether the hardware name in brackets should be added to the Server header.
+// Set to 1 to enable and 0 to disable.
+#define SERVER_HEADER_APPEND_HARDWARE 1
 
 // Sensor options
 // Valid sensor types
@@ -159,6 +163,16 @@ static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
 #define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 0
 #undef ENABLE_PROMETHEUS_PUSH
 #define ENABLE_PROMETHEUS_PUSH 1
+#endif
+
+#if SERVER_HEADER_APPEND_HARDWARE == 0
+static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM;
+#else
+#ifdef ESP32
+static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP32)";
+#elif defined(ESP8266)
+static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)";
+#endif
 #endif
 
 #endif /* SRC_CONFIG_H_ */
