@@ -70,12 +70,22 @@ std::string prom::getMetrics() {
 	metrics << "# HELP environment_temperature The current measured external temperature in degrees celsius."
 			<< std::endl;
 	metrics << "# TYPE environment_temperature gauge" << std::endl;
-	metrics << "environment_temperature " << std::setprecision(3) << temperature << std::endl;
+	metrics << "environment_temperature ";
+	if (!isnan(temperature)) {
+		metrics << std::fixed << std::setprecision(3) << temperature << std::endl;
+	} else {
+		metrics << -1 << std::endl;
+	}
 
 	metrics << "# HELP environment_humidity The current measured external relative humidity in percent."
 			<< std::endl;
 	metrics << "# TYPE environment_humidity gauge" << std::endl;
-	metrics << "environment_humidity " << std::setprecision(3) << humidity << std::endl;
+	metrics << "environment_humidity ";
+	if (!isnan(humidity)) {
+		metrics << std::fixed << std::setprecision(3) << humidity << std::endl;
+	} else {
+		metrics << -1 << std::endl;
+	}
 
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP in bytes."

@@ -138,6 +138,22 @@ bool handle_serial_input(const std::string &input);
  */
 void measure();
 
+/**
+ * Returns the last measured temperature in degrees celsius, rounded to two decimal digits.
+ * Or "Unknown" if it is NAN.
+ *
+ * @return	The last measured temperature.
+ */
+std::string getTemperature();
+
+/**
+ * Returns the last measured relative humidity in percent, rounded to two decimal digits.
+ * Or "Unknown" if it is NAN.
+ *
+ * @return the last measured relative humidity.
+ */
+std::string getHumidity();
+
 #if ENABLE_WEB_SERVER == 1
 /**
  * Gets the decompressed size of a gzip file stored in a byte array.

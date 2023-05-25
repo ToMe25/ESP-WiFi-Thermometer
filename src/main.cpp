@@ -39,8 +39,8 @@ DHT dht(SENSOR_PIN, DHT_TYPE);
 OneWire wire(SENSOR_PIN);
 DallasTemperature sensors(&wire);
 #endif
-float temperature = 0;
-float humidity = 0;
+float temperature = NAN;
+float humidity = NAN;
 uint64_t last_measurement = 0;
 std::string command;
 uint8_t loop_iterations = 0;
@@ -73,8 +73,12 @@ void setup() {
 
 	printTemperature(Serial, temperature);
 	Serial.print("Humidity: ");
-	Serial.print(humidity);
-	Serial.println('%');
+	Serial.print(getHumidity().c_str());
+	if (!isnan(humidity)) {
+		Serial.println('%');
+	} else {
+		Serial.println();
+	}
 
 	if (WiFi.waitForConnectResult() == WL_CONNECTED) {
 #if ENABLE_PROMETHEUS_PUSH == 1
@@ -170,17 +174,13 @@ void setupWebServer() {
 
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
-				std::ostringstream os;
-				os << std::setprecision(3) << temperature;
-				request->send(200, "text/plain", os.str().c_str());
+				request->send(200, "text/plain", getTemperature().c_str());
 				return 200;
 			});
 
 	registerRequestHandler("/humidity", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
-				std::ostringstream os;
-				os << std::setprecision(3) << humidity;
-				request->send(200, "text/plain", os.str().c_str());
+				request->send(200, "text/plain", getHumidity().c_str());
 				return 200;
 			});
 
@@ -227,13 +227,9 @@ size_t getGzipDecompressedSize(const uint8_t *end_ptr) {
 
 String processIndexTemplates(const String &temp) {
 	if (temp == "TEMP") {
-		std::ostringstream converter;
-		converter << std::setprecision(3) << temperature;
-		return converter.str().c_str();
+		return getTemperature().c_str();
 	} else if (temp == "HUMID") {
-		std::ostringstream converter;
-		converter << std::setprecision(3) << humidity;
-		return converter.str().c_str();
+		return getHumidity().c_str();
 	} else if (temp == "TIME") {
 		return getTimeSinceMeasurement().c_str();
 	} else {
@@ -244,9 +240,17 @@ String processIndexTemplates(const String &temp) {
 uint16_t getJson(AsyncWebServerRequest *request) {
 	std::ostringstream json;
 	json << "{\"temperature\": ";
-	json << std::setprecision(3) << temperature;
+	if (isnan(temperature)) {
+		json << "\"Unknown\"";
+	} else {
+		json << std::setprecision(temperature > 10 ? 4 : 3) << temperature;
+	}
 	json << ", \"humidity\": ";
-	json << std::setprecision(3) << humidity;
+	if (isnan(humidity)) {
+		json << "\"Unknown\"";
+	} else {
+		json << std::setprecision(humidity > 10 ? 4 : 3) << humidity;
+	}
 	json << ", \"time\": \"";
 	json << getTimeSinceMeasurement();
 	json << "\"}";
@@ -352,9 +356,9 @@ void loop() {
 
 		if (loop_iterations % 20 == 0 && millis() - last_measurement < 10000) {
 			printTemperature(Serial, temperature);
-			if (humidity != 0) {
+			if (!isnan(humidity)) {
 				Serial.print("Humidity: ");
-				Serial.print(humidity);
+				Serial.print(getHumidity().c_str());
 				Serial.println('%');
 			}
 		}
@@ -414,8 +418,12 @@ bool handle_serial_input(const std::string &input) {
 	} else if (input == "humidity") {
 		Serial.println();
 		Serial.print("Relative humidity: ");
-		Serial.print(humidity);
-		Serial.println('%');
+		Serial.print(getHumidity().c_str());
+		if (!isnan(humidity)) {
+			Serial.println('%');
+		} else {
+			Serial.println();
+		}
 		return true;
 	} else if (input == "ip") {
 		Serial.println();
@@ -433,19 +441,19 @@ bool handle_serial_input(const std::string &input) {
 		Serial.println("Starting WiFi scan...");
 		WiFi.scanNetworks(true, true);
 #elif defined(ESP8266)
-		Serial.println(F("WiFi scanning is not currently supported on ESP8266 hardware."));
+		Serial.println("WiFi scanning is not currently supported on ESP8266 hardware.");
 #endif
 		return true;
 	} else if (input == "help") {
 		Serial.println();
-		Serial.println(F("ESP-WiFi-Thermometer help:"));
-		Serial.println(F("temperature (or temp): Prints the last measured temperature in °C and °F."));
-		Serial.println(F("humidity:              Prints the relative humidity in %."));
-		Serial.println(F("ip:                    Prints the current IPv4 and IPv6 address of this device."));
+		Serial.println("ESP-WiFi-Thermometer help:");
+		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
+		Serial.println("humidity:              Prints the relative humidity in %.");
+		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
 #ifdef ESP32
-		Serial.println(F("scan:                  Scans for WiFi networks in the area and prints the result."));
+		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
 #endif
-		Serial.println(F("help:                  Prints this help text."));
+		Serial.println("help:                  Prints this help text.");
 		return true;
 	} else {
 		return false;
@@ -478,6 +486,24 @@ void measure() {
 		last_measurement = millis();
 	}
 #endif
+}
+
+std::string getTemperature() {
+	if (isnan(temperature)) {
+		return "Unknown";
+	}
+	std::ostringstream converter;
+	converter << std::setprecision(temperature > 10 ? 4 : 3) << temperature;
+	return converter.str();
+}
+
+std::string getHumidity() {
+	if (isnan(humidity)) {
+		return "Unknown";
+	}
+	std::ostringstream converter;
+	converter << std::setprecision(humidity > 10 ? 4 : 3) << humidity;
+	return converter.str();
 }
 
 #if ENABLE_WEB_SERVER == 1
@@ -572,10 +598,20 @@ void registerCompressedStaticHandler(const char *uri, const char *content_type,
 
 void printTemperature(Print &out, const float temp) {
 	out.print("Temperature: ");
-	out.print(temperature);
-	out.print("°C, ");
-	out.print(celsiusToFahrenheit(temperature));
-	out.println("°F");
+	if (isnan(temp)) {
+		out.println("Unknown");
+	} else {
+		std::ostringstream converter;
+		converter << std::setprecision(temp > 10 ? 4 : 3) << temp;
+		out.print(converter.str().c_str());
+		out.print("°C, ");
+		converter.str("");
+		converter.clear();
+		const float tempF = celsiusToFahrenheit(temp);
+		converter << std::setprecision(tempF > 10 ? 4 : 3) << tempF;
+		out.print(converter.str().c_str());
+		out.println("°F");
+	}
 }
 
 float celsiusToFahrenheit(const float celsius) {
