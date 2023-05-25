@@ -139,6 +139,14 @@ void measure();
 
 #if ENABLE_WEB_SERVER == 1
 /**
+ * Gets the decompressed size of a gzip file stored in a byte array.
+ *
+ * @param end_ptr	The pointer to the byte after the last byte of the compressed file.
+ * @return	The size of the file in bytes.
+ */
+size_t getGzipDecompressedSize(const uint8_t *end_ptr);
+
+/**
  * Process the templates for the index page.
  *
  * @param temp	The template to replace.

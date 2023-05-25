@@ -14,6 +14,7 @@
 #include <iomanip>
 #if ENABLE_WEB_SERVER == 1
 #include <sstream>
+#include <uzlib.h>
 #endif
 #include <Adafruit_Sensor.h>
 #if ENABLE_ARDUINO_OTA == 1
@@ -201,11 +202,21 @@ void setupWebServer() {
 	DefaultHeaders::Instance().addHeader("Server", SERVER_HEADER);
 	server.begin();
 
+	uzlib_init();
+
 #if ENABLE_ARDUINO_OTA != 1
 	MDNS.begin(HOSTNAME);
 #endif
 
 	MDNS.addService("http", "tcp", WEB_SERVER_PORT);
+}
+
+size_t getGzipDecompressedSize(const uint8_t *end_ptr) {
+	size_t dlen = end_ptr[-1];
+	dlen = 256 * dlen + end_ptr[-2];
+	dlen = 256 * dlen + end_ptr[-3];
+	dlen = 256 * dlen + end_ptr[-4];
+	return dlen;
 }
 
 String processIndexTemplates(const String &temp) {
@@ -508,15 +519,37 @@ void registerProcessedStaticHandler(const char *uri, const char *content_type,
 			});
 }
 
-
 void registerCompressedStaticHandler(const char *uri, const char *content_type,
 		const uint8_t *start, const uint8_t *end) {
 	registerRequestHandler(uri, HTTP_GET,
 			[content_type, start, end](
 					AsyncWebServerRequest *request) -> uint16_t {
-				AsyncWebServerResponse *response = request->beginResponse_P(200,
-						content_type, start, end - start);
-				response->addHeader("Content-Encoding", "gzip");
+				const size_t clen = end - start;
+				AsyncWebServerResponse *response = NULL;
+				if (request->hasHeader("Accept-Encoding")
+						&& strstr(
+								request->getHeader("Accept-Encoding")->value().c_str(),
+								"gzip")) {
+					response = request->beginResponse_P(200, content_type,
+							start, clen);
+					response->addHeader("Content-Encoding", "gzip");
+				} else {
+					struct uzlib_uncomp decomp;
+					uzlib_uncompress_init(&decomp, NULL, 0);
+					decomp.source = start;
+					decomp.source_limit = end - 4;
+					decomp.source_read_cb = NULL;
+					uzlib_gzip_parse_header(&decomp);
+					response = request->beginResponse(content_type,
+							getGzipDecompressedSize(end),
+							[clen, decomp](uint8_t *buffer, size_t maxLen,
+									size_t index) mutable {
+								decomp.dest = buffer;
+								decomp.dest_limit = buffer + maxLen;
+								uzlib_uncompress(&decomp);
+								return decomp.dest - buffer;
+							});
+				}
 				request->send(response);
 				return 200;
 			});
