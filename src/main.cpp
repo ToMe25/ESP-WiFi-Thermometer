@@ -12,9 +12,7 @@
 #include "prometheus.h"
 #include "mqtt.h"
 #include <iomanip>
-#if ENABLE_WEB_SERVER == 1
 #include <sstream>
-#endif
 #include <Adafruit_Sensor.h>
 #if ENABLE_ARDUINO_OTA == 1
 #include <ArduinoOTA.h>
