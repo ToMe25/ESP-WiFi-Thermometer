@@ -13,6 +13,7 @@
 
 #include "config.h"
 #if ENABLE_WEB_SERVER == 1
+#include <uzlib.h>
 #include <ESPAsyncWebServer.h>
 #endif
 // It would be possible to always only include one, but that makes it a pain when switching between them.
@@ -171,6 +172,42 @@ uint16_t getJson(AsyncWebServerRequest *request);
  * @return	A formatted string representing the time since the last measurement.
  */
 std::string getTimeSinceMeasurement();
+
+/**
+ * A AwsResponseFiller decompressing a file from memory using uzlib.
+ *
+ * @param decomp	The uzlib decompressing persistent data.
+ * @param buffer	The output data to write the decompressed data to.
+ * @param max_len	The max number of bytes to write to the output buffer.
+ * @param index		The number of bytes already generated for this response.
+ * @return	The number of bytes written to the output buffer.
+ */
+size_t decompressingResponseFiller(const std::shared_ptr<uzlib_uncomp> decomp,
+		uint8_t *buffer, const size_t max_len, const size_t index);
+
+/**
+ * The method to be called by the AsyncWebServer to call a request handler.
+ * Calls the handler and updates the prometheus web request statistics.
+ *
+ * @param uri		The uri to be handled by the request handler.
+ * @param handler	The request handler to be wrapped by this method.
+ * @param request	The request to be handled.
+ */
+void trackingRequestHandlerWrapper(const char *uri,
+		const HTTPRequestHandler handler, AsyncWebServerRequest *request);
+
+/**
+ * A web request handler for a compressed static file.
+ * If the client accepts gzip compressed files, the file is sent as is.
+ * Otherwise it is decompressed on the fly.
+ *
+ * @param content_type	The content type of the static file.
+ * @param start			A pointer to the first byte of the compressed static file.
+ * @param end			A pointer to the first byte after the end of the compressed static file.
+ * @param request		The request to handle.
+ */
+uint16_t compressedStaticHandler(const char *content_type, const uint8_t *start,
+		const uint8_t *end, AsyncWebServerRequest *request);
 
 /**
  * Registers the given handler for the web server, and increments the web requests counter

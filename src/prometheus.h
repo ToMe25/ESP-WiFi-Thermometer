@@ -28,7 +28,7 @@ namespace prom {
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 extern uint32_t used_heap;
 #endif
-#if ENABLE_WEB_SERVER == 1
+#if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 extern std::map<std::pair<String, uint16_t>, uint64_t> http_requests_total;
 #endif
 #if ENABLE_PROMETHEUS_PUSH == 1
@@ -54,12 +54,14 @@ void loop();
  */
 void connect();
 
+#if (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 /**
  * Creates a string containing the metrics for prometheus.
  *
  * @return	A string containing all the metrics for a prometheus server.
  */
 std::string getMetrics();
+#endif
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 /**

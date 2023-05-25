@@ -14,7 +14,6 @@
 #include <iomanip>
 #if ENABLE_WEB_SERVER == 1
 #include <sstream>
-#include <uzlib.h>
 #endif
 #include <Adafruit_Sensor.h>
 #if ENABLE_ARDUINO_OTA == 1
@@ -24,6 +23,7 @@
 #include <ESPmDNS.h>
 #elif defined(ESP8266)
 #include <ESP8266mDNS.h>
+#include <dhcpserver.h>
 #endif
 
 IPAddress localhost;
@@ -115,6 +115,10 @@ void setupWiFi() {
 	}
 
 	WiFi.begin(WIFI_SSID, WIFI_PASS);
+
+#ifdef ESP8266
+	dhcps_stop();
+#endif
 }
 
 #if ENABLE_ARDUINO_OTA == 1
@@ -195,8 +199,10 @@ void setupWebServer() {
 				Serial.print(F("A client tried to access the not existing file \""));
 				Serial.print(request->url().c_str());
 				Serial.println("\".");
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 				prom::http_requests_total[std::pair<String, uint16_t>(
 						request->url(), 404)]++;
+#endif
 			});
 
 	DefaultHeaders::Instance().addHeader("Server", SERVER_HEADER);
@@ -492,13 +498,50 @@ std::string getTimeSinceMeasurement() {
 	return stream.str();
 }
 
+size_t decompressingResponseFiller(const std::shared_ptr<uzlib_uncomp> decomp,
+		uint8_t *buffer, const size_t max_len, const size_t index) {
+	decomp->dest = buffer;
+	decomp->dest_limit = buffer + max_len;
+	uzlib_uncompress(decomp.get());
+	return decomp->dest - buffer;
+}
+
+void trackingRequestHandlerWrapper(const char *uri, const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
+	const uint16_t status_code = handler(request);
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+	prom::http_requests_total[std::pair<String, uint16_t>(uri, status_code)]++;
+#endif
+}
+
+uint16_t compressedStaticHandler(const char *content_type, const uint8_t *start,
+		const uint8_t *end, AsyncWebServerRequest *request) {
+	AsyncWebServerResponse *response = NULL;
+	if (request->hasHeader("Accept-Encoding")
+			&& strstr(request->getHeader("Accept-Encoding")->value().c_str(),
+					"gzip")) {
+		response = request->beginResponse_P(200, content_type, start,
+				end - start);
+		response->addHeader("Content-Encoding", "gzip");
+	} else {
+		using namespace std::placeholders;
+		std::shared_ptr<uzlib_uncomp> decomp = std::make_shared<uzlib_uncomp>();
+		uzlib_uncompress_init(decomp.get(), NULL, 0);
+		decomp->source = start;
+		decomp->source_limit = end - 4;
+		decomp->source_read_cb = NULL;
+		uzlib_gzip_parse_header(decomp.get());
+		response = request->beginResponse(content_type,
+				getGzipDecompressedSize(end),
+				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
+	}
+	request->send(response);
+	return 200;
+}
+
 void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 		HTTPRequestHandler handler) {
-	server.on(uri, method,
-			[uri, handler](AsyncWebServerRequest *request) {
-				prom::http_requests_total[std::pair<String, uint16_t>(uri,
-						handler(request))]++;
-			});
+	using namespace std::placeholders;
+	server.on(uri, method, std::bind(trackingRequestHandlerWrapper, uri, handler, _1));
 }
 
 void registerStaticHandler(const char *uri, const char *content_type,
@@ -521,38 +564,9 @@ void registerProcessedStaticHandler(const char *uri, const char *content_type,
 
 void registerCompressedStaticHandler(const char *uri, const char *content_type,
 		const uint8_t *start, const uint8_t *end) {
+	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
-			[content_type, start, end](
-					AsyncWebServerRequest *request) -> uint16_t {
-				const size_t clen = end - start;
-				AsyncWebServerResponse *response = NULL;
-				if (request->hasHeader("Accept-Encoding")
-						&& strstr(
-								request->getHeader("Accept-Encoding")->value().c_str(),
-								"gzip")) {
-					response = request->beginResponse_P(200, content_type,
-							start, clen);
-					response->addHeader("Content-Encoding", "gzip");
-				} else {
-					struct uzlib_uncomp decomp;
-					uzlib_uncompress_init(&decomp, NULL, 0);
-					decomp.source = start;
-					decomp.source_limit = end - 4;
-					decomp.source_read_cb = NULL;
-					uzlib_gzip_parse_header(&decomp);
-					response = request->beginResponse(content_type,
-							getGzipDecompressedSize(end),
-							[clen, decomp](uint8_t *buffer, size_t maxLen,
-									size_t index) mutable {
-								decomp.dest = buffer;
-								decomp.dest_limit = buffer + maxLen;
-								uzlib_uncompress(&decomp);
-								return decomp.dest - buffer;
-							});
-				}
-				request->send(response);
-				return 200;
-			});
+			std::bind(compressedStaticHandler, content_type, start, end, _1));
 }
 #endif /* ENABLE_WEB_SERVER */
 

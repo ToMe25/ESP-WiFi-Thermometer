@@ -13,7 +13,7 @@
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 uint32_t prom::used_heap = 0;
 #endif
-#if ENABLE_WEB_SERVER == 1
+#if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 std::map<std::pair<String, uint16_t>, uint64_t> prom::http_requests_total;
 #endif
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
@@ -64,6 +64,7 @@ void prom::connect() {
 #endif
 }
 
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 std::string prom::getMetrics() {
 	std::ostringstream metrics;
 	metrics << "# HELP environment_temperature The current measured external temperature in degrees celsius."
@@ -97,6 +98,7 @@ std::string prom::getMetrics() {
 
 	return metrics.str();
 }
+#endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
@@ -231,4 +233,4 @@ void prom::pushMetrics() {
 	}
 #endif
 }
-#endif
+#endif /* ENABLE_PROMETHEUS_PUSH == 1 */
