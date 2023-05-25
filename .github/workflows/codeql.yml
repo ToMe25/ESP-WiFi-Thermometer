@@ -44,16 +44,6 @@ jobs:
       with:
         python-version: 3.x
 
-    - name: Cache pip packages and Platform IO build cache
-      if: ${{ matrix.language == 'cpp' }}
-      uses: actions/cache@v3
-      with:
-        path: |
-          ~/.cache/pip
-          ~/.platformio
-          .pio
-        key: ${{ matrix.env }}-${{ matrix.language }}-${{ hashFiles('platformio.ini') }}
-
     - name: Install Platform IO
       if: ${{ matrix.language == 'cpp' }}
       run: pip install -U platformio
