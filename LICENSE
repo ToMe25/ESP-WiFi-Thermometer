@@ -1,6 +1,6 @@
 MIT License
 
-Copyright (c) 2020-2021 ToMe25
+Copyright (c) 2020-2023 ToMe25
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -19,3 +19,37 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+-----------------------------------------------------------------------------
+This project uses the following third-party libraries that are under
+their own open source licenses.
+This section summarizes those libraries and their licenses.
+
+
+GNU Lesser General Public License
+---------------------------------
+See licenses/lgplv3.LICENSE and licenses/gplv3.LICENSE.
+
+AsyncTCP (https://github.com/me-no-dev/AsyncTCP)
+DallasTemperature (https://github.com/milesburton/Arduino-Temperature-Control-Library)
+ESPAsyncTCP (https://github.com/me-no-dev/ESPAsyncTCP)
+ESPAsyncWebServer (https://github.com/me-no-dev/ESPAsyncWebServer)
+
+
+Apache Software Foundation License 2.0
+--------------------------------------
+See licenses/apachev2.LICENSE.
+
+Adafruit Unified Sensor (https://github.com/adafruit/Adafruit_Sensor)
+
+
+MIT License
+-----------
+AsyncMqttClient (https://github.com/marvinroger/async-mqtt-client) See licenses/asyncmqttclient.LICENSE.
+DHT sensor library (https://github.com/adafruit/DHT-sensor-library) See licenses/dhtsensorlibrary.LICENSE.
+OneWire (https://github.com/PaulStoffregen/OneWire) See licenses/onewire.LICENSE.
+
+
+ZLib License
+------------
+uzlib (https://github.com/pfalcon/uzlib) See licenses/uzlib.LICENSE.
