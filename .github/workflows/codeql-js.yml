@@ -1,0 +1,43 @@
+# This workflow runs a CodeQL analysis on the javascript code.
+
+name: "JavaScript CodeQL"
+
+on:
+  push:
+    paths:
+      - src/**
+      - lib/**
+      - test/**
+      - include/**
+      - platformio.ini
+      - .github/workflows/codeql-js.yml
+  pull_request:
+    # The branches below must be a subset of the branches above
+    branches: [ master ]
+
+jobs:
+  analyze:
+    name: Analyze
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [ 'javascript' ]
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        queries: security-and-quality
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2

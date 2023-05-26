@@ -1,6 +1,6 @@
-# This workflow runs a CodeQL analysis for all relevant build configurations.
+# This workflow runs a CodeQL analysis on the c++ code for all relevant build configurations.
 
-name: "CodeQL"
+name: "C++ CodeQL"
 
 on:
   push:
@@ -10,7 +10,7 @@ on:
       - test/**
       - include/**
       - platformio.ini
-      - .github/workflows/codeql.yml
+      - .github/workflows/codeql-cpp.yml
   pull_request:
     # The branches below must be a subset of the branches above
     branches: [ master ]
@@ -27,43 +27,57 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'cpp', 'javascript' ]
+        language: [ 'cpp' ]
         # The platform io environments to test
         env: [ 'esp32dev_debug', 'esp_wroom_02_debug' ]
-        exclude:
-          - language: javascript
-            env: esp_wroom_02_debug
+        # Whether to run quality queries, or check libs
+        check: [ 'quality', 'libs' ]
 
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3
 
     - name: Setup Python
-      if: ${{ matrix.language == 'cpp' }}
       uses: actions/setup-python@v4
       with:
         python-version: 3.x
 
     - name: Install Platform IO
-      if: ${{ matrix.language == 'cpp' }}
       run: pip install -U platformio
 
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
-      with:
-        languages: ${{ matrix.language }}
-        queries: security-and-quality
-
-    - name: Build using platformio
-      if: ${{ matrix.language == 'cpp' }}
+    - name: Create crdential files
       run: |
         echo "OTA Password" > otapass.txt
         echo "WiFi SSID" > wifissid.txt
         echo "WiFi Passphrase" > wifipass.txt
         echo "MQTT Username" > mqttuser.txt
         echo "MQTT Password" > mqttpass.txt
-        pio run -e ${{ matrix.env }}
+
+    - name: Initialize CodeQL for quality check
+      if: ${{ matrix.check == 'quality' }}
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        config: |
+          queries:
+            - uses: security-and-quality
+          paths:
+            - src
+            - lib
+
+    - name: Initialize CodeQL for library check
+      if: ${{ matrix.check == 'libs' }}
+      uses: github/codeql-action/init@v2
+      with:
+        languages: ${{ matrix.language }}
+        config: |
+          queries:
+            - uses: security-extended
+          paths:
+            - .pio/libdeps
+
+    - name: Build using platformio
+      run: pio run -e ${{ matrix.env }}
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
