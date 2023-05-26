@@ -64,6 +64,8 @@ jobs:
           paths:
             - src
             - lib
+          paths-ignore:
+            - .pio/libdeps
 
     - name: Initialize CodeQL for library check
       if: ${{ matrix.check == 'libs' }}
@@ -75,6 +77,9 @@ jobs:
             - uses: security-extended
           paths:
             - .pio/libdeps
+          paths-ignore:
+            - src
+            - lib
 
     - name: Build using platformio
       run: pio run -e ${{ matrix.env }}
