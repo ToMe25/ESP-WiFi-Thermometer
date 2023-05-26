@@ -30,8 +30,6 @@ jobs:
         language: [ 'cpp' ]
         # The platform io environments to test
         env: [ 'esp32dev_debug', 'esp_wroom_02_debug' ]
-        # Whether to run quality queries, or check libs
-        check: [ 'quality', 'libs' ]
 
     steps:
     - name: Checkout repository
@@ -53,33 +51,11 @@ jobs:
         echo "MQTT Username" > mqttuser.txt
         echo "MQTT Password" > mqttpass.txt
 
-    - name: Initialize CodeQL for quality check
-      if: ${{ matrix.check == 'quality' }}
+    - name: Initialize CodeQL
       uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
-        config: |
-          queries:
-            - uses: security-and-quality
-          paths:
-            - src
-            - lib
-          paths-ignore:
-            - .pio/libdeps
-
-    - name: Initialize CodeQL for library check
-      if: ${{ matrix.check == 'libs' }}
-      uses: github/codeql-action/init@v2
-      with:
-        languages: ${{ matrix.language }}
-        config: |
-          queries:
-            - uses: security-extended
-          paths:
-            - .pio/libdeps
-          paths-ignore:
-            - src
-            - lib
+        queries: security-extended
 
     - name: Build using platformio
       run: pio run -e ${{ matrix.env }}
