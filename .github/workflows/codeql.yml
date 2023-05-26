@@ -53,6 +53,7 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
+        queries: security-and-quality
 
     - name: Build using platformio
       if: ${{ matrix.language == 'cpp' }}
