@@ -40,6 +40,7 @@ static const IPAddress SUBNET = IPADDR_ANY;
 // Whether or not to enable the web server on the esp.
 // Set to 1 to enable and to 0 to disable.
 #define ENABLE_WEB_SERVER 1
+#if ENABLE_WEB_SERVER == 1
 // The port on which to open the web server that shows the measurements.
 // The default web server port is 80.
 static const uint16_t WEB_SERVER_PORT = 80;
@@ -50,6 +51,14 @@ static const uint16_t WEB_SERVER_PORT = 80;
 // Whether the hardware name in brackets should be added to the Server header.
 // Set to 1 to enable and 0 to disable.
 #define SERVER_HEADER_APPEND_HARDWARE 1
+// The window size parameter used to decompress gzip files on the webserver.
+// The window size used is pow(2, the absolute of the window size parameter).
+// This window size has to be at least as big for decompression as it was for compression.
+// Decompression requires a window size bytes large buffer on the esp.
+// The range of valid values is -8 to -15.
+// Default is -10.
+static const int8_t GZIP_DECOMP_WINDOW_SIZE = -10;
+#endif
 
 // Sensor options
 // Valid sensor types
@@ -86,6 +95,7 @@ static const uint8_t SENSOR_PIN = 5;
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
 #define ENABLE_PROMETHEUS_PUSH 0
+#if ENABLE_PROMETHEUS_PUSH == 1
 // The address of the prometheus pushgateway to push the data to.
 // Can be an IP address, a hostname, or a domain name.
 static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.203";
@@ -106,12 +116,14 @@ static constexpr char PROMETHEUS_PUSH_INSTANCE[] = "";
 // The name of the namespace to use for the prometheus metrics when pushing.
 // Leave empty to not send namespace information.
 static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
+#endif
 
 // MQTT options
 // Whether or not to enable the MQTT client.
 // This will publish the measurements to the MQTT broker configured below.
 // Set to 1 to enable and to 0 to disable.
 #define ENABLE_MQTT_PUBLISH 1
+#if ENABLE_MQTT_PUBLISH == 1
 // The address of the MQTT broker to publish the measurements to.
 // Can be an IP address, a hostname, or a domain name.
 static constexpr char MQTT_BROKER_ADDR[] = "192.168.2.203";
@@ -131,6 +143,7 @@ static constexpr char MQTT_TOPIC_NAMESPACE[] = "";
 // If enabled the MQTT connection will be initialized without a username or password.
 // Set to 1 to enable and to 0 to disable.
 #define MQTT_PUBLISH_ANONYMOUS 0
+#endif
 
 // Deep sleep mode options
 // Deep sleep mode makes the esp go into deep sleep for a fixed time before makeing a measurement, pushing it,

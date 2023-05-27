@@ -215,14 +215,6 @@ void setupWebServer() {
 	MDNS.addService("http", "tcp", WEB_SERVER_PORT);
 }
 
-size_t getGzipDecompressedSize(const uint8_t *end_ptr) {
-	size_t dlen = end_ptr[-1];
-	dlen = 256 * dlen + end_ptr[-2];
-	dlen = 256 * dlen + end_ptr[-3];
-	dlen = 256 * dlen + end_ptr[-4];
-	return dlen;
-}
-
 String processIndexTemplates(const String &temp) {
 	if (temp == "TEMP") {
 		return getTemperature().c_str();
@@ -522,12 +514,9 @@ std::string getTimeSinceMeasurement() {
 	return stream.str();
 }
 
-size_t decompressingResponseFiller(const std::shared_ptr<uzlib_uncomp> decomp,
+size_t decompressingResponseFiller(const std::shared_ptr<uzlib_gzip_wrapper> decomp,
 		uint8_t *buffer, const size_t max_len, const size_t index) {
-	decomp->dest = buffer;
-	decomp->dest_limit = buffer + max_len;
-	uzlib_uncompress(decomp.get());
-	return decomp->dest - buffer;
+	return decomp->decompress(buffer, max_len);
 }
 
 void trackingRequestHandlerWrapper(const char *uri, const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
@@ -548,14 +537,10 @@ uint16_t compressedStaticHandler(const char *content_type, const uint8_t *start,
 		response->addHeader("Content-Encoding", "gzip");
 	} else {
 		using namespace std::placeholders;
-		std::shared_ptr<uzlib_uncomp> decomp = std::make_shared<uzlib_uncomp>();
-		uzlib_uncompress_init(decomp.get(), NULL, 0);
-		decomp->source = start;
-		decomp->source_limit = end - 4;
-		decomp->source_read_cb = NULL;
-		uzlib_gzip_parse_header(decomp.get());
+		std::shared_ptr<uzlib_gzip_wrapper> decomp = std::make_shared<
+				uzlib_gzip_wrapper>(start, end, GZIP_DECOMP_WINDOW_SIZE);
 		response = request->beginResponse(content_type,
-				getGzipDecompressedSize(end),
+				decomp->getDecompressedSize(),
 				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
 	}
 	request->send(response);

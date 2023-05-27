@@ -7,6 +7,9 @@
 .pydevproject
 .settings/
 
+# Python
+__pycache__
+
 # Credentials
 wifissid.txt
 wifipass.txt

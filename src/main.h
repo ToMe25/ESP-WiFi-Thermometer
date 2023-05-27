@@ -13,7 +13,7 @@
 
 #include "config.h"
 #if ENABLE_WEB_SERVER == 1
-#include <uzlib.h>
+#include "uzlib_gzip_wrapper.h"
 #include <ESPAsyncWebServer.h>
 #endif
 // It would be possible to always only include one, but that makes it a pain when switching between them.
@@ -156,14 +156,6 @@ std::string getHumidity();
 
 #if ENABLE_WEB_SERVER == 1
 /**
- * Gets the decompressed size of a gzip file stored in a byte array.
- *
- * @param end_ptr	The pointer to the byte after the last byte of the compressed file.
- * @return	The size of the file in bytes.
- */
-size_t getGzipDecompressedSize(const uint8_t *end_ptr);
-
-/**
  * Process the templates for the index page.
  *
  * @param temp	The template to replace.
@@ -198,7 +190,7 @@ std::string getTimeSinceMeasurement();
  * @param index		The number of bytes already generated for this response.
  * @return	The number of bytes written to the output buffer.
  */
-size_t decompressingResponseFiller(const std::shared_ptr<uzlib_uncomp> decomp,
+size_t decompressingResponseFiller(const std::shared_ptr<uzlib_gzip_wrapper> decomp,
 		uint8_t *buffer, const size_t max_len, const size_t index);
 
 /**

@@ -2,9 +2,10 @@
 
 Import ("env")
 
-import gzip
 import os
 import os.path as path
+
+from gzip_compressing_stream import GzipCompressingStream
 
 # Unquoted spaces will be removed from these, that is why not_found.html would be listed as a binary.
 input_text_files = [ 'src/html/main.css', 'src/html/index.js' ]
@@ -13,6 +14,13 @@ input_binary_files = [ 'images/favicon.ico', 'images/favicon.svg', 'images/favic
 
 # The javascript keywords that require a space after them.
 js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends', 'function', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'static', 'throw', 'typeof', 'var', 'void', 'yield' ]
+
+# The window size parameter to use for gzip compression.
+# The actual window size used by zlib is pow(2, -gzip_windowsize).
+# The window size used for decompression(on the esp) has to be
+# at least as much as the window size used for compression.
+# This requires a pow(2, -gzip_windowsize) byte buffer on the esp.
+gzip_windowsize = -10
 
 
 def remove_whitespaces(lines_in):
@@ -84,7 +92,7 @@ def gzip_file(input, output):
         The target path to write the compressed file to.
     """
 
-    with open(input, 'rb') as src, gzip.GzipFile(filename=path.basename(output), mode='wb', compresslevel=9, fileobj=open(output, 'wb'), mtime=0) as dst:
+    with open(input, 'rb') as src, GzipCompressingStream(filename=output, compresslevel=9, wsize=gzip_windowsize) as dst:
         for chunk in iter(lambda: src.read(4096), b""):
             dst.write(chunk)
 
