@@ -35,10 +35,14 @@ class GzipCompressingStream(io.RawIOBase):
         filename: str
             The path of the output file to write to.
         compresslevel: int
-            The gzip compression level to use.
+            The zlib compression level to use.
+            Valid values are from -8 to -15.
         wsize: int
             The zlib window size to use. See zlib docs.
         """
+
+        if wsize > -8 or wsize < -15:
+            raise ValueError("Window size out of range")
 
         if not filename.endswith(".gz"):
             filename += ".gz"

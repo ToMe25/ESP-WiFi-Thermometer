@@ -19,6 +19,31 @@
  * This file contains a few variables and defines to be used as config values.
  */
 
+// Deep sleep mode options
+// Deep sleep mode makes the esp go into deep sleep for a fixed time before makeing a measurement, pushing it,
+// and going into deep sleep again.
+// Set to 1 to enable and to 0 to disable.
+// The ifndef is there to allow setting deep sleep mode using the command line.
+#ifndef ENABLE_DEEP_SLEEP_MODE
+#define ENABLE_DEEP_SLEEP_MODE 0
+#endif
+#if ENABLE_DEEP_SLEEP_MODE == 1
+// The time between two measurements in deep sleep mode.
+// Specified in seconds.
+// Default is 5 minutes, or 300 seconds.
+static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
+
+// Deep sleep mode automatic config.
+#undef ENABLE_WEB_SERVER
+#define ENABLE_WEB_SERVER 0
+#undef ENABLE_ARDUINO_OTA
+#define ENABLE_ARDUINO_OTA 0
+#undef ENABLE_PROMETHEUS_SCRAPE_SUPPORT
+#define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 0
+#undef ENABLE_PROMETHEUS_PUSH
+#define ENABLE_PROMETHEUS_PUSH 1
+#endif
+
 // WiFi options
 // The hostname with which the esp can be reached.
 // This value is used for both the actual hostname, as well as the mDNS hostname(mDNS names end with .local).
@@ -39,7 +64,9 @@ static const IPAddress SUBNET = IPADDR_ANY;
 // Web Server options
 // Whether or not to enable the web server on the esp.
 // Set to 1 to enable and to 0 to disable.
+#ifndef ENABLE_WEB_SERVER
 #define ENABLE_WEB_SERVER 1
+#endif
 #if ENABLE_WEB_SERVER == 1
 // The port on which to open the web server that shows the measurements.
 // The default web server port is 80.
@@ -58,6 +85,17 @@ static const uint16_t WEB_SERVER_PORT = 80;
 // The range of valid values is -8 to -15.
 // Default is -10.
 static const int8_t GZIP_DECOMP_WINDOW_SIZE = -10;
+
+// Web server automatic config.
+#if SERVER_HEADER_APPEND_HARDWARE != 1
+static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM;
+#else
+#ifdef ESP32
+static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP32)";
+#elif defined(ESP8266)
+static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)";
+#endif
+#endif
 #endif
 
 // Sensor options
@@ -78,7 +116,9 @@ static const uint8_t SENSOR_PIN = 5;
 // Arduino OTA options
 // Whether to enable the Arduino OTA server.
 // Set to 1 to enable and to 0 to disable.
+#ifndef ENABLE_ARDUINO_OTA
 #define ENABLE_ARDUINO_OTA 1
+#endif
 // The port on which to open an Arduino OTA server.
 // Uncomment to use a custom port.
 // 3232 is the default for ESP32s.
@@ -90,11 +130,20 @@ static const uint8_t SENSOR_PIN = 5;
 // This means publishing metrics on /metrics on the web server.
 // Prometheus can then be configured to automatically read those values at a fixed interval.
 // Set to 1 to enable and to 0 to disable.
+#ifndef ENABLE_PROMETHEUS_SCRAPE_SUPPORT
 #define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 1
+#endif
+#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+#if ENABLE_WEB_SERVER != 1
+#error Prometheus scrape support requires the web server to be enabled.
+#endif
+#endif
 // Whether the esp should automatically push measurements to a prometheus-pushgateway.
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
+#ifndef ENABLE_PROMETHEUS_PUSH
 #define ENABLE_PROMETHEUS_PUSH 0
+#endif
 #if ENABLE_PROMETHEUS_PUSH == 1
 // The address of the prometheus pushgateway to push the data to.
 // Can be an IP address, a hostname, or a domain name.
@@ -122,7 +171,9 @@ static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 // Whether or not to enable the MQTT client.
 // This will publish the measurements to the MQTT broker configured below.
 // Set to 1 to enable and to 0 to disable.
+#ifndef ENABLE_MQTT_PUBLISH
 #define ENABLE_MQTT_PUBLISH 1
+#endif
 #if ENABLE_MQTT_PUBLISH == 1
 // The address of the MQTT broker to publish the measurements to.
 // Can be an IP address, a hostname, or a domain name.
@@ -143,49 +194,6 @@ static constexpr char MQTT_TOPIC_NAMESPACE[] = "";
 // If enabled the MQTT connection will be initialized without a username or password.
 // Set to 1 to enable and to 0 to disable.
 #define MQTT_PUBLISH_ANONYMOUS 0
-#endif
-
-// Deep sleep mode options
-// Deep sleep mode makes the esp go into deep sleep for a fixed time before makeing a measurement, pushing it,
-// and going into deep sleep again.
-// Set to 1 to enable and to 0 to disable.
-// The ifndef is there to allow setting deep sleep mode using the command line.
-#ifndef ENABLE_DEEP_SLEEP_MODE
-#define ENABLE_DEEP_SLEEP_MODE 0
-#endif
-// The time between two measurements in deep sleep mode.
-// Specified in seconds.
-// Default is 5 minutes, or 300 seconds.
-static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
-
-/*
- * Below this are automatic overrides for required things, for example the scrape support needs the web server,
- * so it enables it automatically.
- */
-#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-#undef ENABLE_WEB_SERVER
-#define ENABLE_WEB_SERVER 1
-#endif
-
-#if ENABLE_DEEP_SLEEP_MODE == 1
-#undef ENABLE_WEB_SERVER
-#define ENABLE_WEB_SERVER 0
-#undef ENABLE_ARDUINO_OTA
-#define ENABLE_ARDUINO_OTA 0
-#undef ENABLE_PROMETHEUS_SCRAPE_SUPPORT
-#define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 0
-#undef ENABLE_PROMETHEUS_PUSH
-#define ENABLE_PROMETHEUS_PUSH 1
-#endif
-
-#if SERVER_HEADER_APPEND_HARDWARE == 0
-static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM;
-#else
-#ifdef ESP32
-static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP32)";
-#elif defined(ESP8266)
-static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)";
-#endif
 #endif
 
 #endif /* SRC_CONFIG_H_ */
