@@ -2,6 +2,7 @@
 
 Import ("env")
 
+from enum import Enum
 import os
 import os.path as path
 
@@ -28,27 +29,37 @@ seperator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',' ]
 # This requires a pow(2, -gzip_windowsize) byte buffer on the esp.
 gzip_windowsize = -10
 
+MinifyMode = Enum('MinifyMode', [ 'Default', 'JavaScript', 'HTML' ])
 
-def remove_whitespaces(lines_in, jsmode):
+
+def remove_whitespaces(lines_in, mode):
     """Removes whitespaces and comments from text.
     
     Can only handle /* ... */ comments.
     Can not handle html pre tags.
-    In javascript mode spaces are not removed from inside quotes.
+    Removes empty lines if they follow another empty line.
     
     Parameters
     ----------
     lines_in: list
         A list of strings containing the lines to edit.
-    jsmode: bool
-        Whether to remove spaces in javascript mode.
-        The alternative is the "default" css/svg/html mode.
+    mode: MinifyMode
+        The minifying mode to use.
+        There are currently three modes.
+        In all three modes spaces are removed if they are the first or last character in a line.
+        In Default and HTML mode multiple spaces in a row are always collapsed to a single one.
+        In JavaScript mode multiple spaces in a row are collapsed, unless they are inside of a quote.
+        In Default and JavaScript mode /* ... */ comments are removed entirely.
+        In Default mode spaces are removed if they are before or after a character from the separator_chars list.
     
     Returns
     -------
     list
         A list of strings containing the modified text.
     """
+
+    if not isinstance(mode, MinifyMode):
+        raise ValueError("mode has to be of type MinifyMode")
 
     lines_out = []
     current_quote = None
@@ -58,40 +69,50 @@ def remove_whitespaces(lines_in, jsmode):
         since_space = ""
         for char in line:
             if not current_quote and (char == ' ' or char == '\t'):
-                if jsmode and since_space in js_keywords:
+                if mode == MinifyMode.JavaScript and since_space in js_keywords:
                     line_out += last_char + ' '
                     last_char = None
                 since_space = ""
-                if jsmode or not last_char or last_char in seperator_chars:
+                if mode == MinifyMode.JavaScript or not last_char or last_char == ' ':
                     continue
-            elif jsmode and not current_quote and (char == "'" or char == '"'):
+                if mode == MinifyMode.Default and last_char in seperator_chars:
+                    continue
+            elif mode == MinifyMode.JavaScript and not current_quote and (char == "'" or char == '"'):
                 current_quote = char
             elif char == current_quote:
                 current_quote = None
-            elif char == '/' and current_quote == "/*" and last_char == '*':
+            elif mode != MinifyMode.HTML and char == '/' and current_quote == "/*" and last_char == '*':
                 current_quote = None
-                last_char = None
+                if line_out and line_out[-1] != ' ':
+                    # Comments separate values, so replace them with a single space.
+                    last_char = ' '
+                else:
+                    last_char = None
                 continue
-            elif not current_quote and char == '*' and last_char == '/':
+            elif mode != MinifyMode.HTML and not current_quote and char == '*' and last_char == '/':
                 if since_space in js_keywords:
                     line_out += last_char + ' '
                     last_char = None
                 since_space = ""
                 current_quote = "/*"
-            elif not jsmode and char in seperator_chars and (last_char == ' ' or char == '\t'):
+            elif mode == MinifyMode.Default and char in seperator_chars and last_char == ' ':
                 last_char = None
 
             if last_char and current_quote != "/*":
                 line_out += last_char
 
             since_space += char
-            if last_char != '\t':
+            if char != '\t':
                 last_char = char
             else:
                 last_char = ' '
 
-        if last_char:
+        if last_char and last_char != ' ':
             line_out += last_char
+
+        # Remove trailing whitespace
+        if len(line_out) > len(os.linesep) and line_out[-len(os.linesep) - 1] == ' ':
+            line_out = line_out[:-len(os.linesep) - 2] + os.linesep
 
         if not lines_out or lines_out[-1].strip() or line_out.strip():
             lines_out.append(line_out)
@@ -156,7 +177,13 @@ def compress_file(input, text):
 
             lines = src.readlines()
             if minify:
-                lines = remove_whitespaces(lines, input.endswith(".js"))
+                mode = MinifyMode.Default
+                if input.endswith(".js") or input.endswith(".jsm") or input.endswith(".mjs"):
+                    mode = MinifyMode.JavaScript
+                elif input.endswith(".html") or input.endswith(".htm"):
+                    mode = MinifyMode.HTML
+
+                lines = remove_whitespaces(lines, mode)
 
             with open(output, "w") as dst:
                 dst.writelines(lines)
