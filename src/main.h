@@ -32,12 +32,12 @@ extern const char WIFI_PASS[] asm("_binary_wifipass_txt_start");
 extern const char OTA_PASS[] asm("_binary_otapass_txt_start");
 
 #if ENABLE_WEB_SERVER == 1
-extern const char INDEX_HTML[] asm("_binary_src_html_index_html_start");
+extern const char INDEX_HTML[] asm("_binary_data_index_html_start");
 extern const uint8_t MAIN_CSS_START[] asm("_binary_data_gzip_main_css_gz_start");
 extern const uint8_t MAIN_CSS_END[] asm("_binary_data_gzip_main_css_gz_end");
 extern const uint8_t INDEX_JS_START[] asm("_binary_data_gzip_index_js_gz_start");
 extern const uint8_t INDEX_JS_END[] asm("_binary_data_gzip_index_js_gz_end");
-extern const char NOT_FOUND_HTML[] asm("_binary_src_html_not_found_html_start");
+extern const uint8_t NOT_FOUND_HTML_START[] asm("_binary_data_gzip_not_found_html_gz_start");
 extern const uint8_t NOT_FOUND_HTML_END[] asm("_binary_data_gzip_not_found_html_gz_end");
 extern const uint8_t FAVICON_ICO_GZ_START[] asm("_binary_data_gzip_favicon_ico_gz_start");
 extern const uint8_t FAVICON_ICO_GZ_END[] asm("_binary_data_gzip_favicon_ico_gz_end");
@@ -209,12 +209,14 @@ void trackingRequestHandlerWrapper(const char *uri,
  * If the client accepts gzip compressed files, the file is sent as is.
  * Otherwise it is decompressed on the fly.
  *
+ * @param status_code	The http response status code to send to the client.
  * @param content_type	The content type of the static file.
  * @param start			A pointer to the first byte of the compressed static file.
  * @param end			A pointer to the first byte after the end of the compressed static file.
  * @param request		The request to handle.
+ * @return	The sent status code. Always the same as the status_code argument.
  */
-uint16_t compressedStaticHandler(const char *content_type, const uint8_t *start,
+uint16_t compressedStaticHandler(const uint16_t status_code, const char *content_type, const uint8_t *start,
 		const uint8_t *end, AsyncWebServerRequest *request);
 
 /**
@@ -230,7 +232,9 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 
 /**
  * Registers a request handler that returns the given content type and web page each time it is called.
- * Expects request type get.
+ * Only registers a handler for request type get.
+ * Always sends response code 200.
+ * Also increments the request counter.
  * Also increments the request counter.
  *
  * @param uri			The path on which the page can be found.
@@ -243,7 +247,9 @@ void registerStaticHandler(const char *uri, const char *content_type,
 /**
  * Registers a request handler that returns the given content type and web page each time it is called.
  * Also registers the given template processor.
- * Expects request type get.
+ * Only registers a handler for request type get.
+ * Always sends response code 200.
+ * Also increments the request counter.
  * Also increments the request counter.
  *
  * @param uri			The path on which the page can be found.
@@ -255,7 +261,8 @@ void registerProcessedStaticHandler(const char *uri, const char *content_type,
 
 /**
  * Registers a request handler that returns the given content each time it is called.
- * Expects request type get.
+ * Only registers a handler for request type get.
+ * Always sends response code 200.
  * Also increments the request counter.
  * Expects the content to be a gzip compressed binary.
  *

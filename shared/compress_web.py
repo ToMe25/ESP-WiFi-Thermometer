@@ -7,13 +7,19 @@ import os.path as path
 
 from gzip_compressing_stream import GzipCompressingStream
 
-# Unquoted spaces will be removed from these, that is why not_found.html would be listed as a binary.
-input_text_files = [ 'src/html/main.css', 'src/html/index.js' ]
+# Unquoted spaces will be removed from these.
+input_text_files = [ 'src/html/index.html', 'src/html/not_found.html', 'src/html/main.css', 'src/html/index.js', 'images/favicon.svg' ]
 
-input_binary_files = [ 'images/favicon.ico', 'images/favicon.svg', 'images/favicon.png' ]
+input_binary_files = [ 'images/favicon.ico', 'images/favicon.png' ]
+
+# These files will not be gzip compressed, just copied and potentially stripped of spaces.
+input_gzip_blacklist = [ 'src/html/index.html' ]
 
 # The javascript keywords that require a space after them.
 js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends', 'function', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'static', 'throw', 'typeof', 'var', 'void', 'yield' ]
+
+# The characters before/after which a space doesn't make a different in default mode.
+seperator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',' ]
 
 # The window size parameter to use for gzip compression.
 # The actual window size used by zlib is pow(2, -gzip_windowsize).
@@ -23,15 +29,20 @@ js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends'
 gzip_windowsize = -10
 
 
-def remove_whitespaces(lines_in):
+def remove_whitespaces(lines_in, jsmode):
     """Removes whitespaces and comments from text.
     
     Can only handle /* ... */ comments.
+    Can not handle html pre tags.
+    In javascript mode spaces are not removed from inside quotes.
     
     Parameters
     ----------
     lines_in: list
         A list of strings containing the lines to edit.
+    jsmode: bool
+        Whether to remove spaces in javascript mode.
+        The alternative is the "default" css/svg/html mode.
     
     Returns
     -------
@@ -46,13 +57,14 @@ def remove_whitespaces(lines_in):
         line_out = ""
         since_space = ""
         for char in line:
-            if current_quote == None and (char == ' ' or char == '\t'):
-                if since_space in js_keywords:
+            if not current_quote and (char == ' ' or char == '\t'):
+                if jsmode and since_space in js_keywords:
                     line_out += last_char + ' '
                     last_char = None
                 since_space = ""
-                continue
-            elif current_quote == None and (char == "'" or char == '"'):
+                if jsmode or not last_char or last_char in seperator_chars:
+                    continue
+            elif jsmode and not current_quote and (char == "'" or char == '"'):
                 current_quote = char
             elif char == current_quote:
                 current_quote = None
@@ -60,23 +72,29 @@ def remove_whitespaces(lines_in):
                 current_quote = None
                 last_char = None
                 continue
-            elif current_quote == None and char == '*' and last_char == '/':
+            elif not current_quote and char == '*' and last_char == '/':
                 if since_space in js_keywords:
                     line_out += last_char + ' '
                     last_char = None
                 since_space = ""
                 current_quote = "/*"
+            elif not jsmode and char in seperator_chars and (last_char == ' ' or char == '\t'):
+                last_char = None
 
-            if last_char != None and current_quote != "/*":
+            if last_char and current_quote != "/*":
                 line_out += last_char
 
             since_space += char
-            last_char = char
+            if last_char != '\t':
+                last_char = char
+            else:
+                last_char = ' '
 
-        if last_char != None:
+        if last_char:
             line_out += last_char
 
-        lines_out.append(line_out)
+        if not lines_out or lines_out[-1].strip() or line_out.strip():
+            lines_out.append(line_out)
 
     return lines_out
 
@@ -112,8 +130,10 @@ def compress_file(input, text):
         Whether the input file is a text file.
     """
 
-    filename = path.basename(file)
+    filename = path.basename(input)
     minify = text
+
+    do_gzip = not input in input_gzip_blacklist
 
     if env.get('BUILD_TYPE') == "debug":
         print("Debug mode detected, not minifying text files.")
@@ -136,7 +156,7 @@ def compress_file(input, text):
 
             lines = src.readlines()
             if minify:
-                lines = remove_whitespaces(lines)
+                lines = remove_whitespaces(lines, input.endswith(".js"))
 
             with open(output, "w") as dst:
                 dst.writelines(lines)
@@ -147,15 +167,18 @@ def compress_file(input, text):
     if not path.exists(gzip_dir):
         os.mkdir(gzip_dir)
 
-    gzip_file(input, path.join(gzip_dir, filename + ".gz"))
+    if do_gzip:
+        gzip_file(input, path.join(gzip_dir, filename + ".gz"))
 
 
 for file in input_text_files:
     filename = path.basename(file) + ".gz"
+    # Always build because the output will depend on whether we are building in debug mode.
     env.AlwaysBuild(f"$BUILD_DIR/{filename}.txt.o")
     compress_file(file, True)
 
 for file in input_binary_files:
     filename = path.basename(file) + ".gz"
+    # Always build these because I'm too lazy to check whether they actually changed.
     env.AlwaysBuild(f"$BUILD_DIR/{filename}.txt.o")
     compress_file(file, False)

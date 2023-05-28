@@ -193,13 +193,14 @@ void setupWebServer() {
 
 	server.onNotFound(
 			[](AsyncWebServerRequest *request) {
-				request->send(404, "text/html", NOT_FOUND_HTML);
-				Serial.print(F("A client tried to access the not existing file \""));
+				const uint16_t status_code = compressedStaticHandler(404, "text/html", NOT_FOUND_HTML_START,
+						NOT_FOUND_HTML_END, request);
+				Serial.print("A client tried to access the not existing file \"");
 				Serial.print(request->url().c_str());
 				Serial.println("\".");
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 				prom::http_requests_total[std::pair<String, uint16_t>(
-						request->url(), 404)]++;
+						request->url(), status_code)]++;
 #endif
 			});
 
@@ -526,7 +527,7 @@ void trackingRequestHandlerWrapper(const char *uri, const HTTPRequestHandler han
 #endif
 }
 
-uint16_t compressedStaticHandler(const char *content_type, const uint8_t *start,
+uint16_t compressedStaticHandler(const uint16_t status_code, const char *content_type, const uint8_t *start,
 		const uint8_t *end, AsyncWebServerRequest *request) {
 	AsyncWebServerResponse *response = NULL;
 	if (request->hasHeader("Accept-Encoding")
@@ -543,8 +544,9 @@ uint16_t compressedStaticHandler(const char *content_type, const uint8_t *start,
 				decomp->getDecompressedSize(),
 				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
 	}
+	response->setCode(status_code);
 	request->send(response);
-	return 200;
+	return status_code;
 }
 
 void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
@@ -575,7 +577,7 @@ void registerCompressedStaticHandler(const char *uri, const char *content_type,
 		const uint8_t *start, const uint8_t *end) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
-			std::bind(compressedStaticHandler, content_type, start, end, _1));
+			std::bind(compressedStaticHandler, 200, content_type, start, end, _1));
 }
 #endif /* ENABLE_WEB_SERVER */
 
