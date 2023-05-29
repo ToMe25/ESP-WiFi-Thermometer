@@ -4,11 +4,14 @@
 <svg
 width="256"
 height="256"
-viewBox="0 0 67.733331 67.733332"
+viewBox="0 0 67.733332 67.733335"
 version="1.1"
-id="svg5"
+id="svg186"
 inkscape:version="1.1.2(0a00cf5339,2022-02-04)"
 sodipodi:docname="favicon.svg"
+inkscape:export-filename="/home/theodor/Dokumente/NonMinecraft/ESP32/ESP-WiFi-Thermometer/ESP-WiFi-Thermometer/images/favicon.png"
+inkscape:export-xdpi="67.5"
+inkscape:export-ydpi="67.5"
 xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
 xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
 xmlns="http://www.w3.org/2000/svg"
@@ -16,7 +19,7 @@ xmlns:svg="http://www.w3.org/2000/svg">
 <style
 id="style18384">
 .outline{
-stroke:#000000;
+stroke:#0d0d0d;
 stroke-opacity:1;
 stroke-linejoin:miter;
 stroke-miterlimit:4;
@@ -27,83 +30,79 @@ fill-rule:evenodd;
 }
 @media(prefers-color-scheme:dark){
 .outline{
-stroke:#cacaca;
+stroke:#aab1b5;
 }
 }
 #outline{
-stroke-width:4.22876;
+stroke-width:4.23333;
 }
-.gauge_line{
-stroke-width:2.11667;
+.temp_line{
+stroke-width:2.64583;
 }
 </style>
 <sodipodi:namedview
-id="namedview7"
+id="namedview188"
 pagecolor="#ffffff"
 bordercolor="#666666"
 borderopacity="1.0"
 inkscape:pageshadow="2"
-inkscape:pageopacity="0.0"
+inkscape:pageopacity="0"
 inkscape:pagecheckerboard="0"
 inkscape:document-units="px"
 showgrid="true"
 units="px"
 width="256px"
-inkscape:current-layer="g19682"
-inkscape:snap-nodes="true"
+inkscape:snap-midpoints="false"
+inkscape:snap-object-midpoints="true"
 inkscape:snap-grids="true"
-inkscape:snap-global="true"
+inkscape:current-layer="temp_lines"
+inkscape:object-paths="true"
 inkscape:snap-intersection-paths="true"
-inkscape:snap-others="true"
-inkscape:object-nodes="true"
-inkscape:snap-to-guides="true">
+inkscape:snap-smooth-nodes="true">
 <inkscape:grid
 type="xygrid"
-id="grid1019" />
+id="grid374"
+originx="33.866666"
+originy="33.866667" />
 </sodipodi:namedview>
 <defs
-id="defs2" />
+id="defs183" />
 <g
 inkscape:label="Ebene 1"
 inkscape:groupmode="layer"
 id="layer1">
 <path
-id="rect14663"
-style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:#ff3223;stroke-width:3.1217"
-d="M 47.046529,45.975642 C 46.324749,52.71869 40.632155,57.829966 33.852212,57.822578 27.072268,57.81519 21.390822,52.69152 20.683732,45.946915 19.976641,39.20231 24.471873,33.011223 31.089355,31.440762 l -0.004,-8.932576 h 5.572066 l -0.004,8.935602 c 6.633213,1.587936 11.114948,7.788805 10.393167,14.531854 z"
-sodipodi:nodetypes="sssccccs" />
-<path
 id="outline"
-d="m 40.307844,28.867678 c 7.480333,3.077249 11.74102,11.013909 10.172361,18.948718 -1.568654,7.934819 -8.522917,13.656292 -16.61152,13.655831 -8.088603,-4.59e-4 -15.04818,-5.719744 -16.61593,-13.654742 -1.567752,-7.934997 2.693859,-15.871175 10.173997,-18.947329 l -0.0036,-17.879048 c 0.0046,-3.561692 2.893643,-6.4426165 6.452617,-6.4388947 3.558975,0.00372 6.442123,2.8906831 6.442123,6.4506437 z"
+d="m 42.326114,29.776296 c 6.643306,3.83093 9.884187,11.647358 7.900817,19.055364 -1.98337,7.408006 -8.696148,12.559324 -16.36482,12.558197 -7.668672,-0.0011 -14.379936,-5.154419 -16.361128,-12.563008 -1.981192,-7.408589 1.261988,-15.224064 7.90642,-19.05304 l -0.01502,-14.956914 c 0,-4.679678 3.793173,-8.4733071 8.47229,-8.4733071 4.679117,0 8.47229,3.7936291 8.47229,8.4733071 z"
 sodipodi:nodetypes="csssccscc"
 class="outline" />
+<path
+id="liquid"
+style="fill:#ff0000;stroke:#ff3223;stroke-width:3.17606"
+d="m 38.629179,32.049814 c 5.94618,2.295443 9.410695,8.558328 8.241642,14.824736 -1.169054,6.266408 -6.639327,10.808442 -13.013085,10.804921 -6.373758,-0.0035 -11.839011,-4.551596 -13.001142,-10.819291 -1.162131,-6.267696 2.30924,-12.52675 8.257952,-14.815622 l -0.0098,-8.911807 h 9.523937 z"
+sodipodi:nodetypes="cssscccc" />
 <g
-id="g19682">
+id="temp_lines">
 <path
-d="m 27.781249,28.045833 h 6.614583"
-id="path18451"
-class="outline gauge_line"
-sodipodi:nodetypes="cc" />
+d="m 27.252083,28.839583 h 7.9375"
+id="path9377"
+sodipodi:nodetypes="cc"
+class="outline temp_line" />
 <path
-d="m 27.781249,24.077084 h 6.614583"
-id="path18451-6"
-class="outline gauge_line"
-sodipodi:nodetypes="cc" />
+d="m 27.252083,23.547915 h 7.9375"
+id="path9377-1"
+sodipodi:nodetypes="cc"
+class="outline temp_line" />
 <path
-d="m 27.781249,20.108334 h 6.614583"
-id="path18451-6-7"
-class="outline gauge_line"
-sodipodi:nodetypes="cc" />
+d="m 27.252083,18.256248 h 7.9375"
+id="path9377-2"
+sodipodi:nodetypes="cc"
+class="outline temp_line" />
 <path
-d="m 27.781249,12.170835 h 6.614583"
-id="path18451-6-7-5"
-class="outline gauge_line"
-sodipodi:nodetypes="cc" />
-<path
-d="m 27.781249,16.139585 h 6.614583"
-id="path18451-6-7-5-3"
-class="outline gauge_line"
-sodipodi:nodetypes="cc" />
+d="m 27.252083,12.964582 h 7.9375"
+id="path9377-3"
+sodipodi:nodetypes="cc"
+class="outline temp_line" />
 </g>
 </g>
 </svg>
