@@ -6,10 +6,9 @@ width="256"
 height="256"
 viewBox="0 0 67.733332 67.733335"
 version="1.1"
-id="svg186"
+id="svg5"
 inkscape:version="1.1.2(0a00cf5339,2022-02-04)"
 sodipodi:docname="favicon.svg"
-inkscape:export-filename="/home/theodor/Dokumente/NonMinecraft/ESP32/ESP-WiFi-Thermometer/ESP-WiFi-Thermometer/images/favicon.png"
 inkscape:export-xdpi="67.5"
 inkscape:export-ydpi="67.5"
 xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
@@ -17,16 +16,15 @@ xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
 xmlns="http://www.w3.org/2000/svg"
 xmlns:svg="http://www.w3.org/2000/svg">
 <style
-id="style18384">
+id="style26">
 .outline{
 stroke:#0d0d0d;
 stroke-opacity:1;
+stroke-linecap:butt;
 stroke-linejoin:miter;
 stroke-miterlimit:4;
 stroke-dasharray:none;
-stroke-linecap:butt;
 fill:none;
-fill-rule:evenodd;
 }
 @media(prefers-color-scheme:dark){
 .outline{
@@ -34,14 +32,14 @@ stroke:#aab1b5;
 }
 }
 #outline{
-stroke-width:4.23333;
+stroke-width:3.175;
 }
 .temp_line{
 stroke-width:2.64583;
 }
 </style>
 <sodipodi:namedview
-id="namedview188"
+id="namedview7"
 pagecolor="#ffffff"
 bordercolor="#666666"
 borderopacity="1.0"
@@ -52,55 +50,52 @@ inkscape:document-units="px"
 showgrid="true"
 units="px"
 width="256px"
-inkscape:snap-midpoints="false"
-inkscape:snap-object-midpoints="true"
-inkscape:snap-grids="true"
-inkscape:current-layer="temp_lines"
-inkscape:object-paths="true"
 inkscape:snap-intersection-paths="true"
-inkscape:snap-smooth-nodes="true">
+inkscape:object-paths="true"
+inkscape:snap-grids="false"
+inkscape:current-layer="temps">
 <inkscape:grid
 type="xygrid"
-id="grid374"
+id="grid35"
 originx="33.866666"
 originy="33.866667" />
 </sodipodi:namedview>
 <defs
-id="defs183" />
+id="defs2" />
 <g
 inkscape:label="Ebene 1"
 inkscape:groupmode="layer"
 id="layer1">
 <path
 id="outline"
-d="m 42.326114,29.776296 c 6.643306,3.83093 9.884187,11.647358 7.900817,19.055364 -1.98337,7.408006 -8.696148,12.559324 -16.36482,12.558197 -7.668672,-0.0011 -14.379936,-5.154419 -16.361128,-12.563008 -1.981192,-7.408589 1.261988,-15.224064 7.90642,-19.05304 l -0.01502,-14.956914 c 0,-4.679678 3.793173,-8.4733071 8.47229,-8.4733071 4.679117,0 8.47229,3.7936291 8.47229,8.4733071 z"
-sodipodi:nodetypes="csssccscc"
+d="M 48.800265,50.106923 C 47.158363,57.032121 40.972264,61.920511 33.855772,61.916385 26.73928,61.912259 20.558852,57.0167 18.924979,50.089603 17.291106,43.162506 20.632308,36.020654 26.992107,32.838492 l -0.0046,-20.138424 c 0,-3.7992966 3.079925,-6.8792349 6.879204,-6.8792348 3.799279,-1e-7 6.879204,3.0799379 6.879204,6.8792348 l 0.0013,20.143434 c 6.362043,3.192542 9.694961,10.338237 8.053082,17.263421 z"
+sodipodi:nodetypes="csscssccc"
 class="outline" />
 <path
-id="liquid"
-style="fill:#ff0000;stroke:#ff3223;stroke-width:3.17606"
-d="m 38.629179,32.049814 c 5.94618,2.295443 9.410695,8.558328 8.241642,14.824736 -1.169054,6.266408 -6.639327,10.808442 -13.013085,10.804921 -6.373758,-0.0035 -11.839011,-4.551596 -13.001142,-10.819291 -1.162131,-6.267696 2.30924,-12.52675 8.257952,-14.815622 l -0.0098,-8.911807 h 9.523937 z"
-sodipodi:nodetypes="cssscccc" />
+id="fluid"
+style="fill:#ff0000;stroke:#ff3223;stroke-width:2.64594"
+d="m 46.142691,48.560448 c -0.977516,6.017069 -6.170736,10.439282 -12.26605,10.444982 -6.095314,0.0057 -11.296793,-4.406794 -12.285558,-10.422024 -0.988765,-6.01523 2.526515,-11.917245 8.3049,-13.869262 l 0.002,-11.430811 h 7.937398 l 0.01044,11.427108 c 5.769283,1.937508 9.274345,7.832938 8.296829,13.850007 z"
+sodipodi:nodetypes="sssccccss" />
 <g
-id="temp_lines">
+id="temps">
 <path
-d="m 27.252083,28.839583 h 7.9375"
-id="path9377"
+d="m 26.9875,31.220832 h 8.73125"
+id="temp_line_1"
 sodipodi:nodetypes="cc"
 class="outline temp_line" />
 <path
-d="m 27.252083,23.547915 h 7.9375"
-id="path9377-1"
+d="m 26.9875,25.399998 h 8.73125"
+id="temp_line_2"
 sodipodi:nodetypes="cc"
 class="outline temp_line" />
 <path
-d="m 27.252083,18.256248 h 7.9375"
-id="path9377-2"
+d="m 26.9875,19.579165 h 8.73125"
+id="temp_line_3"
 sodipodi:nodetypes="cc"
 class="outline temp_line" />
 <path
-d="m 27.252083,12.964582 h 7.9375"
-id="path9377-3"
+d="m 26.9875,13.758332 h 8.73125"
+id="temp_line_4"
 sodipodi:nodetypes="cc"
 class="outline temp_line" />
 </g>
