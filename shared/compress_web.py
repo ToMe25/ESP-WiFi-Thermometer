@@ -9,7 +9,7 @@ import os.path as path
 from gzip_compressing_stream import GzipCompressingStream
 
 # Unquoted spaces will be removed from these.
-input_text_files = [ 'src/html/index.html', 'src/html/not_found.html', 'src/html/main.css', 'src/html/index.js', 'images/favicon.svg' ]
+input_text_files = [ 'src/html/index.html', 'src/html/not_found.html', 'src/html/main.css', 'src/html/index.js', 'src/html/manifest.json', 'images/favicon.svg' ]
 
 input_binary_files = [ 'images/favicon.ico', 'images/favicon.png' ]
 

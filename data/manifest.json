@@ -1,0 +1,23 @@
+{
+"name":"ESP-WiFi-Thermometer",
+"short_name":"ESP-WiFi-Thermometer",
+"description":"A ESP Thermometer Web Page",
+"display":"standalone",
+"start_url":"/index.html",
+"background_color":"#c2cbd1",
+"theme_color":"#c2cbd1",
+"icons":[
+{
+"src":"favicon.ico",
+"sizes":"16x16 32x32 48x48 64x64",
+"type":"image/x-icon",
+"purpose":"any"
+},
+{
+"src":"favicon.svg",
+"sizes":"any",
+"type":"image/svg+xml",
+"purpose":"any"
+}
+]
+}

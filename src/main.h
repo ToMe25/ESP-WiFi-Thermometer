@@ -37,6 +37,8 @@ extern const uint8_t MAIN_CSS_START[] asm("_binary_data_gzip_main_css_gz_start")
 extern const uint8_t MAIN_CSS_END[] asm("_binary_data_gzip_main_css_gz_end");
 extern const uint8_t INDEX_JS_START[] asm("_binary_data_gzip_index_js_gz_start");
 extern const uint8_t INDEX_JS_END[] asm("_binary_data_gzip_index_js_gz_end");
+extern const uint8_t MANIFEST_JSON_START[] asm("_binary_data_gzip_manifest_json_gz_start");
+extern const uint8_t MANIFEST_JSON_END[] asm("_binary_data_gzip_manifest_json_gz_end");
 extern const uint8_t NOT_FOUND_HTML_START[] asm("_binary_data_gzip_not_found_html_gz_start");
 extern const uint8_t NOT_FOUND_HTML_END[] asm("_binary_data_gzip_not_found_html_gz_end");
 extern const uint8_t FAVICON_ICO_GZ_START[] asm("_binary_data_gzip_favicon_ico_gz_start");

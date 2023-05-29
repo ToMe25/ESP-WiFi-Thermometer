@@ -169,6 +169,7 @@ void setupWebServer() {
 
 	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START, MAIN_CSS_END);
 	registerCompressedStaticHandler("/index.js", "text/javascript", INDEX_JS_START, INDEX_JS_END);
+	registerCompressedStaticHandler("/manifest.json", "application/json", MANIFEST_JSON_START, MANIFEST_JSON_END);
 
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> uint16_t {
