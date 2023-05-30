@@ -7,7 +7,9 @@
 
 #include "prometheus.h"
 #include "main.h"
+#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 #include "webhandler.h"
+#endif
 #include <iomanip>
 #include <sstream>
 
