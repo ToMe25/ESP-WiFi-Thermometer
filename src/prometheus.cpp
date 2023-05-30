@@ -7,6 +7,7 @@
 
 #include "prometheus.h"
 #include "main.h"
+#include "webhandler.h"
 #include <iomanip>
 #include <sstream>
 
@@ -26,7 +27,7 @@ std::string prom::push_url;
 
 void prom::setup() {
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	registerRequestHandler("/metrics", HTTP_GET, handleMetrics);
+	web::registerRequestHandler("/metrics", HTTP_GET, handleMetrics);
 #endif
 }
 

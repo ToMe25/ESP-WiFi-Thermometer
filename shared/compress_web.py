@@ -199,7 +199,10 @@ def compress_file(input, text):
 
 
 for file in input_text_files:
-    filename = path.basename(file) + ".gz"
+    if file in input_gzip_blacklist:
+        filename = path.basename(file)
+    else:
+        filename = path.basename(file) + ".gz"
     # Always build because the output will depend on whether we are building in debug mode.
     env.AlwaysBuild(f"$BUILD_DIR/{filename}.txt.o")
     compress_file(file, True)
