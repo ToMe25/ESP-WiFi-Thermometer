@@ -38,7 +38,41 @@ extern const uint8_t FAVICON_SVG_GZ_END[] asm("_binary_data_gzip_favicon_svg_gz_
  */
 namespace web {
 #if ENABLE_WEB_SERVER == 1
-typedef std::function<uint16_t(AsyncWebServerRequest *request)> HTTPRequestHandler;
+/**
+ * A custom struct containing all the info required to send a response to the client.
+ */
+class ResponseData {
+public:
+	/**
+	 * The actual response to send.
+	 */
+	AsyncWebServerResponse *response;
+
+	/**
+	 * The number of bytes the response body contains or will contain.
+	 */
+	size_t content_length;
+
+	/**
+	 * The HTTP status code the response sends to the client.
+	 */
+	uint16_t status_code;
+
+	/**
+	 * Creates a new ResponseData object from its values.
+	 *
+	 * @param response		The response to send to the client.
+	 * @param content_len	The number of bytes of the response body to send.
+	 * @param status_code	The HTTP status code this response will send.
+	 */
+	ResponseData(AsyncWebServerResponse *response, const size_t content_len, const uint16_t status_code);
+};
+
+/**
+ * A function handling http requests for some set of urls.
+ * Gets a not yet handled request, and returns a not yet sent response.
+ */
+typedef std::function<ResponseData(AsyncWebServerRequest *request)> HTTPRequestHandler;
 
 /**
  * The character to use as a template delimiter.
@@ -72,9 +106,9 @@ void connect();
  * as well as the time since the last measurement.
  *
  * @param request	The web request to handle.
- * @return	The returned http status code.
+ * @return	The response to be sent to the client.
  */
-uint16_t getJson(AsyncWebServerRequest *request);
+ResponseData getJson(AsyncWebServerRequest *request);
 
 /**
  * A AwsResponseFiller decompressing a file from memory using uzlib.
@@ -129,6 +163,20 @@ void trackingRequestHandlerWrapper(const char *uri,
 void notFoundHandler(AsyncWebServerRequest *request);
 
 /**
+ * A web request handler for a static page.
+ *
+ * @param status_code	The HTTP response status code to send to the client.
+ * @param content_type	The content type of the static file.
+ * @param start			A pointer to the first byte of the compressed static file.
+ * @param end			A pointer to the first byte after the end of the compressed static file.
+ * @param request		The request to handle.
+ * @return	The response to be sent to the client.
+ */
+ResponseData staticHandler(const uint16_t status_code,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
+		AsyncWebServerRequest *request);
+
+/**
  * A web request handler for a compressed static file.
  * If the client accepts gzip compressed files, the file is sent as is.
  * Otherwise it is decompressed on the fly.
@@ -138,10 +186,10 @@ void notFoundHandler(AsyncWebServerRequest *request);
  * @param start			A pointer to the first byte of the compressed static file.
  * @param end			A pointer to the first byte after the end of the compressed static file.
  * @param request		The request to handle.
- * @return	The sent status code. Always the same as the status_code argument.
+ * @return	The response to be sent to the client.
  */
-uint16_t compressedStaticHandler(const uint16_t status_code,
-		const char *content_type, const uint8_t *start, const uint8_t *end,
+ResponseData compressedStaticHandler(const uint16_t status_code,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request);
 
 /**
@@ -158,11 +206,11 @@ uint16_t compressedStaticHandler(const uint16_t status_code,
  * @param start			A pointer to the first byte of the static file.
  * @param end			A pointer to the first byte after the static file.
  * @param request		The request to handle.
- * @return	The sent status code. Always the same as the status_code argument.
+ * @return	The response to be sent to the client.
  */
-uint16_t replacingRequestHandler(
+ResponseData replacingRequestHandler(
 		const std::map<String, std::function<std::string()>> replacements,
-		const uint16_t status_code, const char *content_type,
+		const uint16_t status_code, const String &content_type,
 		const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request);
 
@@ -171,8 +219,8 @@ uint16_t replacingRequestHandler(
  * by one each time it is called.
  *
  * @param uri		The path on which the page can be found.
- * @param method	The HTTP request method for which to register the handler.
- * @param handler	A function responding to AsyncWebServerRequests and returning the response HTTP status code.
+ * @param method	The HTTP request method(s) for which to register the handler.
+ * @param handler	A function responding to AsyncWebServerRequests and returning the response to send.
  */
 void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
 		HTTPRequestHandler handler);
@@ -187,7 +235,7 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
  * @param content_type	The content type for the page.
  * @param page			The content for the page to be sent to the client.
  */
-void registerStaticHandler(const char *uri, const char *content_type,
+void registerStaticHandler(const char *uri, const String &content_type,
 		const char *page);
 
 /**
@@ -202,7 +250,7 @@ void registerStaticHandler(const char *uri, const char *content_type,
  * @param start			The pointer for the start of the file.
  * @param end			The pointer for the end of the file.
  */
-void registerCompressedStaticHandler(const char *uri, const char *content_type,
+void registerCompressedStaticHandler(const char *uri, const String &content_type,
 		const uint8_t *start, const uint8_t *end);
 
 /**
@@ -223,7 +271,7 @@ void registerCompressedStaticHandler(const char *uri, const char *content_type,
  * @param replacements	A map mapping a template string to be replaced,
  * 						to a function returning its replacement value.
  */
-void registerReplacingStaticHandler(const char *uri, const char *content_type,
+void registerReplacingStaticHandler(const char *uri, const String &content_type,
 		const char *page,
 		const std::map<String, std::function<std::string()>> replacements);
 #endif /* ENABLE_WEB_SERVER */

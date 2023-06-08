@@ -34,15 +34,19 @@ void web::setup() {
 	registerCompressedStaticHandler("/manifest.json", "application/json", MANIFEST_JSON_START, MANIFEST_JSON_END);
 
 	registerRequestHandler("/temperature", HTTP_GET,
-			[](AsyncWebServerRequest *request) -> uint16_t {
-				request->send(200, "text/plain", getTemperature().c_str());
-				return 200;
+			[](AsyncWebServerRequest *request) -> ResponseData {
+				const std::string temp = getTemperature();
+				return ResponseData(
+						request->beginResponse(200, "text/plain", temp.c_str()),
+						temp.length(), 200);
 			});
 
 	registerRequestHandler("/humidity", HTTP_GET,
-			[](AsyncWebServerRequest *request) -> uint16_t {
-				request->send(200, "text/plain", getHumidity().c_str());
-				return 200;
+			[](AsyncWebServerRequest *request) -> ResponseData {
+				const std::string humidity = getHumidity();
+				return ResponseData(
+						request->beginResponse(200, "text/plain",
+								humidity.c_str()), humidity.length(), 200);
 			});
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
@@ -78,7 +82,11 @@ void web::connect() {
 }
 
 #if ENABLE_WEB_SERVER == 1
-uint16_t web::getJson(AsyncWebServerRequest *request) {
+web::ResponseData::ResponseData(AsyncWebServerResponse *response, size_t content_len, uint16_t status_code): response(response), content_length(content_len), status_code(status_code) {
+
+}
+
+web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 	std::ostringstream json;
 	json << "{\"temperature\": ";
 	if (isnan(temperature)) {
@@ -97,8 +105,7 @@ uint16_t web::getJson(AsyncWebServerRequest *request) {
 	json << "\"}";
 	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", json.str().c_str());
 	response->addHeader("Cache-Control", "no-cache");
-	request->send(response);
-	return 200;
+	return ResponseData(response, json.str().length(), 200);
 }
 
 size_t web::decompressingResponseFiller(const std::shared_ptr<uzlib_gzip_wrapper> decomp,
@@ -170,31 +177,45 @@ size_t web::replacingResponseFiller(
 	}
 }
 
-void web::trackingRequestHandlerWrapper(const char *uri, const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
-	const uint16_t status_code = handler(request);
+void web::trackingRequestHandlerWrapper(const char *uri,
+		const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
+	const ResponseData response = handler(request);
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(uri, status_code)]++;
+	prom::http_requests_total[std::pair<String, uint16_t>(uri,
+			response.status_code)]++;
 #endif
+	request->send(response.response);
 }
 
 void web::notFoundHandler(AsyncWebServerRequest *request) {
-	const uint16_t status_code = compressedStaticHandler(404, "text/html", NOT_FOUND_HTML_START,
+	const ResponseData response = compressedStaticHandler(404, "text/html", NOT_FOUND_HTML_START,
 			NOT_FOUND_HTML_END, request);
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+	prom::http_requests_total[std::pair<String, uint16_t>(
+			request->url(), response.status_code)]++;
+#endif
+	request->send(response.response);
 	Serial.print("A client tried to access the not existing file \"");
 	Serial.print(request->url().c_str());
 	Serial.println("\".");
-#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(
-			request->url(), status_code)]++;
-#endif
 }
 
-uint16_t web::compressedStaticHandler(const uint16_t status_code, const char *content_type, const uint8_t *start,
-		const uint8_t *end, AsyncWebServerRequest *request) {
+web::ResponseData web::staticHandler(const uint16_t status_code,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
+		AsyncWebServerRequest *request) {
+	return ResponseData(request->beginResponse_P(status_code, content_type, start,
+			end - start), end - start, status_code);
+}
+
+web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
+		AsyncWebServerRequest *request) {
 	AsyncWebServerResponse *response = NULL;
+	size_t content_length;
 	if (request->hasHeader("Accept-Encoding")
 			&& strstr(request->getHeader("Accept-Encoding")->value().c_str(),
 					"gzip")) {
+		content_length = end - start;
 		response = request->beginResponse_P(200, content_type, start,
 				end - start);
 		response->addHeader("Content-Encoding", "gzip");
@@ -202,18 +223,18 @@ uint16_t web::compressedStaticHandler(const uint16_t status_code, const char *co
 		using namespace std::placeholders;
 		std::shared_ptr<uzlib_gzip_wrapper> decomp = std::make_shared<
 				uzlib_gzip_wrapper>(start, end, GZIP_DECOMP_WINDOW_SIZE);
+		content_length = decomp->getDecompressedSize();
 		response = request->beginResponse(content_type,
 				decomp->getDecompressedSize(),
 				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
 	}
 	response->setCode(status_code);
-	request->send(response);
-	return status_code;
+	return ResponseData(response, content_length, status_code);
 }
 
-uint16_t web::replacingRequestHandler(
+web::ResponseData web::replacingRequestHandler(
 		const std::map<String, std::function<std::string()>> replacements,
-		const uint16_t status_code, const char *content_type,
+		const uint16_t status_code, const String &content_type,
 		const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request) {
 	using namespace std::placeholders;
@@ -238,14 +259,14 @@ uint16_t web::replacingRequestHandler(
 		idx = template_end + 1;
 	}
 
+	const size_t content_length = (end - start) + len_diff;
 	std::shared_ptr<int64_t> offset = std::make_shared<int64_t>(0);
 	AsyncWebServerResponse *response = request->beginResponse(content_type,
-			(end - start) + len_diff,
+			content_length,
 			std::bind(replacingResponseFiller, repl, offset, start, end, _1, _2,
 					_3));
 	response->setCode(status_code);
-	request->send(response);
-	return status_code;
+	return ResponseData(response, content_length, status_code);
 }
 
 void web::registerRequestHandler(const char *uri, WebRequestMethodComposite method,
@@ -254,16 +275,15 @@ void web::registerRequestHandler(const char *uri, WebRequestMethodComposite meth
 	server.on(uri, method, std::bind(trackingRequestHandlerWrapper, uri, handler, _1));
 }
 
-void web::registerStaticHandler(const char *uri, const char *content_type,
+void web::registerStaticHandler(const char *uri, const String &content_type,
 		const char *page) {
+	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
-			[content_type, page](AsyncWebServerRequest *request) -> uint16_t {
-				request->send_P(200, content_type, page);
-				return 200;
-			});
+			std::bind(staticHandler, 200, content_type, (uint8_t*) page,
+					(uint8_t*) page + strlen(page), _1));
 }
 
-void web::registerCompressedStaticHandler(const char *uri, const char *content_type,
+void web::registerCompressedStaticHandler(const char *uri, const String &content_type,
 		const uint8_t *start, const uint8_t *end) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
@@ -271,7 +291,7 @@ void web::registerCompressedStaticHandler(const char *uri, const char *content_t
 }
 
 void web::registerReplacingStaticHandler(const char *uri,
-		const char *content_type, const char *page,
+		const String &content_type, const char *page,
 		const std::map<String, std::function<std::string()>> replacements) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,

@@ -9,6 +9,9 @@
 #define SRC_PROMETHEUS_H_
 
 #include "config.h"
+#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+#include "webhandler.h"
+#endif
 #include <map>
 #if ENABLE_PROMETHEUS_PUSH == 1
 #ifdef ESP32
@@ -70,7 +73,7 @@ std::string getMetrics();
  * @param request	The request to respond to.
  * @return	The HTTP status code of the response.
  */
-uint16_t handleMetrics(AsyncWebServerRequest *request);
+web::ResponseData handleMetrics(AsyncWebServerRequest *request);
 #endif
 
 #if ENABLE_PROMETHEUS_PUSH == 1

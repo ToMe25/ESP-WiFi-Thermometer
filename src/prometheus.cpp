@@ -7,9 +7,6 @@
 
 #include "prometheus.h"
 #include "main.h"
-#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-#include "webhandler.h"
-#endif
 #include <iomanip>
 #include <sstream>
 
@@ -114,11 +111,11 @@ std::string prom::getMetrics() {
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-uint16_t prom::handleMetrics(AsyncWebServerRequest *request) {
-	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", getMetrics().c_str());
+web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
+	const std::string metrics = getMetrics();
+	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", metrics.c_str());
 	response->addHeader("Cache-Control", "no-cache");
-	request->send(response);
-	return 200;
+	return web::ResponseData(response, metrics.length(), 200);
 }
 #endif
 
