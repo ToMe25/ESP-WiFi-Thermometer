@@ -19,8 +19,8 @@ input_gzip_blacklist = [ 'src/html/index.html' ]
 # The javascript keywords that require a space after them.
 js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends', 'function', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'static', 'throw', 'typeof', 'var', 'void', 'yield' ]
 
-# The characters before/after which a space doesn't make a different in default mode.
-seperator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',' ]
+# The characters before/after which a space doesn't make a difference in default mode.
+separator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',' ]
 
 # The window size parameter to use for gzip compression.
 # The actual window size used by zlib is pow(2, -gzip_windowsize).
@@ -29,7 +29,7 @@ seperator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',' ]
 # This requires a pow(2, -gzip_windowsize) byte buffer on the esp.
 gzip_windowsize = -10
 
-MinifyMode = Enum('MinifyMode', [ 'Default', 'JavaScript', 'HTML' ])
+MinifyMode = Enum('MinifyMode', [ 'Default', 'HTML', 'CSS', 'JavaScript' ])
 
 
 def remove_whitespaces(lines_in, mode):
@@ -45,12 +45,17 @@ def remove_whitespaces(lines_in, mode):
         A list of strings containing the lines to edit.
     mode: MinifyMode
         The minifying mode to use.
-        There are currently three modes.
-        In all three modes spaces are removed if they are the first or last character in a line.
-        In Default and HTML mode multiple spaces in a row are always collapsed to a single one.
+        There are currently four modes.
+        In all modes spaces are removed if they are the first or last character in a line.
+        In Default, HTML, and CSS mode multiple spaces in a row are always collapsed to a single one.
         In JavaScript mode multiple spaces in a row are collapsed, unless they are inside of a quote.
-        In Default and JavaScript mode /* ... */ comments are removed entirely.
+        In all modes except JavaScript mode /* ... */ comments are removed entirely.
         In Default mode spaces are removed if they are before or after a character from the separator_chars list.
+        In CSS mode spaces are removed if they are before or after a character from the separator_chars list,
+        except if they are before an opening bracket.
+        In all modes empty lines at the beginning of the file are removed.
+        In all modes multiple empty lines in a row a collapsed to a single one.
+        In CSS mode single linebreaks after commas are removed.
     
     Returns
     -------
@@ -75,7 +80,7 @@ def remove_whitespaces(lines_in, mode):
                 since_space = ""
                 if mode == MinifyMode.JavaScript or not last_char or last_char == ' ':
                     continue
-                if mode == MinifyMode.Default and last_char in seperator_chars:
+                elif (mode == MinifyMode.Default or mode == MinifyMode.CSS) and last_char in separator_chars:
                     continue
             elif mode == MinifyMode.JavaScript and not current_quote and (char == "'" or char == '"'):
                 current_quote = char
@@ -95,7 +100,9 @@ def remove_whitespaces(lines_in, mode):
                     last_char = None
                 since_space = ""
                 current_quote = "/*"
-            elif mode == MinifyMode.Default and char in seperator_chars and last_char == ' ':
+            elif mode == MinifyMode.Default and char in separator_chars and last_char == ' ':
+                last_char = None
+            elif mode == MinifyMode.CSS and char != '(' and char in separator_chars and last_char == ' ':
                 last_char = None
 
             if last_char and current_quote != "/*":
@@ -114,7 +121,10 @@ def remove_whitespaces(lines_in, mode):
         if len(line_out) > len(os.linesep) and line_out[-len(os.linesep) - 1] == ' ':
             line_out = line_out[:-len(os.linesep) - 2] + os.linesep
 
-        if not lines_out or lines_out[-1].strip() or line_out.strip():
+        # Remove single linebreaks after lines ending with a comma
+        if mode == MinifyMode.CSS and lines_out and lines_out[-1].strip()[-1:] == ',' and line_out.strip():
+            lines_out[-1] = lines_out[-1][:-len(os.linesep)] + line_out
+        elif (lines_out and lines_out[-1].strip()) or line_out.strip():
             lines_out.append(line_out)
 
     return lines_out
@@ -178,10 +188,12 @@ def compress_file(input, text):
             lines = src.readlines()
             if minify:
                 mode = MinifyMode.Default
-                if input.endswith(".js") or input.endswith(".jsm") or input.endswith(".mjs"):
-                    mode = MinifyMode.JavaScript
-                elif input.endswith(".html") or input.endswith(".htm"):
+                if input.endswith(".html") or input.endswith(".htm"):
                     mode = MinifyMode.HTML
+                elif input.endswith(".css"):
+                    mode = MinifyMode.CSS
+                elif input.endswith(".js") or input.endswith(".jsm") or input.endswith(".mjs"):
+                    mode = MinifyMode.JavaScript
 
                 lines = remove_whitespaces(lines, mode)
 
