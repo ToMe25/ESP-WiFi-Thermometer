@@ -61,6 +61,7 @@ void web::setup() {
 	server.onNotFound(notFoundHandler);
 
 	DefaultHeaders::Instance().addHeader("Server", SERVER_HEADER);
+	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 	server.begin();
 
 	uzlib_init();

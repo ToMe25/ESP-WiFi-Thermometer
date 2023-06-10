@@ -1,9 +1,10 @@
 {
-  "name": "ESP-WiFi-Thermometer",
-  "short_name": "ESP-WiFi-Thermometer",
+  "name": "ESP WiFi Thermometer",
+  "short_name": "Thermometer",
   "description": "A ESP Thermometer Web Page",
   "display": "standalone",
   "start_url": "/index.html",
+  "scope": "/",
   "background_color": "#c2cbd1",
   "theme_color": "#c2cbd1",
   "icons": [
