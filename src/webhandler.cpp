@@ -83,8 +83,28 @@ void web::connect() {
 }
 
 #if ENABLE_WEB_SERVER == 1
-web::ResponseData::ResponseData(AsyncWebServerResponse *response, size_t content_len, uint16_t status_code): response(response), content_length(content_len), status_code(status_code) {
+web::ResponseData::ResponseData(AsyncWebServerResponse *response,
+		size_t content_len, uint16_t status_code) :
+		response(response), content_length(content_len), status_code(
+				status_code) {
 
+}
+
+web::AsyncHeadOnlyResponse::AsyncHeadOnlyResponse(AsyncWebServerResponse *wrapped) :
+		AsyncBasicResponse(200, "", ""), _wrapped(wrapped) {
+
+}
+
+web::AsyncHeadOnlyResponse::~AsyncHeadOnlyResponse() {
+	delete _wrapped;
+}
+
+String web::AsyncHeadOnlyResponse::_assembleHead(uint8_t version) {
+	return _wrapped->_assembleHead(version);
+}
+
+bool web::AsyncHeadOnlyResponse::_sourceValid() const {
+	return _wrapped->_sourceValid();
 }
 
 web::ResponseData web::getJson(AsyncWebServerRequest *request) {
@@ -178,11 +198,22 @@ size_t web::replacingResponseFiller(
 	}
 }
 
-void web::trackingRequestHandlerWrapper(const char *uri,
-		const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
+void web::trackingRequestHandlerWrapper(const HTTPRequestHandler handler,
+		AsyncWebServerRequest *request) {
 	const ResponseData response = handler(request);
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(uri,
+	prom::http_requests_total[std::pair<String, uint16_t>(request->url(),
+			response.status_code)]++;
+#endif
+	request->send(response.response);
+}
+
+void web::defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
+		AsyncWebServerRequest *request) {
+	ResponseData response = handler(request);
+	response.response = new AsyncHeadOnlyResponse(response.response);
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+	prom::http_requests_total[std::pair<String, uint16_t>(request->url(),
 			response.status_code)]++;
 #endif
 	request->send(response.response);
@@ -193,9 +224,12 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 			{ "ERROR", "The requested file can not be found on this server!" },
 			{ "DETAILS", "The page \"" + request->url()
 					+ "\" couldn't be found." } };
-	const ResponseData response = replacingRequestHandler(replacements, 404,
+	ResponseData response = replacingRequestHandler(replacements, 404,
 			"text/html", (uint8_t*) ERROR_HTML,
 			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
+	if (request->method() == HTTP_HEAD) {
+		response.response = new AsyncHeadOnlyResponse(response.response);
+	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	prom::http_requests_total[std::pair<String, uint16_t>(
 			request->url(), response.status_code)]++;
@@ -349,11 +383,18 @@ web::ResponseData web::replacingRequestHandler(
 	return ResponseData(response, content_length, status_code);
 }
 
-void web::registerRequestHandler(const char *uri, WebRequestMethodComposite method,
-		HTTPRequestHandler handler) {
+void web::registerRequestHandler(const char *uri,
+		WebRequestMethodComposite method, HTTPRequestHandler handler) {
 	using namespace std::placeholders;
-	server.on(uri, method, std::bind(trackingRequestHandlerWrapper, uri, handler, _1));
-	server.on(uri, method ^ HTTP_ANY, std::bind(invalidMethodHandler, method, _1));
+	server.on(uri, method,
+			std::bind(trackingRequestHandlerWrapper, handler, _1));
+	if (!(method & HTTP_HEAD)) {
+		method |= HTTP_HEAD;
+		server.on(uri, HTTP_HEAD,
+				std::bind(defaultHeadRequestHandlerWrapper, handler, _1));
+	}
+	server.on(uri, method ^ HTTP_ANY,
+			std::bind(invalidMethodHandler, method, _1));
 }
 
 void web::registerStaticHandler(const char *uri, const String &content_type,

@@ -68,6 +68,47 @@ public:
 };
 
 /**
+ * A response wrapper that sends the exact head of the wrapped response.
+ * It doesn't however send any body at all.
+ * This type of response should only be used to respond to HEAD requests.
+ */
+class AsyncHeadOnlyResponse: public AsyncBasicResponse {
+private:
+	/**
+	 * The wrapped response, the headers of which will be sent.
+	 */
+	AsyncWebServerResponse *_wrapped;
+public:
+	/**
+	 * Creates a new head only response wrapping the given response.
+	 * This type of response should only be used to respond to HEAD requests.
+	 *
+	 * @param wrapped	The response to get the head from.
+	 */
+	AsyncHeadOnlyResponse(AsyncWebServerResponse *wrapped);
+
+	/**
+	 * Destroys this response, as well as the wrapped response.
+	 */
+	~AsyncHeadOnlyResponse();
+
+	/**
+	 * Assembles the response head to send to the client.
+	 *
+	 * @param version	Whether the request is HTTP 1.0 or 1.1+.
+	 * @return	The assembled response head.
+	 */
+	String _assembleHead(uint8_t version) override;
+
+	/**
+	 * Checks whether the data source of the wrapped response is valid.
+	 *
+	 * @return	True of the data source is valid.
+	 */
+	bool _sourceValid() const override;
+};
+
+/**
  * A function handling http requests for some set of urls.
  * Gets a not yet handled request, and returns a not yet sent response.
  */
@@ -146,12 +187,21 @@ size_t replacingResponseFiller(
  * The method to be called by the AsyncWebServer to call a request handler.
  * Calls the handler and updates the prometheus web request statistics.
  *
- * @param uri		The uri to be handled by the request handler.
  * @param handler	The request handler to be wrapped by this method.
  * @param request	The request to be handled.
  */
-void trackingRequestHandlerWrapper(const char *uri,
-		const HTTPRequestHandler handler, AsyncWebServerRequest *request);
+void trackingRequestHandlerWrapper(const HTTPRequestHandler handler,
+		AsyncWebServerRequest *request);
+
+/**
+ * A request handler wrapper for GET request handlers that automatically adapts them for HEAD request.
+ * Also updates the prometheus web request statistics.
+ *
+ * @param handler	The request handler to be wrapped by this method.
+ * @param request	The request to be handled.
+ */
+void defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
+		AsyncWebServerRequest *request);
 
 /**
  * The request handler for pages that couldn't be found.
@@ -244,7 +294,8 @@ ResponseData replacingRequestHandler(
  * Registers the given handler for the web server, and increments the web requests counter
  * by one each time it is called.
  *
- * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
+ * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
  * That means this method should never be called twice with the same uri.
  *
  * @param uri		The path on which the page can be found.
@@ -260,7 +311,8 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
  * Always sends response code 200.
  * Also increments the request counter.
  *
- * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
+ * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
  * That means this method should never be called twice with the same uri.
  *
  * @param uri			The path on which the page can be found.
@@ -277,7 +329,8 @@ void registerStaticHandler(const char *uri, const String &content_type,
  * Also increments the request counter.
  * Expects the content to be a gzip compressed binary.
  *
- * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
+ * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
  * That means this method should never be called twice with the same uri.
  *
  * @param uri			The path on which the file can be found.
@@ -300,7 +353,8 @@ void registerCompressedStaticHandler(const char *uri, const String &content_type
  * Always sends response code 200.
  * Also increments the request counter.
  *
- * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
+ * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
  * That means this method should never be called twice with the same uri.
  *
  * @param uri			The path on which the page can be found.
