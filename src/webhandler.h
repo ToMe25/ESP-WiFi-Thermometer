@@ -23,8 +23,7 @@ extern const uint8_t INDEX_JS_START[] asm("_binary_data_gzip_index_js_gz_start")
 extern const uint8_t INDEX_JS_END[] asm("_binary_data_gzip_index_js_gz_end");
 extern const uint8_t MANIFEST_JSON_START[] asm("_binary_data_gzip_manifest_json_gz_start");
 extern const uint8_t MANIFEST_JSON_END[] asm("_binary_data_gzip_manifest_json_gz_end");
-extern const uint8_t NOT_FOUND_HTML_START[] asm("_binary_data_gzip_not_found_html_gz_start");
-extern const uint8_t NOT_FOUND_HTML_END[] asm("_binary_data_gzip_not_found_html_gz_end");
+extern const char ERROR_HTML[] asm("_binary_data_error_html_start");
 extern const uint8_t FAVICON_ICO_GZ_START[] asm("_binary_data_gzip_favicon_ico_gz_start");
 extern const uint8_t FAVICON_ICO_GZ_END[] asm("_binary_data_gzip_favicon_ico_gz_end");
 extern const uint8_t FAVICON_PNG_GZ_START[] asm("_binary_data_gzip_favicon_png_gz_start");
@@ -156,11 +155,20 @@ void trackingRequestHandlerWrapper(const char *uri,
 
 /**
  * The request handler for pages that couldn't be found.
- * Sends a standard 404 page.
+ * Sends an error 404 page.
  *
  * @param request	The request to handle.
  */
 void notFoundHandler(AsyncWebServerRequest *request);
+
+/**
+ * The request handler for pages that received an invalid request type.
+ * Sends an error 405 page.
+ *
+ * @param validMethods	The request methods accepted by this uri.
+ * @param request		The request to handle.
+ */
+void invalidMethodHandler(const WebRequestMethodComposite validMethods, AsyncWebServerRequest *request);
 
 /**
  * A web request handler for a static page.
@@ -215,8 +223,29 @@ ResponseData replacingRequestHandler(
 		AsyncWebServerRequest *request);
 
 /**
+ * A web request handler for a static file with some templates to replace.
+ * Template strings have to be formatted like this: $TEMPLATE$.
+ *
+ * @param replacements	A map mapping a template string to be replaced,
+ * 						to its replacement string.
+ * @param status_code	The HTTP response status code to send to the client.
+ * @param content_type	The content type of the file to send.
+ * @param start			A pointer to the first byte of the static file.
+ * @param end			A pointer to the first byte after the static file.
+ * @param request		The request to handle.
+ * @return	The response to be sent to the client.
+ */
+ResponseData replacingRequestHandler(
+		const std::map<String, String> replacements, const uint16_t status_code,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
+		AsyncWebServerRequest *request);
+
+/**
  * Registers the given handler for the web server, and increments the web requests counter
  * by one each time it is called.
+ *
+ * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * That means this method should never be called twice with the same uri.
  *
  * @param uri		The path on which the page can be found.
  * @param method	The HTTP request method(s) for which to register the handler.
@@ -231,6 +260,9 @@ void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
  * Always sends response code 200.
  * Also increments the request counter.
  *
+ * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * That means this method should never be called twice with the same uri.
+ *
  * @param uri			The path on which the page can be found.
  * @param content_type	The content type for the page.
  * @param page			The content for the page to be sent to the client.
@@ -244,6 +276,9 @@ void registerStaticHandler(const char *uri, const String &content_type,
  * Always sends response code 200.
  * Also increments the request counter.
  * Expects the content to be a gzip compressed binary.
+ *
+ * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * That means this method should never be called twice with the same uri.
  *
  * @param uri			The path on which the file can be found.
  * @param content_type	The content type for the file.
@@ -264,6 +299,9 @@ void registerCompressedStaticHandler(const char *uri, const String &content_type
  * Only registers a handler for request type get.
  * Always sends response code 200.
  * Also increments the request counter.
+ *
+ * This method also registers a Method Not Allowed response for all request types not covered by method.
+ * That means this method should never be called twice with the same uri.
  *
  * @param uri			The path on which the page can be found.
  * @param content_type	The content type for the page.

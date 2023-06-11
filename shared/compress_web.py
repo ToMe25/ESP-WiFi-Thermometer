@@ -9,12 +9,12 @@ import os.path as path
 from gzip_compressing_stream import GzipCompressingStream
 
 # Unquoted spaces will be removed from these.
-input_text_files = [ 'src/html/index.html', 'src/html/not_found.html', 'src/html/main.css', 'src/html/index.js', 'src/html/manifest.json', 'images/favicon.svg' ]
+input_text_files = [ 'src/html/index.html', 'src/html/error.html', 'src/html/main.css', 'src/html/index.js', 'src/html/manifest.json', 'images/favicon.svg' ]
 
 input_binary_files = [ 'images/favicon.ico', 'images/favicon.png' ]
 
 # These files will not be gzip compressed, just copied and potentially stripped of spaces.
-input_gzip_blacklist = [ 'src/html/index.html' ]
+input_gzip_blacklist = [ 'src/html/index.html', 'src/html/error.html' ]
 
 # The javascript keywords that require a space after them.
 js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends', 'function', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'static', 'throw', 'typeof', 'var', 'void', 'yield' ]

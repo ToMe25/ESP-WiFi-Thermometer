@@ -189,8 +189,76 @@ void web::trackingRequestHandlerWrapper(const char *uri,
 }
 
 void web::notFoundHandler(AsyncWebServerRequest *request) {
-	const ResponseData response = compressedStaticHandler(404, "text/html", NOT_FOUND_HTML_START,
-			NOT_FOUND_HTML_END, request);
+	std::map<String, String> replacements { { "TITLE", "Error 404 Not Found" },
+			{ "ERROR", "The requested file can not be found on this server!" },
+			{ "DETAILS", "The page \"" + request->url()
+					+ "\" couldn't be found." } };
+	const ResponseData response = replacingRequestHandler(replacements, 404,
+			"text/html", (uint8_t*) ERROR_HTML,
+			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+	prom::http_requests_total[std::pair<String, uint16_t>(
+			request->url(), response.status_code)]++;
+#endif
+	request->send(response.response);
+	Serial.print("A client tried to access the not existing file \"");
+	Serial.print(request->url().c_str());
+	Serial.println("\".");
+}
+
+void web::invalidMethodHandler(const WebRequestMethodComposite validMethods,
+		AsyncWebServerRequest *request) {
+	std::vector<String> valid;
+	valid.reserve(7);
+	if (validMethods & HTTP_GET) {
+		valid.push_back("GET");
+	}
+	if (validMethods & HTTP_POST) {
+		valid.push_back("POST");
+	}
+	if (validMethods & HTTP_DELETE) {
+		valid.push_back("DELETE");
+	}
+	if (validMethods & HTTP_PUT) {
+		valid.push_back("PUT");
+	}
+	if (validMethods & HTTP_PATCH) {
+		valid.push_back("PATCH");
+	}
+	if (validMethods & HTTP_HEAD) {
+		valid.push_back("HEAD");
+	}
+	if (validMethods & HTTP_OPTIONS) {
+		valid.push_back("OPTIONS");
+	}
+
+	String validStr = "";
+	for (size_t i = 0; i < valid.size(); i++) {
+		if (i > 0) {
+			validStr += ", ";
+			if (i == valid.size() - 1) {
+				validStr += "and ";
+			}
+		}
+		validStr += valid[i];
+	}
+
+	std::map<String, String> replacements { { "TITLE",
+			"Error 405 Method Not Allowed" }, { "ERROR",
+			"The page cannot handle " + String(request->methodToString())
+					+ " requests!" }, { "DETAILS", "The page \""
+			+ request->url() + "\" can handle the request types " + validStr + "." } };
+	const ResponseData response = replacingRequestHandler(replacements, 405,
+			"text/html", (uint8_t*) ERROR_HTML,
+			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
+	validStr = "";
+	for (size_t i = 0; i < valid.size(); i++) {
+		if (i > 0) {
+			validStr += ", ";
+		}
+		validStr += valid[i];
+	}
+	response.response->addHeader("Allow", validStr);
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	prom::http_requests_total[std::pair<String, uint16_t>(
 			request->url(), response.status_code)]++;
@@ -238,12 +306,19 @@ web::ResponseData web::replacingRequestHandler(
 		const uint16_t status_code, const String &content_type,
 		const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request) {
-	using namespace std::placeholders;
 	std::map<String, String> repl;
 	for (std::pair<String, std::function<std::string()>> replacement : replacements) {
 		repl[replacement.first] = replacement.second().c_str();
 	}
 
+	return replacingRequestHandler(repl, status_code, content_type, start, end, request);
+}
+
+web::ResponseData web::replacingRequestHandler(
+		const std::map<String, String> replacements, const uint16_t status_code,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
+		AsyncWebServerRequest *request) {
+	using namespace std::placeholders;
 	int64_t len_diff = 0;
 	const uint8_t *idx = start;
 	while (idx && (idx = (uint8_t*) memchr(idx, TEMPLATE_CHAR, end - idx))) {
@@ -255,7 +330,11 @@ web::ResponseData web::replacingRequestHandler(
 		uint8_t *buf = new uint8_t[template_end - idx];
 		memcpy(buf, idx + 1, template_end - idx - 1);
 		buf[template_end - idx - 1] = 0;
-		len_diff += repl[String((char*)buf)].length() - (template_end - idx + 1);
+		if (replacements.find(String((char*)buf)) != replacements.end()) {
+			len_diff += replacements.at(String((char*)buf)).length() - (template_end - idx + 1);
+		} else {
+			len_diff -= 2;
+		}
 		delete[] buf;
 		idx = template_end + 1;
 	}
@@ -264,7 +343,7 @@ web::ResponseData web::replacingRequestHandler(
 	std::shared_ptr<int64_t> offset = std::make_shared<int64_t>(0);
 	AsyncWebServerResponse *response = request->beginResponse(content_type,
 			content_length,
-			std::bind(replacingResponseFiller, repl, offset, start, end, _1, _2,
+			std::bind(replacingResponseFiller, replacements, offset, start, end, _1, _2,
 					_3));
 	response->setCode(status_code);
 	return ResponseData(response, content_length, status_code);
@@ -274,6 +353,7 @@ void web::registerRequestHandler(const char *uri, WebRequestMethodComposite meth
 		HTTPRequestHandler handler) {
 	using namespace std::placeholders;
 	server.on(uri, method, std::bind(trackingRequestHandlerWrapper, uri, handler, _1));
+	server.on(uri, method ^ HTTP_ANY, std::bind(invalidMethodHandler, method, _1));
 }
 
 void web::registerStaticHandler(const char *uri, const String &content_type,
@@ -296,7 +376,12 @@ void web::registerReplacingStaticHandler(const char *uri,
 		const std::map<String, std::function<std::string()>> replacements) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
-			std::bind(replacingRequestHandler, replacements, 200, content_type,
+			std::bind<
+					ResponseData(
+							const std::map<String, std::function<std::string()>>,
+							const uint16_t, const String&, const uint8_t*,
+							const uint8_t*, AsyncWebServerRequest*)>(
+					replacingRequestHandler, replacements, 200, content_type,
 					(uint8_t*) page, (uint8_t*) page + strlen(page), _1));
 }
 #endif /* ENABLE_WEB_SERVER == 1 */
