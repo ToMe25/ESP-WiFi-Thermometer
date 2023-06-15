@@ -215,10 +215,22 @@ void notFoundHandler(AsyncWebServerRequest *request);
  * The request handler for pages that received an invalid request type.
  * Sends an error 405 page.
  *
- * @param validMethods	The request methods accepted by this uri.
+ * @param validMethods	The request methods that will be accepted by this uri.
  * @param request		The request to handle.
  */
-void invalidMethodHandler(const WebRequestMethodComposite validMethods, AsyncWebServerRequest *request);
+void invalidMethodHandler(const WebRequestMethodComposite validMethods,
+		AsyncWebServerRequest *request);
+
+/**
+ * Handles a received OPTIONS request, and responds with a 204 No Content response.
+ * This response will contain an Allow header with the given methods.
+ * OPTIONS will automatically be added to the start of the valid methods.
+ *
+ * @param validMethods	The request methods that will be accepted by this uri.
+ * @param request		The request to handle.
+ */
+void optionsHandler(const WebRequestMethodComposite validMethods,
+		AsyncWebServerRequest *request);
 
 /**
  * A web request handler for a static page.
@@ -302,8 +314,8 @@ ResponseData replacingRequestHandler(
  * @param method	The HTTP request method(s) for which to register the handler.
  * @param handler	A function responding to AsyncWebServerRequests and returning the response to send.
  */
-void registerRequestHandler(const char *uri, WebRequestMethodComposite method,
-		HTTPRequestHandler handler);
+void registerRequestHandler(const char *uri,
+		const WebRequestMethodComposite method, HTTPRequestHandler handler);
 
 /**
  * Registers a request handler that returns the given content type and web page each time it is called.

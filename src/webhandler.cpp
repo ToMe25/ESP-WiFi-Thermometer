@@ -58,6 +58,14 @@ void web::setup() {
 	registerCompressedStaticHandler("/favicon.svg", "image/svg+xml", FAVICON_SVG_GZ_START,
 			FAVICON_SVG_GZ_END);
 
+	// FIXME find a way to avoid the * url being treated as a template.
+	//server.on("*", HTTP_OPTIONS,
+			//std::bind(optionsHandler, HTTP_GET | HTTP_HEAD | HTTP_OPTIONS,
+					//std::placeholders::_1));
+	//server.on("*", HTTP_ANY ^ HTTP_OPTIONS,
+			//std::bind(invalidMethodHandler, HTTP_OPTIONS,
+					//std::placeholders::_1));
+
 	server.onNotFound(notFoundHandler);
 
 	DefaultHeaders::Instance().addHeader("Server", SERVER_HEADER);
@@ -303,6 +311,37 @@ void web::invalidMethodHandler(const WebRequestMethodComposite validMethods,
 	Serial.println("\".");
 }
 
+void web::optionsHandler(const WebRequestMethodComposite validMethods,
+		AsyncWebServerRequest *request) {
+	const uint16_t status_code = 204;
+	String valid = "OPTIONS";
+	if (validMethods & HTTP_GET) {
+		valid += ", GET";
+	}
+	if (validMethods & HTTP_HEAD) {
+		valid += ", HEAD";
+	}
+	if (validMethods & HTTP_POST) {
+		valid += ", POST";
+	}
+	if (validMethods & HTTP_DELETE) {
+		valid += ", DELETE";
+	}
+	if (validMethods & HTTP_PUT) {
+		valid += ", PUT";
+	}
+	if (validMethods & HTTP_PATCH) {
+		valid += ", PATCH";
+	}
+	AsyncWebServerResponse *response = request->beginResponse(status_code);
+	response->addHeader("Allow", valid);
+#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+	prom::http_requests_total[std::pair<String, uint16_t>(
+			request->url(), status_code)]++;
+#endif
+	request->send(response);
+}
+
 web::ResponseData web::staticHandler(const uint16_t status_code,
 		const String &content_type, const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request) {
@@ -384,17 +423,23 @@ web::ResponseData web::replacingRequestHandler(
 }
 
 void web::registerRequestHandler(const char *uri,
-		WebRequestMethodComposite method, HTTPRequestHandler handler) {
+		const WebRequestMethodComposite method, HTTPRequestHandler handler) {
+	// The web request methods that will automatically be handled,
+	// if the given handler doesn't handle them.
+	const WebRequestMethodComposite autoHandled = HTTP_HEAD | HTTP_OPTIONS;
 	using namespace std::placeholders;
 	server.on(uri, method,
 			std::bind(trackingRequestHandlerWrapper, handler, _1));
 	if (!(method & HTTP_HEAD)) {
-		method |= HTTP_HEAD;
 		server.on(uri, HTTP_HEAD,
 				std::bind(defaultHeadRequestHandlerWrapper, handler, _1));
 	}
-	server.on(uri, method ^ HTTP_ANY,
-			std::bind(invalidMethodHandler, method, _1));
+	if (!(method & HTTP_OPTIONS)) {
+		server.on(uri, HTTP_OPTIONS,
+				std::bind(optionsHandler, method | autoHandled, _1));
+	}
+	server.on(uri, (method | autoHandled) ^ HTTP_ANY,
+			std::bind(invalidMethodHandler, method | autoHandled, _1));
 }
 
 void web::registerStaticHandler(const char *uri, const String &content_type,
