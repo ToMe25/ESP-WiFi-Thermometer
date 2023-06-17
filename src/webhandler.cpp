@@ -32,12 +32,16 @@ void web::setup() {
 			"TEMP", getTemperature }, { "HUMID", getHumidity }, { "TIME",
 			getTimeSinceMeasurement } };
 
-	registerReplacingStaticHandler("/", "text/html", INDEX_HTML, index_replacements);
-	registerReplacingStaticHandler("/index.html", "text/html", INDEX_HTML, index_replacements);
+	registerRedirect("/", "/index.html");
+	registerReplacingStaticHandler("/index.html", "text/html", INDEX_HTML,
+			index_replacements);
 
-	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START, MAIN_CSS_END);
-	registerCompressedStaticHandler("/index.js", "text/javascript", INDEX_JS_START, INDEX_JS_END);
-	registerCompressedStaticHandler("/manifest.json", "application/json", MANIFEST_JSON_START, MANIFEST_JSON_END);
+	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START,
+			MAIN_CSS_END);
+	registerCompressedStaticHandler("/index.js", "text/javascript",
+			INDEX_JS_START, INDEX_JS_END);
+	registerCompressedStaticHandler("/manifest.json", "application/json",
+			MANIFEST_JSON_START, MANIFEST_JSON_END);
 
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> ResponseData {
@@ -57,12 +61,12 @@ void web::setup() {
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
 
-	registerCompressedStaticHandler("/favicon.ico", "image/x-icon", FAVICON_ICO_GZ_START,
-			FAVICON_ICO_GZ_END);
-	registerCompressedStaticHandler("/favicon.png", "image/png", FAVICON_PNG_GZ_START,
-			FAVICON_PNG_GZ_END);
-	registerCompressedStaticHandler("/favicon.svg", "image/svg+xml", FAVICON_SVG_GZ_START,
-			FAVICON_SVG_GZ_END);
+	registerCompressedStaticHandler("/favicon.ico", "image/x-icon",
+			FAVICON_ICO_GZ_START, FAVICON_ICO_GZ_END);
+	registerCompressedStaticHandler("/favicon.png", "image/png",
+			FAVICON_PNG_GZ_START, FAVICON_PNG_GZ_END);
+	registerCompressedStaticHandler("/favicon.svg", "image/svg+xml",
+			FAVICON_SVG_GZ_START, FAVICON_SVG_GZ_END);
 
 	// An OPTIONS request to * is supposed to return server-wide support.
 	registerRequestHandler("*", HTTP_OPTIONS,
@@ -118,13 +122,15 @@ web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 	json << ", \"time\": \"";
 	json << getTimeSinceMeasurement();
 	json << "\"}";
-	AsyncWebServerResponse *response = request->beginResponse(200, "application/json", json.str().c_str());
+	AsyncWebServerResponse *response = request->beginResponse(200,
+			"application/json", json.str().c_str());
 	response->addHeader("Cache-Control", "no-cache");
 	return ResponseData(response, json.str().length(), 200);
 }
 
-size_t web::decompressingResponseFiller(const std::shared_ptr<uzlib_gzip_wrapper> decomp,
-		uint8_t *buffer, const size_t max_len, const size_t index) {
+size_t web::decompressingResponseFiller(
+		const std::shared_ptr<uzlib_gzip_wrapper> decomp, uint8_t *buffer,
+		const size_t max_len, const size_t index) {
 	return decomp->decompress(buffer, max_len);
 }
 
@@ -163,7 +169,8 @@ size_t web::replacingResponseFiller(
 			memcpy(buf, template_start + 1, template_end - template_start - 1);
 			buf[template_end - template_start - 1] = 0;
 			String replacement = String((char*) buf);
-			std::map<String, String>::const_iterator it = replacements.find(replacement);
+			std::map<String, String>::const_iterator it = replacements.find(
+					replacement);
 			if (it != replacements.end()) {
 				replacement = it->second;
 			}
@@ -209,11 +216,12 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 			"text/html", (uint8_t*) ERROR_HTML,
 			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
 	if (request->method() == HTTP_HEAD) {
-		response.response = new AsyncHeadOnlyResponse(response.response, response.status_code);
+		response.response = new AsyncHeadOnlyResponse(response.response,
+				response.status_code);
 	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(
-			request->url(), response.status_code)]++;
+	prom::http_requests_total[std::pair<String, uint16_t>(request->url(),
+			response.status_code)]++;
 #endif
 	request->send(response.response);
 	Serial.print("A client tried to access the not existing file \"");
@@ -221,7 +229,8 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 	Serial.println("\".");
 }
 
-web::ResponseData web::invalidMethodHandler(const WebRequestMethodComposite validMethods,
+web::ResponseData web::invalidMethodHandler(
+		const WebRequestMethodComposite validMethods,
 		AsyncWebServerRequest *request) {
 	if (request->method() == HTTP_OPTIONS) {
 		return optionsHandler(validMethods, request);
@@ -263,8 +272,8 @@ web::ResponseData web::invalidMethodHandler(const WebRequestMethodComposite vali
 				"Error 405 Method Not Allowed" }, { "ERROR",
 				"The page cannot handle " + String(request->methodToString())
 						+ " requests!" }, { "DETAILS", "The page \""
-				+ request->url() + "\" can handle the request methods " + validStr
-				+ "." } };
+				+ request->url() + "\" can handle the request methods "
+				+ validStr + "." } };
 
 		ResponseData response = replacingRequestHandler(replacements, 405,
 				"text/html", (uint8_t*) ERROR_HTML,
@@ -288,7 +297,8 @@ web::ResponseData web::invalidMethodHandler(const WebRequestMethodComposite vali
 	}
 }
 
-web::ResponseData web::optionsHandler(const WebRequestMethodComposite validMethods,
+web::ResponseData web::optionsHandler(
+		const WebRequestMethodComposite validMethods,
 		AsyncWebServerRequest *request) {
 	const uint16_t status_code = 204;
 	String valid = "OPTIONS";
@@ -318,8 +328,9 @@ web::ResponseData web::optionsHandler(const WebRequestMethodComposite validMetho
 web::ResponseData web::staticHandler(const uint16_t status_code,
 		const String &content_type, const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request) {
-	return ResponseData(request->beginResponse_P(status_code, content_type, start,
-			end - start), end - start, status_code);
+	return ResponseData(
+			request->beginResponse_P(status_code, content_type, start,
+					end - start), end - start, status_code);
 }
 
 web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
@@ -357,7 +368,8 @@ web::ResponseData web::replacingRequestHandler(
 		repl[replacement.first] = replacement.second().c_str();
 	}
 
-	return replacingRequestHandler(repl, status_code, content_type, start, end, request);
+	return replacingRequestHandler(repl, status_code, content_type, start, end,
+			request);
 }
 
 web::ResponseData web::replacingRequestHandler(
@@ -376,8 +388,9 @@ web::ResponseData web::replacingRequestHandler(
 		uint8_t *buf = new uint8_t[template_end - idx];
 		memcpy(buf, idx + 1, template_end - idx - 1);
 		buf[template_end - idx - 1] = 0;
-		if (replacements.find(String((char*)buf)) != replacements.end()) {
-			len_diff += replacements.at(String((char*)buf)).length() - (template_end - idx + 1);
+		if (replacements.find(String((char*) buf)) != replacements.end()) {
+			len_diff += replacements.at(String((char*) buf)).length()
+					- (template_end - idx + 1);
 		} else {
 			len_diff -= 2;
 		}
@@ -389,10 +402,18 @@ web::ResponseData web::replacingRequestHandler(
 	std::shared_ptr<int64_t> offset = std::make_shared<int64_t>(0);
 	AsyncWebServerResponse *response = request->beginResponse(content_type,
 			content_length,
-			std::bind(replacingResponseFiller, replacements, offset, start, end, _1, _2,
-					_3));
+			std::bind(replacingResponseFiller, replacements, offset, start, end,
+					_1, _2, _3));
 	response->setCode(status_code);
 	return ResponseData(response, content_length, status_code);
+}
+
+web::ResponseData web::redirectHandler(const char *target,
+		AsyncWebServerRequest *request) {
+	const uint16_t status_code = 307;
+	AsyncWebServerResponse *response = request->beginResponse(status_code);
+	response->addHeader("Location", target);
+	return ResponseData(response, 0, status_code);
 }
 
 void web::registerRequestHandler(const char *uri,
@@ -400,7 +421,8 @@ void web::registerRequestHandler(const char *uri,
 	const String uri_s = uri;
 	AsyncTrackingFallbackWebHandler *hand = handlers[uri_s];
 	if (!hand) {
-		hand = handlers[uri_s] = new AsyncTrackingFallbackWebHandler(uri_s, invalidMethodHandler);
+		hand = handlers[uri_s] = new AsyncTrackingFallbackWebHandler(uri_s,
+				invalidMethodHandler);
 		server.addHandler(hand);
 	}
 	using namespace std::placeholders;
@@ -419,11 +441,12 @@ void web::registerStaticHandler(const char *uri, const String &content_type,
 					(uint8_t*) page + strlen(page), _1));
 }
 
-void web::registerCompressedStaticHandler(const char *uri, const String &content_type,
-		const uint8_t *start, const uint8_t *end) {
+void web::registerCompressedStaticHandler(const char *uri,
+		const String &content_type, const uint8_t *start, const uint8_t *end) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
-			std::bind(compressedStaticHandler, 200, content_type, start, end, _1));
+			std::bind(compressedStaticHandler, 200, content_type, start, end,
+					_1));
 }
 
 void web::registerReplacingStaticHandler(const char *uri,
@@ -438,5 +461,11 @@ void web::registerReplacingStaticHandler(const char *uri,
 							const uint8_t*, AsyncWebServerRequest*)>(
 					replacingRequestHandler, replacements, 200, content_type,
 					(uint8_t*) page, (uint8_t*) page + strlen(page), _1));
+}
+
+void web::registerRedirect(const char *uri, const char *target) {
+	using namespace std::placeholders;
+	registerRequestHandler(uri, HTTP_ANY,
+			std::bind(redirectHandler, target, _1));
 }
 #endif /* ENABLE_WEB_SERVER == 1 */

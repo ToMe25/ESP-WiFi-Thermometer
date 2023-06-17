@@ -276,6 +276,16 @@ ResponseData replacingRequestHandler(
 		AsyncWebServerRequest *request);
 
 /**
+ * A web request handler generating a Temporary Redirect(307) response.
+ *
+ * @param target	The target url to redirect the client to.
+ * @param request	The request to handle.
+ * @return	The response to send to the client.
+ */
+ResponseData redirectHandler(const char *target,
+		AsyncWebServerRequest *request);
+
+/**
  * Registers the given request handler for the given uri and request methods.
  * Will automatically increment the prometheus request counter.
  *
@@ -339,6 +349,15 @@ void registerCompressedStaticHandler(const char *uri, const String &content_type
 void registerReplacingStaticHandler(const char *uri, const String &content_type,
 		const char *page,
 		const std::map<String, std::function<std::string()>> replacements);
+
+/**
+ * Registers a request handler redirecting to the given target url.
+ * The request handler will be registered for all request methods.
+ *
+ * @param uri		The uri to register the redirect for.
+ * @param target	The url to redirect to.
+ */
+void registerRedirect(const char *uri, const char *target);
 #endif /* ENABLE_WEB_SERVER */
 }
 
