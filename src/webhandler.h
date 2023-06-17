@@ -10,12 +10,34 @@
 
 #include "config.h"
 #if ENABLE_WEB_SERVER == 1
-#include <map>
-#include "uzlib_gzip_wrapper.h"
 #include <ESPAsyncWebServer.h>
-#endif
+namespace web {
+class ResponseData;
+class AsyncHeadOnlyResponse;
+class AsyncTrackingFallbackWebHandler;
 
-#if ENABLE_WEB_SERVER == 1
+/**
+ * A function handling HTTP requests for some set of urls.
+ * Gets the HTTP request to handle.
+ * Returns the response to be sent to the client.
+ */
+typedef std::function<ResponseData(AsyncWebServerRequest *request)> HTTPRequestHandler;
+
+/**
+ * A function handling all the HTTP request methods for which no handler was registered.
+ * Gets the HTTP request methods for the uri to handle, for which handlers were registered.
+ * Gets the HTTP request to handle.
+ * Returns the response to be sent to the client.
+ */
+typedef std::function<
+		ResponseData(const WebRequestMethodComposite handledMethods,
+				AsyncWebServerRequest *request)> HTTPFallbackRequestHandler;
+}
+
+#include <AsyncTrackingFallbackWebHandler.h>
+#include "uzlib_gzip_wrapper.h"
+#include <map>
+
 extern const char INDEX_HTML[] asm("_binary_data_index_html_start");
 extern const uint8_t MAIN_CSS_START[] asm("_binary_data_gzip_main_css_gz_start");
 extern const uint8_t MAIN_CSS_END[] asm("_binary_data_gzip_main_css_gz_end");
@@ -30,13 +52,11 @@ extern const uint8_t FAVICON_PNG_GZ_START[] asm("_binary_data_gzip_favicon_png_g
 extern const uint8_t FAVICON_PNG_GZ_END[] asm("_binary_data_gzip_favicon_png_gz_end");
 extern const uint8_t FAVICON_SVG_GZ_START[] asm("_binary_data_gzip_favicon_svg_gz_start");
 extern const uint8_t FAVICON_SVG_GZ_END[] asm("_binary_data_gzip_favicon_svg_gz_end");
-#endif
 
 /**
  * The namespace for all the web server related stuff in this project.
  */
 namespace web {
-#if ENABLE_WEB_SERVER == 1
 /**
  * A custom struct containing all the info required to send a response to the client.
  */
@@ -68,53 +88,6 @@ public:
 };
 
 /**
- * A response wrapper that sends the exact head of the wrapped response.
- * It doesn't however send any body at all.
- * This type of response should only be used to respond to HEAD requests.
- */
-class AsyncHeadOnlyResponse: public AsyncBasicResponse {
-private:
-	/**
-	 * The wrapped response, the headers of which will be sent.
-	 */
-	AsyncWebServerResponse *_wrapped;
-public:
-	/**
-	 * Creates a new head only response wrapping the given response.
-	 * This type of response should only be used to respond to HEAD requests.
-	 *
-	 * @param wrapped	The response to get the head from.
-	 */
-	AsyncHeadOnlyResponse(AsyncWebServerResponse *wrapped);
-
-	/**
-	 * Destroys this response, as well as the wrapped response.
-	 */
-	~AsyncHeadOnlyResponse();
-
-	/**
-	 * Assembles the response head to send to the client.
-	 *
-	 * @param version	Whether the request is HTTP 1.0 or 1.1+.
-	 * @return	The assembled response head.
-	 */
-	String _assembleHead(uint8_t version) override;
-
-	/**
-	 * Checks whether the data source of the wrapped response is valid.
-	 *
-	 * @return	True of the data source is valid.
-	 */
-	bool _sourceValid() const override;
-};
-
-/**
- * A function handling http requests for some set of urls.
- * Gets a not yet handled request, and returns a not yet sent response.
- */
-typedef std::function<ResponseData(AsyncWebServerRequest *request)> HTTPRequestHandler;
-
-/**
  * The character to use as a template delimiter.
  */
 static const char TEMPLATE_CHAR = '$';
@@ -123,7 +96,15 @@ static const char TEMPLATE_CHAR = '$';
  * The global async web server instance used by this handler.
  */
 extern AsyncWebServer server;
+
+/**
+ * A map containing the registered request handler for each uri.
+ */
+extern std::map<String, AsyncTrackingFallbackWebHandler*> handlers;
+#else /* ENABLE_WEB_SERVER == 1 */
+namespace web {
 #endif
+
 /**
  * Initializes the web server and the related components.
  */
@@ -184,23 +165,13 @@ size_t replacingResponseFiller(
 		const size_t index);
 
 /**
- * The method to be called by the AsyncWebServer to call a request handler.
- * Calls the handler and updates the prometheus web request statistics.
+ * A request handler wrapper for GET request handlers that automatically adapts them for HEAD requests.
  *
  * @param handler	The request handler to be wrapped by this method.
  * @param request	The request to be handled.
+ * @return	The response to be sent to the client.
  */
-void trackingRequestHandlerWrapper(const HTTPRequestHandler handler,
-		AsyncWebServerRequest *request);
-
-/**
- * A request handler wrapper for GET request handlers that automatically adapts them for HEAD request.
- * Also updates the prometheus web request statistics.
- *
- * @param handler	The request handler to be wrapped by this method.
- * @param request	The request to be handled.
- */
-void defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
+ResponseData defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
 		AsyncWebServerRequest *request);
 
 /**
@@ -212,13 +183,14 @@ void defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
 void notFoundHandler(AsyncWebServerRequest *request);
 
 /**
- * The request handler for pages that received an invalid request type.
+ * The request handler for pages that received an invalid request method.
  * Sends an error 405 page.
  *
  * @param validMethods	The request methods that will be accepted by this uri.
  * @param request		The request to handle.
+ * @return	The response to be sent to the client.
  */
-void invalidMethodHandler(const WebRequestMethodComposite validMethods,
+ResponseData invalidMethodHandler(const WebRequestMethodComposite validMethods,
 		AsyncWebServerRequest *request);
 
 /**
@@ -228,8 +200,9 @@ void invalidMethodHandler(const WebRequestMethodComposite validMethods,
  *
  * @param validMethods	The request methods that will be accepted by this uri.
  * @param request		The request to handle.
+ * @return	The response to be sent to the client.
  */
-void optionsHandler(const WebRequestMethodComposite validMethods,
+ResponseData optionsHandler(const WebRequestMethodComposite validMethods,
 		AsyncWebServerRequest *request);
 
 /**
@@ -303,12 +276,12 @@ ResponseData replacingRequestHandler(
 		AsyncWebServerRequest *request);
 
 /**
- * Registers the given handler for the web server, and increments the web requests counter
- * by one each time it is called.
+ * Registers the given request handler for the given uri and request methods.
+ * Will automatically increment the prometheus request counter.
  *
- * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
- * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
- * That means this method should never be called twice with the same uri.
+ * OPTIONS requests for the given uri will automatically be handled, if no OPTIONS handler is registered for the uri.
+ * A HEAD request handler will automatically be registered, if no HEAD handler was registered for the uri yes,
+ * and the new handler handles GET requests.
  *
  * @param uri		The path on which the page can be found.
  * @param method	The HTTP request method(s) for which to register the handler.
@@ -319,13 +292,9 @@ void registerRequestHandler(const char *uri,
 
 /**
  * Registers a request handler that returns the given content type and web page each time it is called.
- * Only registers a handler for request type get.
+ * Registers request handlers for the request methods GET, HEAD, and OPTIONS.
  * Always sends response code 200.
- * Also increments the request counter.
- *
- * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
- * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
- * That means this method should never be called twice with the same uri.
+ * Will automatically increment the prometheus request counter.
  *
  * @param uri			The path on which the page can be found.
  * @param content_type	The content type for the page.
@@ -336,14 +305,10 @@ void registerStaticHandler(const char *uri, const String &content_type,
 
 /**
  * Registers a request handler that returns the given content each time it is called.
- * Only registers a handler for request type get.
+ * Registers request handlers for the request methods GET, HEAD, and OPTIONS.
  * Always sends response code 200.
- * Also increments the request counter.
+ * Will automatically increment the prometheus request counter.
  * Expects the content to be a gzip compressed binary.
- *
- * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
- * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
- * That means this method should never be called twice with the same uri.
  *
  * @param uri			The path on which the file can be found.
  * @param content_type	The content type for the file.
@@ -361,13 +326,9 @@ void registerCompressedStaticHandler(const char *uri, const String &content_type
  * The templates will be replaced with the result of the function registered for them.
  * Note that each function will be called once per request, no matter how often its template appears.
  *
- * Only registers a handler for request type get.
+ * Registers request handlers for the request methods GET, HEAD, and OPTIONS.
  * Always sends response code 200.
- * Also increments the request counter.
- *
- * If the handler does not handle HEAD requests, this also registers a HEAD request handler for the same uri.
- * This method also registers a Method Not Allowed response for all request types that aren't specified by method, and aren't HEAD.
- * That means this method should never be called twice with the same uri.
+ * Will automatically increment the prometheus request counter.
  *
  * @param uri			The path on which the page can be found.
  * @param content_type	The content type for the page.

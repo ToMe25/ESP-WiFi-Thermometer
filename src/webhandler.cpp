@@ -7,9 +7,14 @@
 
 #include "webhandler.h"
 #include "main.h"
+#if ENABLE_WEB_SERVER == 1
+#if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 || ENABLE_PROMETHEUS_PUSH == 1
 #include "prometheus.h"
-#include <iomanip>
+#endif
+#include "AsyncHeadOnlyResponse.h"
 #include <sstream>
+#endif
+#include <iomanip>
 #ifdef ESP32
 #include <ESPmDNS.h>
 #elif defined(ESP8266)
@@ -18,6 +23,7 @@
 
 #if ENABLE_WEB_SERVER == 1
 AsyncWebServer web::server(WEB_SERVER_PORT);
+std::map<String, web::AsyncTrackingFallbackWebHandler*> web::handlers;
 #endif
 
 void web::setup() {
@@ -58,13 +64,10 @@ void web::setup() {
 	registerCompressedStaticHandler("/favicon.svg", "image/svg+xml", FAVICON_SVG_GZ_START,
 			FAVICON_SVG_GZ_END);
 
-	// FIXME find a way to avoid the * url being treated as a template.
-	//server.on("*", HTTP_OPTIONS,
-			//std::bind(optionsHandler, HTTP_GET | HTTP_HEAD | HTTP_OPTIONS,
-					//std::placeholders::_1));
-	//server.on("*", HTTP_ANY ^ HTTP_OPTIONS,
-			//std::bind(invalidMethodHandler, HTTP_OPTIONS,
-					//std::placeholders::_1));
+	// An OPTIONS request to * is supposed to return server-wide support.
+	registerRequestHandler("*", HTTP_OPTIONS,
+			std::bind(optionsHandler, HTTP_GET | HTTP_HEAD | HTTP_OPTIONS,
+					std::placeholders::_1));
 
 	server.onNotFound(notFoundHandler);
 
@@ -96,23 +99,6 @@ web::ResponseData::ResponseData(AsyncWebServerResponse *response,
 		response(response), content_length(content_len), status_code(
 				status_code) {
 
-}
-
-web::AsyncHeadOnlyResponse::AsyncHeadOnlyResponse(AsyncWebServerResponse *wrapped) :
-		AsyncBasicResponse(200, "", ""), _wrapped(wrapped) {
-
-}
-
-web::AsyncHeadOnlyResponse::~AsyncHeadOnlyResponse() {
-	delete _wrapped;
-}
-
-String web::AsyncHeadOnlyResponse::_assembleHead(uint8_t version) {
-	return _wrapped->_assembleHead(version);
-}
-
-bool web::AsyncHeadOnlyResponse::_sourceValid() const {
-	return _wrapped->_sourceValid();
 }
 
 web::ResponseData web::getJson(AsyncWebServerRequest *request) {
@@ -206,25 +192,12 @@ size_t web::replacingResponseFiller(
 	}
 }
 
-void web::trackingRequestHandlerWrapper(const HTTPRequestHandler handler,
-		AsyncWebServerRequest *request) {
-	const ResponseData response = handler(request);
-#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(request->url(),
-			response.status_code)]++;
-#endif
-	request->send(response.response);
-}
-
-void web::defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
-		AsyncWebServerRequest *request) {
+web::ResponseData web::defaultHeadRequestHandlerWrapper(
+		const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
 	ResponseData response = handler(request);
-	response.response = new AsyncHeadOnlyResponse(response.response);
-#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(request->url(),
-			response.status_code)]++;
-#endif
-	request->send(response.response);
+	response.response = new AsyncHeadOnlyResponse(response.response,
+			response.status_code);
+	return response;
 }
 
 void web::notFoundHandler(AsyncWebServerRequest *request) {
@@ -236,7 +209,7 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 			"text/html", (uint8_t*) ERROR_HTML,
 			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
 	if (request->method() == HTTP_HEAD) {
-		response.response = new AsyncHeadOnlyResponse(response.response);
+		response.response = new AsyncHeadOnlyResponse(response.response, response.status_code);
 	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	prom::http_requests_total[std::pair<String, uint16_t>(
@@ -248,70 +221,74 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 	Serial.println("\".");
 }
 
-void web::invalidMethodHandler(const WebRequestMethodComposite validMethods,
+web::ResponseData web::invalidMethodHandler(const WebRequestMethodComposite validMethods,
 		AsyncWebServerRequest *request) {
-	std::vector<String> valid;
-	valid.reserve(7);
-	if (validMethods & HTTP_GET) {
-		valid.push_back("GET");
-	}
-	if (validMethods & HTTP_POST) {
-		valid.push_back("POST");
-	}
-	if (validMethods & HTTP_DELETE) {
-		valid.push_back("DELETE");
-	}
-	if (validMethods & HTTP_PUT) {
-		valid.push_back("PUT");
-	}
-	if (validMethods & HTTP_PATCH) {
-		valid.push_back("PATCH");
-	}
-	if (validMethods & HTTP_HEAD) {
-		valid.push_back("HEAD");
-	}
-	if (validMethods & HTTP_OPTIONS) {
+	if (request->method() == HTTP_OPTIONS) {
+		return optionsHandler(validMethods, request);
+	} else {
+		std::vector<String> valid;
+		valid.reserve(7);
+		if (validMethods & HTTP_GET) {
+			valid.push_back("GET");
+		}
+		if (validMethods & HTTP_POST) {
+			valid.push_back("POST");
+		}
+		if (validMethods & HTTP_DELETE) {
+			valid.push_back("DELETE");
+		}
+		if (validMethods & HTTP_PUT) {
+			valid.push_back("PUT");
+		}
+		if (validMethods & HTTP_PATCH) {
+			valid.push_back("PATCH");
+		}
+		if (validMethods & HTTP_HEAD) {
+			valid.push_back("HEAD");
+		}
 		valid.push_back("OPTIONS");
-	}
 
-	String validStr = "";
-	for (size_t i = 0; i < valid.size(); i++) {
-		if (i > 0) {
-			validStr += ", ";
-			if (i == valid.size() - 1) {
-				validStr += "and ";
+		String validStr = "";
+		for (size_t i = 0; i < valid.size(); i++) {
+			if (i > 0) {
+				validStr += ", ";
+				if (i == valid.size() - 1) {
+					validStr += "and ";
+				}
 			}
+			validStr += valid[i];
 		}
-		validStr += valid[i];
-	}
 
-	std::map<String, String> replacements { { "TITLE",
-			"Error 405 Method Not Allowed" }, { "ERROR",
-			"The page cannot handle " + String(request->methodToString())
-					+ " requests!" }, { "DETAILS", "The page \""
-			+ request->url() + "\" can handle the request types " + validStr + "." } };
-	const ResponseData response = replacingRequestHandler(replacements, 405,
-			"text/html", (uint8_t*) ERROR_HTML,
-			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
-	validStr = "";
-	for (size_t i = 0; i < valid.size(); i++) {
-		if (i > 0) {
-			validStr += ", ";
+		std::map<String, String> replacements { { "TITLE",
+				"Error 405 Method Not Allowed" }, { "ERROR",
+				"The page cannot handle " + String(request->methodToString())
+						+ " requests!" }, { "DETAILS", "The page \""
+				+ request->url() + "\" can handle the request methods " + validStr
+				+ "." } };
+
+		ResponseData response = replacingRequestHandler(replacements, 405,
+				"text/html", (uint8_t*) ERROR_HTML,
+				(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
+		if (request->method() == HTTP_HEAD) {
+			response.response = new AsyncHeadOnlyResponse(response.response,
+					405);
 		}
-		validStr += valid[i];
+		validStr = "";
+		for (size_t i = 0; i < valid.size(); i++) {
+			if (i > 0) {
+				validStr += ", ";
+			}
+			validStr += valid[i];
+		}
+		response.response->addHeader("Allow", validStr);
+		Serial.print("A client tried to access the not existing file \"");
+		Serial.print(request->url().c_str());
+		Serial.println("\".");
+		return response;
 	}
-	response.response->addHeader("Allow", validStr);
-#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(
-			request->url(), response.status_code)]++;
-#endif
-	request->send(response.response);
-	Serial.print("A client tried to access the not existing file \"");
-	Serial.print(request->url().c_str());
-	Serial.println("\".");
 }
 
-void web::optionsHandler(const WebRequestMethodComposite validMethods,
+web::ResponseData web::optionsHandler(const WebRequestMethodComposite validMethods,
 		AsyncWebServerRequest *request) {
 	const uint16_t status_code = 204;
 	String valid = "OPTIONS";
@@ -335,11 +312,7 @@ void web::optionsHandler(const WebRequestMethodComposite validMethods,
 	}
 	AsyncWebServerResponse *response = request->beginResponse(status_code);
 	response->addHeader("Allow", valid);
-#if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(
-			request->url(), status_code)]++;
-#endif
-	request->send(response);
+	return ResponseData(response, 0, status_code);
 }
 
 web::ResponseData web::staticHandler(const uint16_t status_code,
@@ -424,22 +397,18 @@ web::ResponseData web::replacingRequestHandler(
 
 void web::registerRequestHandler(const char *uri,
 		const WebRequestMethodComposite method, HTTPRequestHandler handler) {
-	// The web request methods that will automatically be handled,
-	// if the given handler doesn't handle them.
-	const WebRequestMethodComposite autoHandled = HTTP_HEAD | HTTP_OPTIONS;
+	const String uri_s = uri;
+	AsyncTrackingFallbackWebHandler *hand = handlers[uri_s];
+	if (!hand) {
+		hand = handlers[uri_s] = new AsyncTrackingFallbackWebHandler(uri_s, invalidMethodHandler);
+		server.addHandler(hand);
+	}
 	using namespace std::placeholders;
-	server.on(uri, method,
-			std::bind(trackingRequestHandlerWrapper, handler, _1));
-	if (!(method & HTTP_HEAD)) {
-		server.on(uri, HTTP_HEAD,
+	hand->setHandler(method, handler);
+	if ((method & HTTP_GET) && !(hand->getHandledMethods() & HTTP_HEAD)) {
+		hand->setHandler(HTTP_HEAD,
 				std::bind(defaultHeadRequestHandlerWrapper, handler, _1));
 	}
-	if (!(method & HTTP_OPTIONS)) {
-		server.on(uri, HTTP_OPTIONS,
-				std::bind(optionsHandler, method | autoHandled, _1));
-	}
-	server.on(uri, (method | autoHandled) ^ HTTP_ANY,
-			std::bind(invalidMethodHandler, method | autoHandled, _1));
 }
 
 void web::registerStaticHandler(const char *uri, const String &content_type,

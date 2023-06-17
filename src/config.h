@@ -135,6 +135,8 @@ static const uint8_t SENSOR_PIN = 5;
 #endif
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 #if ENABLE_WEB_SERVER != 1
+#undef ENABLE_PROMETHEUS_SCRAPE_SUPPORT
+#define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 0
 #error Prometheus scrape support requires the web server to be enabled.
 #endif
 #endif
