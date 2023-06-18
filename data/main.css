@@ -1,10 +1,11 @@
-body{
+:root{
+--border-color:#808080;
 background-color:#c2cbd1;
+color-scheme:light dark;
 text-align:center;
 }
 
 .main{
---border-color:#808080;
 background-color:#ededed;
 color:#0d0d0d;
 font-size:2rem;
@@ -30,14 +31,14 @@ font-size:2.5rem;
 }
 
 @media only screen and (prefers-color-scheme:dark){
-body{
+:root{
+--border-color:#484946;
 background-color:#222221;
 }
 
 .main{
 background-color:#131312;
 color:#aab1b5;
---border-color:#484946;
 }
 
 h3,label,p{

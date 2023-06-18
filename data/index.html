@@ -5,7 +5,8 @@
 <meta name="author" content="ToMe25" />
 <meta name="description" content="A ESP Thermometer Web Page" />
 <meta name="viewport" content="width=device-width" />
-<meta name="theme-color" content="#c2cbd1" />
+<meta name="theme-color" content="#c2cbd1" media="not (prefers-color-scheme: dark)"/>
+<meta name="theme-color" content="#222221" media="(prefers-color-scheme: dark)"/>
 <title>ESP WiFi Thermometer</title>
 <link rel="stylesheet" type="text/css" href="/main.css">
 <link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48 64x64">
@@ -18,9 +19,9 @@
 <div class="main">
 <h1>ESP WiFi Thermometer</h1>
 <hr />
-<h3>Temperature: <span id="temp">$TEMP$</span>&deg;C</h3>
-<h3>Humidity: <span id="humid">$HUMID$</span>&#37;</h3>
-<h3>Time since Measurement: <time id="time" datetime="$TIME$">$TIME$</time></h3>
+<p>Temperature: <span id="temp">$TEMP$</span>&deg;C</p>
+<p>Humidity: <span id="humid">$HUMID$</span>&#37;</p>
+<p>Time since Measurement: <time id="time" datetime="$TIME$">$TIME$</time></p>
 </div>
 </body>
 </html>
