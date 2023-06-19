@@ -32,7 +32,7 @@ namespace prom {
 extern uint32_t used_heap;
 #endif
 #if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
-extern std::map<std::pair<String, uint16_t>, uint64_t> http_requests_total;
+extern std::map<String, std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> http_requests_total;
 #endif
 #if ENABLE_PROMETHEUS_PUSH == 1
 #if ENABLE_DEEP_SLEEP_MODE != 1

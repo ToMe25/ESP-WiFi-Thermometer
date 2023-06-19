@@ -14,7 +14,7 @@
 uint32_t prom::used_heap = 0;
 #endif
 #if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
-std::map<std::pair<String, uint16_t>, uint64_t> prom::http_requests_total;
+std::map<String, std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> prom::http_requests_total;
 #endif
 #if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
 uint64_t prom::last_push = 0;
@@ -99,10 +99,45 @@ std::string prom::getMetrics() {
 			<< std::endl;
 	metrics << "# TYPE http_requests_total counter" << std::endl;
 
-	for (std::pair<std::pair<String, uint16_t>, uint64_t> element : http_requests_total) {
-		metrics << "http_requests_total{method=\"get\",code=\""
-				<< element.first.second << "\",path=\"" << element.first.first.c_str()
-				<< "\"} " << element.second << std::endl;
+	for (std::pair<String,
+			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
+		for (std::pair<std::pair<WebRequestMethod, uint16_t>, uint64_t> response_stats : uri_stats.second) {
+			metrics << "http_requests_total{method=\"";
+			switch (response_stats.first.first) {
+			case HTTP_GET:
+				metrics << "get";
+				break;
+			case HTTP_POST:
+				metrics << "post";
+				break;
+			case HTTP_PUT:
+				metrics << "put";
+				break;
+			case HTTP_PATCH:
+				metrics << "patch";
+				break;
+			case HTTP_DELETE:
+				metrics << "delete";
+				break;
+			case HTTP_HEAD:
+				metrics << "head";
+				break;
+			case HTTP_OPTIONS:
+				metrics << "options";
+				break;
+			default:
+				metrics << "unknown";
+				Serial.print("Unknown request method ");
+				Serial.print(response_stats.first.first);
+				Serial.print(" for uri \"");
+				Serial.print(uri_stats.first);
+				Serial.println(" in stats map.");
+				break;
+			}
+			metrics << "\",code=\"" << response_stats.first.second;
+			metrics << "\",path=\"" << uri_stats.first.c_str() << "\"} "
+					<< response_stats.second << std::endl;
+		}
 	}
 #endif
 
@@ -141,15 +176,15 @@ void prom::pushMetrics() {
 		tcpClient = new AsyncClient();
 
 		if (!tcpClient) {
-			Serial.println(F("Failed to allocate Async TCP Client!"));
+			Serial.println("Failed to allocate Async TCP Client!");
 			return;
 		}
 
 		tcpClient->setAckTimeout(PROMETHEUS_PUSH_INTERVAL * 0.75);
 		tcpClient->setRxTimeout(PROMETHEUS_PUSH_INTERVAL * 0.75);
 		tcpClient->onError([](void *arg, AsyncClient *cli, int error) {
-			Serial.println(F("Connecting to the metrics server failed!"));
-			Serial.print(F("Connection Error: "));
+			Serial.println("Connecting to the metrics server failed!");
+			Serial.print("Connection Error: ");
 			Serial.println(error);
 			if (tcpClient != NULL) {
 				tcpClient = NULL;
@@ -162,7 +197,7 @@ void prom::pushMetrics() {
 			cli->onDisconnect([](void *arg, AsyncClient *c) {
 				if (tcpClient != NULL) {
 					tcpClient = NULL;
-					Serial.println(F("Connection to prometheus pushgateway server was closed while reading or writing."));
+					Serial.println("Connection to prometheus pushgateway server was closed while reading or writing.");
 					delete c;
 				}
 			}, NULL);
@@ -184,7 +219,7 @@ void prom::pushMetrics() {
 							uint64_t now = millis();
 
 							if (now - last_push >= (PROMETHEUS_PUSH_INTERVAL + 10) * 1000) {
-								Serial.print(F("Successfully pushed again after "));
+								Serial.print("Successfully pushed again after ");
 								Serial.print(now - last_push);
 								Serial.println("ms.");
 							}
@@ -192,9 +227,9 @@ void prom::pushMetrics() {
 							last_push = now;
 #endif
 						} else {
-							Serial.print(F("Received http status code "));
+							Serial.print("Received http status code ");
 							Serial.print(code);
-							Serial.println(F(" when trying to push metrics."));
+							Serial.println(" when trying to push metrics.");
 						}
 
 						if (tcpClient != NULL) {
@@ -227,7 +262,7 @@ void prom::pushMetrics() {
 		}, NULL);
 
 		if (!tcpClient->connect(PROMETHEUS_PUSH_ADDR, PROMETHEUS_PUSH_PORT)) {
-			Serial.println(F("Connecting to the metrics server failed!"));
+			Serial.println("Connecting to the metrics server failed!");
 			if (tcpClient != NULL) {
 				AsyncClient *cli = tcpClient;
 				tcpClient = NULL;

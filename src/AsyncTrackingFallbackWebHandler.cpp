@@ -83,8 +83,8 @@ void web::AsyncTrackingFallbackWebHandler::handleRequest(AsyncWebServerRequest *
 		Serial.println(", and didn't have a fallback handler.");
 	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(
-			request->url(), response.status_code)]++;
+	prom::http_requests_total[request->url()][ {
+			(WebRequestMethod) request->method(), response.status_code }]++;
 #endif
 	request->send(response.response);
 }

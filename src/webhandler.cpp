@@ -220,8 +220,8 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 				response.status_code);
 	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-	prom::http_requests_total[std::pair<String, uint16_t>(request->url(),
-			response.status_code)]++;
+	prom::http_requests_total[request->url()][ {
+			(WebRequestMethod) request->method(), response.status_code }]++;
 #endif
 	request->send(response.response);
 	Serial.print("A client tried to access the not existing file \"");
@@ -243,14 +243,14 @@ web::ResponseData web::invalidMethodHandler(
 		if (validMethods & HTTP_POST) {
 			valid.push_back("POST");
 		}
-		if (validMethods & HTTP_DELETE) {
-			valid.push_back("DELETE");
-		}
 		if (validMethods & HTTP_PUT) {
 			valid.push_back("PUT");
 		}
 		if (validMethods & HTTP_PATCH) {
 			valid.push_back("PATCH");
+		}
+		if (validMethods & HTTP_DELETE) {
+			valid.push_back("DELETE");
 		}
 		if (validMethods & HTTP_HEAD) {
 			valid.push_back("HEAD");
@@ -305,20 +305,20 @@ web::ResponseData web::optionsHandler(
 	if (validMethods & HTTP_GET) {
 		valid += ", GET";
 	}
-	if (validMethods & HTTP_HEAD) {
-		valid += ", HEAD";
-	}
 	if (validMethods & HTTP_POST) {
 		valid += ", POST";
-	}
-	if (validMethods & HTTP_DELETE) {
-		valid += ", DELETE";
 	}
 	if (validMethods & HTTP_PUT) {
 		valid += ", PUT";
 	}
 	if (validMethods & HTTP_PATCH) {
 		valid += ", PATCH";
+	}
+	if (validMethods & HTTP_DELETE) {
+		valid += ", DELETE";
+	}
+	if (validMethods & HTTP_HEAD) {
+		valid += ", HEAD";
 	}
 	AsyncWebServerResponse *response = request->beginResponse(status_code);
 	response->addHeader("Allow", valid);
