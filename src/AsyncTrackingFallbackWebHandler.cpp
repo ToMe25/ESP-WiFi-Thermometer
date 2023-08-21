@@ -76,6 +76,7 @@ bool web::AsyncTrackingFallbackWebHandler::canHandle(AsyncWebServerRequest *requ
 }
 
 void web::AsyncTrackingFallbackWebHandler::handleRequest(AsyncWebServerRequest *request) {
+	const size_t start = micros();
 	ResponseData response(request->beginResponse(500), 0, 500);
 	HTTPRequestHandler handler = _getHandler((WebRequestMethod) request->method());
 	if (handler) {
@@ -85,17 +86,17 @@ void web::AsyncTrackingFallbackWebHandler::handleRequest(AsyncWebServerRequest *
 		delete response.response;
 		response = _fallbackHandler(getHandledMethods(), request);
 	} else {
-		Serial.print("The handler for uri \"");
-		Serial.print(_uri);
-		Serial.print("\" didn't have a handler for request type ");
-		Serial.print(request->methodToString());
-		Serial.println(", and didn't have a fallback handler.");
+		log_w("The handler for uri \"%s\" didn't have a handler for request type %s, and didn't have a fallback handler.",
+				_uri.c_str(), request->methodToString());
 	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	prom::http_requests_total[request->url()][ {
 			(WebRequestMethod) request->method(), response.status_code }]++;
 #endif
+	const size_t mid = micros();
 	request->send(response.response);
+	const size_t end = micros();
+	log_d("Handling a request to \"%s\" took %luus + %luus.", request->url().c_str(), mid - start, end - mid);
 }
 
 bool web::AsyncTrackingFallbackWebHandler::isRequestHandlerTrivial() {

@@ -65,90 +65,143 @@ void prom::connect() {
 }
 
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-std::string prom::getMetrics() {
-	std::ostringstream metrics;
-	metrics << "# HELP environment_temperature The current measured external temperature in degrees celsius."
-			<< std::endl;
-	metrics << "# TYPE environment_temperature gauge" << std::endl;
-	metrics << "environment_temperature ";
+String prom::getMetrics() {
+#if ENABLE_WEB_SERVER == 1
+	// First determine the sum of all called path lengths.
+	size_t uri_len_sum = 0;
+	for (std::pair<String,
+			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
+		uri_len_sum += uri_stats.first.length();
+	}
+#endif
+	// The added lengths of all the lines.
+	// One float is assumed to have three digits before and after the dot.
+	// An integer is assumed to be at most 20 digits.
+	const size_t max_len = 93 + 37 + 32 + 88 + 34 + 29 +
+#ifdef ESP32
+			71 + 32 + 40 +
+#endif
+#if ENABLE_WEB_SERVER == 1
+			85 + 35 + 78 * http_requests_total.size() + uri_len_sum +
+#endif
+			0;
+
+	char *buffer = new char[max_len + 1];
+	buffer[0] = 0;
+
+	strncat(buffer,
+			"# HELP environment_temperature The current measured external temperature in degrees celsius.\n",
+			max_len);
+	size_t len = 93;
+	strncat(buffer + len,
+			"# TYPE environment_temperature gauge\nenvironment_temperature ",
+			max_len - len);
+	len += 37 + 24;
 	if (!isnan(temperature)) {
-		metrics << std::fixed << std::setprecision(3) << temperature << std::endl;
+		len += snprintf(buffer + len, max_len - len, "%.3f\n", temperature);
 	} else {
-		metrics << -1 << std::endl;
+		strncat(buffer + len, "NAN\n", max_len - len);
+		len += 4;
 	}
 
-	metrics << "# HELP environment_humidity The current measured external relative humidity in percent."
-			<< std::endl;
-	metrics << "# TYPE environment_humidity gauge" << std::endl;
-	metrics << "environment_humidity ";
+	strncat(buffer + len,
+			"# HELP environment_humidity The current measured external relative humidity in percent.\n",
+			max_len - len);
+	len += 88;
+	strncat(buffer + len,
+			"# TYPE environment_humidity gauge\nenvironment_humidity ",
+			max_len - len);
+	len += 34 + 21;
 	if (!isnan(humidity)) {
-		metrics << std::fixed << std::setprecision(3) << humidity << std::endl;
+		len += snprintf(buffer + len, max_len - len, "%.3f\n", humidity);
 	} else {
-		metrics << -1 << std::endl;
+		strncat(buffer + len, "NAN\n", max_len - len);
 	}
 
-#ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
-	metrics << "# HELP process_heap_bytes The amount of heap used on the ESP in bytes."
-			<< std::endl;
-	metrics << "# TYPE process_heap_bytes gauge" << std::endl;
-	metrics << "process_heap_bytes " << used_heap << std::endl;
+	// From what I could find this seems to be impossible on a ESP8266.
+#ifdef ESP32
+	strncat(buffer + len,
+			"# HELP process_heap_bytes The amount of heap used on the ESP in bytes.\n",
+			max_len - len);
+	len += 71;
+	strncat(buffer + len,
+			"# TYPE process_heap_bytes gauge\nprocess_heap_bytes ",
+			max_len - len);
+	len += 32 + 19;
+	len += snprintf(buffer + len, max_len - len, "%u\n", used_heap);
 #endif
 
 #if ENABLE_WEB_SERVER == 1
-	metrics << "# HELP http_requests_total The total number of http requests handled by this server."
-			<< std::endl;
-	metrics << "# TYPE http_requests_total counter" << std::endl;
+	// Write web server statistics.
+	strncat(buffer + len,
+			"# HELP http_requests_total The total number of http requests handled by this server.\n",
+			max_len - len);
+	len += 85;
+	strncat(buffer + len, "# TYPE http_requests_total counter\n",
+			max_len - len);
+	len += 35;
 
 	for (std::pair<String,
 			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
 		for (std::pair<std::pair<WebRequestMethod, uint16_t>, uint64_t> response_stats : uri_stats.second) {
-			metrics << "http_requests_total{method=\"";
+			strncat(buffer + len, "http_requests_total{method=\"",
+					max_len - len);
+			len += 28;
 			switch (response_stats.first.first) {
 			case HTTP_GET:
-				metrics << "get";
+				strncat(buffer + len, "get", max_len - len);
+				len += 3;
 				break;
 			case HTTP_POST:
-				metrics << "post";
+				strncat(buffer + len, "post", max_len - len);
+				len += 4;
 				break;
 			case HTTP_PUT:
-				metrics << "put";
+				strncat(buffer + len, "put", max_len - len);
+				len += 3;
 				break;
 			case HTTP_PATCH:
-				metrics << "patch";
+				strncat(buffer + len, "patch", max_len - len);
+				len += 5;
 				break;
 			case HTTP_DELETE:
-				metrics << "delete";
+				strncat(buffer + len, "delete", max_len - len);
+				len += 6;
 				break;
 			case HTTP_HEAD:
-				metrics << "head";
+				strncat(buffer + len, "head", max_len - len);
+				len += 4;
 				break;
 			case HTTP_OPTIONS:
-				metrics << "options";
+				strncat(buffer + len, "options", max_len - len);
+				len += 7;
 				break;
 			default:
-				metrics << "unknown";
-				Serial.print("Unknown request method ");
-				Serial.print(response_stats.first.first);
-				Serial.print(" for uri \"");
-				Serial.print(uri_stats.first);
-				Serial.println(" in stats map.");
+				strncat(buffer + len, "unknown", max_len - len);
+				len += 7;
+				log_e("Unknown request method %u for uri \"%s\" in stats map.",
+						response_stats.first.first, uri_stats.first.c_str());
 				break;
 			}
-			metrics << "\",code=\"" << response_stats.first.second;
-			metrics << "\",path=\"" << uri_stats.first.c_str() << "\"} "
-					<< response_stats.second << std::endl;
+
+			len += snprintf(buffer + len, max_len - len,
+					"\",code=\"%u\",path=\"%s\"} %llu\n",
+					response_stats.first.second, uri_stats.first.c_str(),
+					response_stats.second);
 		}
 	}
 #endif
 
-	return metrics.str();
+	String metrics = buffer;
+	delete[] buffer;
+	return metrics;
 }
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
-	const std::string metrics = getMetrics();
-	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", metrics.c_str());
+	const String metrics = getMetrics();
+	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", metrics);
 	response->addHeader("Cache-Control", "no-cache");
 	return web::ResponseData(response, metrics.length(), 200);
 }
@@ -176,16 +229,15 @@ void prom::pushMetrics() {
 		tcpClient = new AsyncClient();
 
 		if (!tcpClient) {
-			Serial.println("Failed to allocate Async TCP Client!");
+			log_e("Failed to allocate Async TCP Client!");
 			return;
 		}
 
 		tcpClient->setAckTimeout(PROMETHEUS_PUSH_INTERVAL * 0.75);
 		tcpClient->setRxTimeout(PROMETHEUS_PUSH_INTERVAL * 0.75);
 		tcpClient->onError([](void *arg, AsyncClient *cli, int error) {
-			Serial.println("Connecting to the metrics server failed!");
-			Serial.print("Connection Error: ");
-			Serial.println(error);
+			log_e("Connecting to the metrics server failed!");
+			log_e("Connection Error: %d", error);
 			if (tcpClient != NULL) {
 				tcpClient = NULL;
 				delete cli;
@@ -197,7 +249,7 @@ void prom::pushMetrics() {
 			cli->onDisconnect([](void *arg, AsyncClient *c) {
 				if (tcpClient != NULL) {
 					tcpClient = NULL;
-					Serial.println("Connection to prometheus pushgateway server was closed while reading or writing.");
+					log_e("Connection to prometheus pushgateway server was closed while reading or writing.");
 					delete c;
 				}
 			}, NULL);
@@ -219,17 +271,13 @@ void prom::pushMetrics() {
 							uint64_t now = millis();
 
 							if (now - last_push >= (PROMETHEUS_PUSH_INTERVAL + 10) * 1000) {
-								Serial.print("Successfully pushed again after ");
-								Serial.print(now - last_push);
-								Serial.println("ms.");
+								log_i("Successfully pushed again after %lums.", now - last_push);
 							}
 
 							last_push = now;
 #endif
 						} else {
-							Serial.print("Received http status code ");
-							Serial.print(code);
-							Serial.println(" when trying to push metrics.");
+							log_w("Received http status code %d when trying to push metrics.", code);
 						}
 
 						if (tcpClient != NULL) {
@@ -250,7 +298,7 @@ void prom::pushMetrics() {
 			cli->write(" HTTP/1.0\r\nHost: ");
 			cli->write(PROMETHEUS_PUSH_ADDR);
 			cli->write("\r\n");
-			std::string metrics = getMetrics();
+			String metrics = getMetrics();
 			cli->write("Content-Type: application/x-www-form-urlencoded\r\n");
 			cli->write("Content-Length: ");
 			std::ostringstream converter;
@@ -262,7 +310,7 @@ void prom::pushMetrics() {
 		}, NULL);
 
 		if (!tcpClient->connect(PROMETHEUS_PUSH_ADDR, PROMETHEUS_PUSH_PORT)) {
-			Serial.println("Connecting to the metrics server failed!");
+			log_e("Connecting to the metrics server failed!");
 			if (tcpClient != NULL) {
 				AsyncClient *cli = tcpClient;
 				tcpClient = NULL;

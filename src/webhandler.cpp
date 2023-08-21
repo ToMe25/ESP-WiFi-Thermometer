@@ -106,26 +106,36 @@ web::ResponseData::ResponseData(AsyncWebServerResponse *response,
 }
 
 web::ResponseData web::getJson(AsyncWebServerRequest *request) {
-	std::ostringstream json;
-	json << "{\"temperature\": ";
+	const std::string time_string = getTimeSinceMeasurement();
+	// Valid values will never be longer than "Unknown".
+	const size_t max_len = 61 + time_string.length();
+	char *buffer = new char[max_len + 1];
+	buffer[0] = 0;
+
+	strncat(buffer, "{\"temperature\": ", max_len);
+	size_t len = 16;
 	if (isnan(temperature)) {
-		json << "\"Unknown\"";
+		strncat(buffer + len, "\"Unknown\"", max_len - len);
+		len += 9;
 	} else {
-		json << std::setprecision(temperature > 10 ? 4 : 3) << temperature;
+		len += snprintf(buffer + len, max_len - len, "%f.2", temperature);
 	}
-	json << ", \"humidity\": ";
+	strncat(buffer + len, ", \"humidity\": ", max_len - len);
+	len += 13;
 	if (isnan(humidity)) {
-		json << "\"Unknown\"";
+		strncat(buffer + len, "\"Unknown\"", max_len - len);
+		len += 9;
 	} else {
-		json << std::setprecision(humidity > 10 ? 4 : 3) << humidity;
+		len += snprintf(buffer + len, max_len - len, "%f.2", humidity);
 	}
-	json << ", \"time\": \"";
-	json << getTimeSinceMeasurement();
-	json << "\"}";
+	len += snprintf(buffer + len, max_len - len, ", \"time\": \"%s\"}",
+			time_string.c_str());
+
 	AsyncWebServerResponse *response = request->beginResponse(200,
-			"application/json", json.str().c_str());
+			"application/json", buffer);
+	delete[] buffer;
 	response->addHeader("Cache-Control", "no-cache");
-	return ResponseData(response, json.str().length(), 200);
+	return ResponseData(response, len, 200);
 }
 
 size_t web::decompressingResponseFiller(
@@ -200,7 +210,7 @@ size_t web::replacingResponseFiller(
 }
 
 web::ResponseData web::defaultHeadRequestHandlerWrapper(
-		const HTTPRequestHandler handler, AsyncWebServerRequest *request) {
+		const HTTPRequestHandler &handler, AsyncWebServerRequest *request) {
 	ResponseData response = handler(request);
 	response.response = new AsyncHeadOnlyResponse(response.response,
 			response.status_code);
@@ -208,7 +218,8 @@ web::ResponseData web::defaultHeadRequestHandlerWrapper(
 }
 
 void web::notFoundHandler(AsyncWebServerRequest *request) {
-	std::map<String, String> replacements { { "TITLE", "Error 404 Not Found" },
+	const size_t start = micros();
+	const std::map<String, String> replacements { { "TITLE", "Error 404 Not Found" },
 			{ "ERROR", "The requested file can not be found on this server!" },
 			{ "DETAILS", "The page \"" + request->url()
 					+ "\" couldn't be found." } };
@@ -223,10 +234,11 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 	prom::http_requests_total[request->url()][ {
 			(WebRequestMethod) request->method(), response.status_code }]++;
 #endif
+	const size_t mid = micros();
 	request->send(response.response);
-	Serial.print("A client tried to access the not existing file \"");
-	Serial.print(request->url().c_str());
-	Serial.println("\".");
+	const size_t end = micros();
+	log_i("A client tried to access the not existing file \"%s\".", request->url().c_str());
+	log_d("Handling a request to \"%s\" took %luus + %luus.", request->url().c_str(), mid - start, end - mid);
 }
 
 web::ResponseData web::invalidMethodHandler(
@@ -290,9 +302,7 @@ web::ResponseData web::invalidMethodHandler(
 			validStr += valid[i];
 		}
 		response.response->addHeader("Allow", validStr);
-		Serial.print("A client tried to access the not existing file \"");
-		Serial.print(request->url().c_str());
-		Serial.println("\".");
+		log_i("A client tried to access the not existing file \"%s\".", request->url().c_str());
 		return response;
 	}
 }

@@ -78,7 +78,7 @@ void setup() {
 		mqtt::publishMeasurements();
 #endif
 	} else {
-		Serial.println("Failed to connect to WiFi!");
+		log_e("Failed to connect to WiFi!");
 	}
 
 	WiFi.disconnect(1);
@@ -101,7 +101,7 @@ void setupWiFi() {
 
 	if (STATIC_IP != IPADDR_ANY || GATEWAY != IPADDR_ANY || SUBNET != IPADDR_ANY) {
 		if (!WiFi.config(STATIC_IP, GATEWAY, SUBNET)) {
-			Serial.println("Configuring WiFi failed!");
+			log_e("Configuring WiFi failed!");
 			return;
 		}
 
@@ -164,10 +164,8 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		WiFi.enableIpV6();
 
 		if (STATIC_IP != IPADDR_ANY) {
-			Serial.print("WiFi ready ");
-			Serial.print(millis() - start_ms);
-			Serial.println("ms after start.");
-			Serial.print("STA IP: ");
+			log_i("WiFi ready %lums after start.", millis() - start_ms);
+			Serial.print("Using STA IP ");
 			Serial.println(localhost = WiFi.localIP());
 			web::connect();
 			prom::connect();
@@ -175,17 +173,15 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		}
 		break;
 	case SYSTEM_EVENT_GOT_IP6:
-		Serial.print("STA IPv6: ");
+		Serial.print("Using STA IPv6 ");
 		Serial.println(localhost_ipv6 = WiFi.localIPv6());
 		break;
 	case SYSTEM_EVENT_STA_GOT_IP:
 #if CORE_DEBUG_LEVEL == 5
 		delay(10);// if not doing this the additional logging causes the next log entry to not work.
 #endif
-		Serial.print("WiFi ready ");
-		Serial.print(millis() - start_ms);
-		Serial.println("ms after start.");
-		Serial.print("STA IP: ");
+		log_i("WiFi ready %lums after start.", millis() - start_ms);
+		Serial.print("Using STA IP ");
 		Serial.println(localhost = WiFi.localIP());
 		web::connect();
 		prom::connect();
@@ -226,10 +222,8 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 void onWiFiEvent(WiFiEvent_t id) {
 	switch (id) {
 	case WIFI_EVENT_STAMODE_GOT_IP:
-		Serial.print("WiFi ready ");
-		Serial.print(millis() - start_ms);
-		Serial.println("ms after start.");
-		Serial.print("STA IP: ");
+		log_i("WiFi ready %lums after start.", millis() - start_ms);
+		Serial.print("Using STA IP ");
 		Serial.println(localhost = WiFi.localIP());
 		web::connect();
 		prom::connect();

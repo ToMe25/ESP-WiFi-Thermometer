@@ -171,7 +171,7 @@ size_t replacingResponseFiller(
  * @param request	The request to be handled.
  * @return	The response to be sent to the client.
  */
-ResponseData defaultHeadRequestHandlerWrapper(const HTTPRequestHandler handler,
+ResponseData defaultHeadRequestHandlerWrapper(const HTTPRequestHandler &handler,
 		AsyncWebServerRequest *request);
 
 /**

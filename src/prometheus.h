@@ -63,7 +63,7 @@ void connect();
  *
  * @return	A string containing all the metrics for a prometheus server.
  */
-std::string getMetrics();
+String getMetrics();
 #endif
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
