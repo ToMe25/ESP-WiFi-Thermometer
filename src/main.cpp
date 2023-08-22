@@ -21,6 +21,7 @@
 #if defined(ESP8266)
 #include <dhcpserver.h>
 #endif
+#include "fallback_log.h"
 
 IPAddress localhost;
 #ifdef ESP32
@@ -222,7 +223,7 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 void onWiFiEvent(WiFiEvent_t id) {
 	switch (id) {
 	case WIFI_EVENT_STAMODE_GOT_IP:
-		log_i("WiFi ready %lums after start.", millis() - start_ms);
+		log_i("WiFi ready %lums after start.", (long unsigned int ) (millis() - start_ms));
 		Serial.print("Using STA IP ");
 		Serial.println(localhost = WiFi.localIP());
 		web::connect();

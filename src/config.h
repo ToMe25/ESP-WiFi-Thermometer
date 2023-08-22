@@ -31,7 +31,7 @@
 // The time between two measurements in deep sleep mode.
 // Specified in seconds.
 // Default is 5 minutes, or 300 seconds.
-static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
+static constexpr uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
 
 // Deep sleep mode automatic config.
 #undef ENABLE_WEB_SERVER
@@ -48,7 +48,7 @@ static const uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
 // The hostname with which the esp can be reached.
 // This value is used for both the actual hostname, as well as the mDNS hostname(mDNS names end with .local).
 // While the normal hostname doesn't work with a static IP, mDNS still works.
-static constexpr char HOSTNAME[] = "esp-wifi-thermometer";
+static constexpr const char HOSTNAME[] = "esp-wifi-thermometer";
 // If set to an actual IP rather then IPADDR_ANY this will make the esp use that IP.
 // However setting this to anything but IPADDR_ANY means the hostname wont work.
 // If this is set to IPADDR_ANY the esp will get an IP address from the dhcp server.
@@ -70,7 +70,7 @@ static const IPAddress SUBNET = IPADDR_ANY;
 #if ENABLE_WEB_SERVER == 1
 // The port on which to open the web server that shows the measurements.
 // The default web server port is 80.
-static const uint16_t WEB_SERVER_PORT = 80;
+static constexpr uint16_t WEB_SERVER_PORT = 80;
 // The value for the Server header of all http responses sent by the webserver.
 // The hardware name may be added to the server header.
 // The default value is "ESP-WiFi-Thermometer".
@@ -84,16 +84,16 @@ static const uint16_t WEB_SERVER_PORT = 80;
 // Decompression requires a window size bytes large buffer on the esp.
 // The range of valid values is -8 to -15.
 // Default is -10.
-static const int8_t GZIP_DECOMP_WINDOW_SIZE = -10;
+static constexpr int8_t GZIP_DECOMP_WINDOW_SIZE = -10;
 
 // Web server automatic config.
 #if SERVER_HEADER_APPEND_HARDWARE != 1
-static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM;
+static constexpr const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM;
 #else
 #ifdef ESP32
-static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP32)";
+static constexpr const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP32)";
 #elif defined(ESP8266)
-static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)";
+static constexpr const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)";
 #endif
 #endif
 #endif
@@ -108,10 +108,10 @@ static const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)";
 // The type of DHT sensor in use.
 // Only used if SENSOR_TYPE is SENSOR_TYPE_DHT.
 // Valid types are 11, 12, 21, and 22.
-static const uint8_t DHT_TYPE = 22;
+static constexpr uint8_t DHT_TYPE = 22;
 // The gpio pin to which the data pin of the sensor is connected.
 // Default is 5.
-static const uint8_t SENSOR_PIN = 5;
+static constexpr uint8_t SENSOR_PIN = 5;
 
 // Arduino OTA options
 // Whether to enable the Arduino OTA server.
@@ -149,24 +149,24 @@ static const uint8_t SENSOR_PIN = 5;
 #if ENABLE_PROMETHEUS_PUSH == 1
 // The address of the prometheus pushgateway to push the data to.
 // Can be an IP address, a hostname, or a domain name.
-static constexpr char PROMETHEUS_PUSH_ADDR[] = "192.168.2.203";
+static constexpr const char PROMETHEUS_PUSH_ADDR[] = "192.168.2.203";
 // The port of the prometheus pushgateway.
 // The default prometheus pushgateway port is 9091.
-static const uint16_t PROMETHEUS_PUSH_PORT = 9091;
+static constexpr uint16_t PROMETHEUS_PUSH_PORT = 9091;
 // The time between two HTTP post requests sent to the pushgateway.
 // Specified in seconds.
 // Ignored in deep sleep mode.
 // Prometheus default scrape interval is every 30 seconds.
-static const uint16_t PROMETHEUS_PUSH_INTERVAL = 30;
+static constexpr uint16_t PROMETHEUS_PUSH_INTERVAL = 30;
 // The name of the job to use for the prometheus metrics when pushing.
 // Leave empty to use the hostname of this device.
-static constexpr char PROMETHEUS_PUSH_JOB[] = "";
+static constexpr const char PROMETHEUS_PUSH_JOB[] = "";
 // The name of the instance to use for the prometheus metrics when pushing.
 // Leave empty to use the device IP.
-static constexpr char PROMETHEUS_PUSH_INSTANCE[] = "";
+static constexpr const char PROMETHEUS_PUSH_INSTANCE[] = "";
 // The name of the namespace to use for the prometheus metrics when pushing.
 // Leave empty to not send namespace information.
-static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
+static constexpr const char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 #endif
 
 // MQTT options
@@ -174,24 +174,24 @@ static constexpr char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
 // This will publish the measurements to the MQTT broker configured below.
 // Set to 1 to enable and to 0 to disable.
 #ifndef ENABLE_MQTT_PUBLISH
-#define ENABLE_MQTT_PUBLISH 1
+#define ENABLE_MQTT_PUBLISH 0
 #endif
 #if ENABLE_MQTT_PUBLISH == 1
 // The address of the MQTT broker to publish the measurements to.
 // Can be an IP address, a hostname, or a domain name.
-static constexpr char MQTT_BROKER_ADDR[] = "192.168.2.203";
+static constexpr const char MQTT_BROKER_ADDR[] = "192.168.2.203";
 // The port of the MQTT broker to publish to.
 // The default MQTT broker port is 1883.
-static const uint16_t MQTT_BROKER_PORT = 1883;
+static constexpr uint16_t MQTT_BROKER_PORT = 1883;
 // The time between two MQTT pushes.
 // Specified in seconds.
 // Ignored in deep sleep mode.
-static const uint16_t MQTT_PUBLISH_INTERVAL = 15;
+static constexpr uint16_t MQTT_PUBLISH_INTERVAL = 15;
 // The namespace of the measurement topics.
 // The MQTT topics published are structured like this: "namespace/measurement value".
 // Also used as the name to open the MQTT connection.
 // Leave empty to use the device hostname.
-static constexpr char MQTT_TOPIC_NAMESPACE[] = "";
+static constexpr const char MQTT_TOPIC_NAMESPACE[] = "";
 // Whether MQTT publishing should be done anonymously.
 // If enabled the MQTT connection will be initialized without a username or password.
 // Set to 1 to enable and to 0 to disable.

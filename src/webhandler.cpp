@@ -20,6 +20,7 @@
 #elif defined(ESP8266)
 #include <ESP8266mDNS.h>
 #endif
+#include "fallback_log.h"
 
 #if ENABLE_WEB_SERVER == 1
 AsyncWebServer web::server(WEB_SERVER_PORT);
@@ -118,7 +119,7 @@ web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 		strncat(buffer + len, "\"Unknown\"", max_len - len);
 		len += 9;
 	} else {
-		len += snprintf(buffer + len, max_len - len, "%f.2", temperature);
+		len += snprintf(buffer + len, max_len - len, "%.2f", temperature);
 	}
 	strncat(buffer + len, ", \"humidity\": ", max_len - len);
 	len += 13;
@@ -126,7 +127,7 @@ web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 		strncat(buffer + len, "\"Unknown\"", max_len - len);
 		len += 9;
 	} else {
-		len += snprintf(buffer + len, max_len - len, "%f.2", humidity);
+		len += snprintf(buffer + len, max_len - len, "%.2f", humidity);
 	}
 	len += snprintf(buffer + len, max_len - len, ", \"time\": \"%s\"}",
 			time_string.c_str());
@@ -237,8 +238,11 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 	const size_t mid = micros();
 	request->send(response.response);
 	const size_t end = micros();
-	log_i("A client tried to access the not existing file \"%s\".", request->url().c_str());
-	log_d("Handling a request to \"%s\" took %luus + %luus.", request->url().c_str(), mid - start, end - mid);
+	log_i("A client tried to access the not existing file \"%s\".",
+			request->url().c_str());
+	log_d("Handling a request to \"%s\" took %luus + %luus.",
+			request->url().c_str(), (long unsigned int ) (mid - start),
+			(long unsigned int ) (end - mid));
 }
 
 web::ResponseData web::invalidMethodHandler(

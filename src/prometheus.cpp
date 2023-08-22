@@ -9,6 +9,7 @@
 #include "main.h"
 #include <iomanip>
 #include <sstream>
+#include "fallback_log.h"
 
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
 uint32_t prom::used_heap = 0;

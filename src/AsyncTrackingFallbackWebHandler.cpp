@@ -10,6 +10,7 @@
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 || ENABLE_PROMETHEUS_PUSH == 1
 #include "prometheus.h"
 #endif
+#include "fallback_log.h"
 
 /**
  * A method to get the index of the Most Significant Bit set in a number.
@@ -96,7 +97,9 @@ void web::AsyncTrackingFallbackWebHandler::handleRequest(AsyncWebServerRequest *
 	const size_t mid = micros();
 	request->send(response.response);
 	const size_t end = micros();
-	log_d("Handling a request to \"%s\" took %luus + %luus.", request->url().c_str(), mid - start, end - mid);
+	log_d("Handling a request to \"%s\" took %luus + %luus.",
+			request->url().c_str(), (long unsigned int ) (mid - start),
+			(long unsigned int ) (end - mid));
 }
 
 bool web::AsyncTrackingFallbackWebHandler::isRequestHandlerTrivial() {

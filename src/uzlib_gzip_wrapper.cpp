@@ -7,6 +7,7 @@
 
 #include "uzlib_gzip_wrapper.h"
 #include <Arduino.h>
+#include "fallback_log.h"
 
 uzlib_gzip_wrapper::uzlib_gzip_wrapper(const uint8_t *cmp_start,
 		const uint8_t *cmp_end, int8_t wsize) :
