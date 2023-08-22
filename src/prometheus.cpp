@@ -117,6 +117,7 @@ String prom::getMetrics() {
 		len += snprintf(buffer + len, max_len - len, "%.3f\n", humidity);
 	} else {
 		strncat(buffer + len, "NAN\n", max_len - len);
+		len += 4;
 	}
 
 	// From what I could find this seems to be impossible on a ESP8266.
@@ -189,6 +190,10 @@ String prom::getMetrics() {
 					"\",code=\"%u\",path=\"%s\"} %llu\n",
 					response_stats.first.second, uri_stats.first.c_str(),
 					response_stats.second);
+			if (len >= max_len) {
+				log_e("Metrics generation buffer overflow.");
+				break;
+			}
 		}
 	}
 #endif
