@@ -45,20 +45,22 @@ void prom::connect() {
 #if ENABLE_PROMETHEUS_PUSH == 1
 	std::ostringstream stream;
 	stream << "/metrics/job/";
-	if (strlen(PROMETHEUS_PUSH_JOB) > 0) {
+	if (PROMETHEUS_PUSH_JOB_LEN > 0) {
 		stream << PROMETHEUS_PUSH_JOB;
 	} else {
 		stream << HOSTNAME;
 	}
 	stream << "/instance/";
-	if (strlen(PROMETHEUS_PUSH_INSTANCE) > 0) {
+	if (PROMETHEUS_PUSH_INSTANCE_LEN > 0) {
 		stream << PROMETHEUS_PUSH_INSTANCE;
 	} else {
 		stream << localhost.toString().c_str();
 	}
-	if (strlen(PROMETHEUS_PUSH_NAMESPACE) > 0) {
-		stream << "/namespace/";
+	stream << "/namespace/";
+	if (PROMETHEUS_PUSH_NAMESPACE_LEN > 0) {
 		stream << PROMETHEUS_PUSH_NAMESPACE;
+	} else {
+		stream << PROMETHEUS_NAMESPACE;
 	}
 
 	push_url = stream.str();
@@ -78,24 +80,39 @@ String prom::getMetrics() {
 	// The added lengths of all the lines.
 	// One float is assumed to have three digits before and after the dot.
 	// An integer is assumed to be at most 20 digits.
-	const size_t max_len = 93 + 37 + 32 + 88 + 34 + 29 +
+	const size_t max_len = 99 + 43 + 37 + 94 + 40 + 34
+			+ PROMETHEUS_NAMESPACE_LEN * 6 +
 #ifdef ESP32
 			71 + 32 + 40 +
 #endif
 #if ENABLE_WEB_SERVER == 1
-			85 + 35 + 78 * http_requests_total.size() + uri_len_sum +
+			86 + 36 + PROMETHEUS_NAMESPACE_LEN * 2
+			+ (79 + PROMETHEUS_NAMESPACE_LEN) * http_requests_total.size()
+			+ uri_len_sum +
 #endif
 			0;
 
 	char *buffer = new char[max_len + 1];
 	buffer[0] = 0;
 
-	strcpy(buffer,
-			"# HELP environment_temperature The current measured external temperature in degrees celsius.\n");
-	size_t len = 93;
+	// Write temperature metric.
+	strcpy(buffer, "# HELP ");
+	size_t len = 7;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
 	strcpy(buffer + len,
-			"# TYPE environment_temperature gauge\nenvironment_temperature ");
-	len += 37 + 24;
+			"_external_temperature_celsius The current measured external temperature in degrees celsius.\n");
+	len += 92;
+	strcpy(buffer + len, "# TYPE ");
+	len += 7;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
+	strcpy(buffer + len, "_external_temperature_celsius gauge\n");
+	len += 36;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
+	strcpy(buffer + len, "_external_temperature_celsius ");
+	len += 30;
 	if (!isnan(temperature)) {
 		len += snprintf(buffer + len, max_len - len, "%.3f\n", temperature);
 	} else {
@@ -103,12 +120,24 @@ String prom::getMetrics() {
 		len += 4;
 	}
 
+	// Write humidity metric.
+	strcpy(buffer + len, "# HELP ");
+	len += 7;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
 	strcpy(buffer + len,
-			"# HELP environment_humidity The current measured external relative humidity in percent.\n");
-	len += 88;
-	strcpy(buffer + len,
-			"# TYPE environment_humidity gauge\nenvironment_humidity ");
-	len += 34 + 21;
+			"_external_humidity_percent The current measured external relative humidity in percent.\n");
+	len += 87;
+	strcpy(buffer + len, "# TYPE ");
+	len += 7;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
+	strcpy(buffer + len, "_external_humidity_percent gauge\n");
+	len += 33;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
+	strcpy(buffer + len, "_external_humidity_percent ");
+	len += 27;
 	if (!isnan(humidity)) {
 		len += snprintf(buffer + len, max_len - len, "%.3f\n", humidity);
 	} else {
@@ -129,17 +158,27 @@ String prom::getMetrics() {
 
 #if ENABLE_WEB_SERVER == 1
 	// Write web server statistics.
+	strcpy(buffer + len, "# HELP ");
+	len += 7;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
 	strcpy(buffer + len,
-			"# HELP http_requests_total The total number of http requests handled by this server.\n");
-	len += 85;
-	strcpy(buffer + len, "# TYPE http_requests_total counter\n");
-	len += 35;
+			"_http_requests_total The total number of HTTP requests handled by this server.\n");
+	len += 79;
+	strcpy(buffer + len, "# TYPE ");
+	len += 7;
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
+	strcpy(buffer + len, "_http_requests_total counter\n");
+	len += 29;
 
 	for (std::pair<String,
 			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
 		for (std::pair<std::pair<WebRequestMethod, uint16_t>, uint64_t> response_stats : uri_stats.second) {
-			strcpy(buffer + len, "http_requests_total{method=\"");
-			len += 28;
+			strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+			len += PROMETHEUS_NAMESPACE_LEN;
+			strcpy(buffer + len, "_http_requests_total{method=\"");
+			len += 29;
 			switch (response_stats.first.first) {
 			case HTTP_GET:
 				strcpy(buffer + len, "get");
@@ -198,7 +237,8 @@ String prom::getMetrics() {
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
 	const String metrics = getMetrics();
-	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain", metrics);
+	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain",
+			metrics);
 	response->addHeader("Cache-Control", "no-cache");
 	return web::ResponseData(response, metrics.length(), 200);
 }

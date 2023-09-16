@@ -34,7 +34,7 @@ void web::setup() {
 			getTimeSinceMeasurement } };
 
 	registerRedirect("/", "/index.html");
-	registerReplacingStaticHandler("/index.html", "text/html", INDEX_HTML,
+	registerReplacingStaticHandler("/index.html", "text/html", INDEX_HTML_START,
 			index_replacements);
 
 	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START,
@@ -220,13 +220,14 @@ web::ResponseData web::defaultHeadRequestHandlerWrapper(
 
 void web::notFoundHandler(AsyncWebServerRequest *request) {
 	const size_t start = micros();
-	const std::map<String, String> replacements { { "TITLE", "Error 404 Not Found" },
-			{ "ERROR", "The requested file can not be found on this server!" },
+	const std::map<String, String> replacements { { "TITLE",
+			"Error 404 Not Found" }, { "ERROR",
+			"The requested file can not be found on this server!" },
 			{ "DETAILS", "The page \"" + request->url()
 					+ "\" couldn't be found." } };
 	ResponseData response = replacingRequestHandler(replacements, 404,
-			"text/html", (uint8_t*) ERROR_HTML,
-			(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
+			"text/html", (uint8_t*) ERROR_HTML_START, (uint8_t*) ERROR_HTML_END,
+			request);
 	if (request->method() == HTTP_HEAD) {
 		response.response = new AsyncHeadOnlyResponse(response.response,
 				response.status_code);
@@ -292,8 +293,8 @@ web::ResponseData web::invalidMethodHandler(
 				+ validStr + "." } };
 
 		ResponseData response = replacingRequestHandler(replacements, 405,
-				"text/html", (uint8_t*) ERROR_HTML,
-				(uint8_t*) ERROR_HTML + strlen(ERROR_HTML), request);
+				"text/html", (uint8_t*) ERROR_HTML_START,
+				(uint8_t*) ERROR_HTML_END, request);
 		if (request->method() == HTTP_HEAD) {
 			response.response = new AsyncHeadOnlyResponse(response.response,
 					405);
@@ -306,7 +307,8 @@ web::ResponseData web::invalidMethodHandler(
 			validStr += valid[i];
 		}
 		response.response->addHeader("Allow", validStr);
-		log_i("A client tried to access the not existing file \"%s\".", request->url().c_str());
+		log_i("A client tried to access the not existing file \"%s\".",
+				request->url().c_str());
 		return response;
 	}
 }

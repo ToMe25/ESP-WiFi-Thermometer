@@ -14,6 +14,7 @@
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #endif
+#include "utils.h"
 
 /**
  * This file contains a few variables and defines to be used as config values.
@@ -159,9 +160,15 @@ static constexpr uint8_t SENSOR_PIN = 5;
 #if ENABLE_WEB_SERVER != 1
 #undef ENABLE_PROMETHEUS_SCRAPE_SUPPORT
 #define ENABLE_PROMETHEUS_SCRAPE_SUPPORT 0
-#error Prometheus scrape support requires the web server to be enabled.
+#warning Prometheus scrape support requires the web server to be enabled.
 #endif
 #endif
+// The namespace to be used as a prefix for most prometheus metrics.
+// Will by default also be used as the pushgateway namespace.
+// The default namespace is "esptherm".
+static constexpr const char PROMETHEUS_NAMESPACE[] = "esptherm";
+// The length of the prometheus namespace string.
+static constexpr size_t PROMETHEUS_NAMESPACE_LEN = utility::strlen(PROMETHEUS_NAMESPACE);
 // Whether the esp should automatically push measurements to a prometheus-pushgateway.
 // This is done through HTTP post requests to a given address at fixed intervals.
 // Set to 1 to enable and to 0 to disable.
@@ -182,13 +189,21 @@ static constexpr uint16_t PROMETHEUS_PUSH_PORT = 9091;
 static constexpr uint16_t PROMETHEUS_PUSH_INTERVAL = 30;
 // The name of the job to use for the prometheus metrics when pushing.
 // Leave empty to use the hostname of this device.
+// The default is to use the device hostname.
 static constexpr const char PROMETHEUS_PUSH_JOB[] = "";
+// The length of the prometheus pushgateway job.
+static constexpr size_t PROMETHEUS_PUSH_JOB_LEN = utility::strlen(PROMETHEUS_PUSH_JOB);
 // The name of the instance to use for the prometheus metrics when pushing.
 // Leave empty to use the device IP.
 static constexpr const char PROMETHEUS_PUSH_INSTANCE[] = "";
+// The length of the prometheus pushgateway instance string.
+static constexpr size_t PROMETHEUS_PUSH_INSTANCE_LEN = utility::strlen(PROMETHEUS_PUSH_INSTANCE);
 // The name of the namespace to use for the prometheus metrics when pushing.
-// Leave empty to not send namespace information.
-static constexpr const char PROMETHEUS_PUSH_NAMESPACE[] = "monitoring";
+// Leave empty to use the prometheus namespace.
+// The default is to use the prometheus namespace.
+static constexpr const char PROMETHEUS_PUSH_NAMESPACE[] = "";
+// The length of the prometheus pushgateway namespace string.
+static constexpr size_t PROMETHEUS_PUSH_NAMESPACE_LEN = utility::strlen(PROMETHEUS_PUSH_NAMESPACE);
 #endif
 
 // MQTT options
