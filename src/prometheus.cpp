@@ -172,14 +172,18 @@ String prom::getMetrics() {
 	strcpy(buffer + len, "_http_requests_total counter\n");
 	len += 29;
 
-	for (std::pair<String,
-			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
-		for (std::pair<std::pair<WebRequestMethod, uint16_t>, uint64_t> response_stats : uri_stats.second) {
+	for (std::map<String,
+			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>>::const_iterator uri_stats =
+			http_requests_total.cbegin();
+			uri_stats != http_requests_total.cend(); uri_stats++) {
+		for (std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>::const_iterator response_stats =
+				uri_stats->second.cbegin();
+				response_stats != uri_stats->second.cend(); response_stats++) {
 			strcpy(buffer + len, PROMETHEUS_NAMESPACE);
 			len += PROMETHEUS_NAMESPACE_LEN;
 			strcpy(buffer + len, "_http_requests_total{method=\"");
 			len += 29;
-			switch (response_stats.first.first) {
+			switch (response_stats->first.first) {
 			case HTTP_GET:
 				strcpy(buffer + len, "get");
 				len += 3;
@@ -212,14 +216,14 @@ String prom::getMetrics() {
 				strcpy(buffer + len, "unknown");
 				len += 7;
 				log_e("Unknown request method %u for uri \"%s\" in stats map.",
-						response_stats.first.first, uri_stats.first.c_str());
+						response_stats->first.first, uri_stats->first.c_str());
 				break;
 			}
 
 			len += snprintf(buffer + len, max_len - len,
 					"\",code=\"%u\",path=\"%s\"} %llu\n",
-					response_stats.first.second, uri_stats.first.c_str(),
-					response_stats.second);
+					response_stats->first.second, uri_stats->first.c_str(),
+					response_stats->second);
 			if (len >= max_len) {
 				log_e("Metrics generation buffer overflow.");
 				break;
