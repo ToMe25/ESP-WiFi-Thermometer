@@ -48,18 +48,38 @@ static constexpr uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
 // The hostname with which the esp can be reached.
 // This value is used for both the actual hostname, as well as the mDNS hostname(mDNS names end with .local).
 // While the normal hostname doesn't work with a static IP, mDNS still works.
+// To define the host name using a macro pleases use ESPTHERM_HOSTNAME.
+#ifdef ESPTHERM_HOSTNAME
+static constexpr const char HOSTNAME[] = ESPTHERM_HOSTNAME;
+#else
 static constexpr const char HOSTNAME[] = "esp-wifi-thermometer";
+#endif
 // If set to an actual IP rather then IPADDR_ANY this will make the esp use that IP.
 // However setting this to anything but IPADDR_ANY means the hostname wont work.
 // If this is set to IPADDR_ANY the esp will get an IP address from the dhcp server.
+// To configure this using a macro, please set ESPTHERM_STATIC_IP_ADDR.
+#ifdef ESPTHERM_STATIC_IP_ADDR
+static const IPAddress STATIC_IP = ESPTHERM_STATIC_IP_ADDR;
+#else
 static const IPAddress STATIC_IP = IPADDR_ANY;
+#endif
 // The WiFi gateway IP.
 // Usually your router.
 // Set to IPADDR_ANY to use the standard gateway of the WLAN.
+// To configure this using a macro, please set ESPTHERM_GATEWAY_ADDR.
+#ifdef ESPTHERM_GATEWAY_ADDR
+static const IPAddress GATEWAY = ESPTHERM_GATEWAY_ADDR;
+#else
 static const IPAddress GATEWAY = IPADDR_ANY;
+#endif
 // The netmask of the subnet in which the esp is.
 // Set to IPADDR_ANY to dynamically determine this when connecting to the WiFi access point.
-static const IPAddress SUBNET = IPADDR_ANY;
+// To configure this using a macro, please set ESPTHERM_SUBNET_MASK.
+#ifdef ESPTHERM_SUBNET_MASK
+static const IPAddress SUBNET = ESPTHERM_SUBNET_MASK;
+#else
+static const IPAddress SUBNET = IPAddress(255, 255, 255, 0);
+#endif
 
 // Web Server options
 // Whether or not to enable the web server on the esp.
@@ -104,7 +124,9 @@ static constexpr const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)"
 #define SENSOR_TYPE_DALLAS 2
 // The type of sensor in use.
 // Supported values: SENSOR_TYPE_DHT and SENSOR_TYPE_DALLAS.
+#ifndef SENSOR_TYPE
 #define SENSOR_TYPE SENSOR_TYPE_DHT
+#endif
 // The type of DHT sensor in use.
 // Only used if SENSOR_TYPE is SENSOR_TYPE_DHT.
 // Valid types are 11, 12, 21, and 22.
