@@ -113,18 +113,18 @@ web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 	char *buffer = new char[max_len + 1];
 	buffer[0] = 0;
 
-	strncat(buffer, "{\"temperature\": ", max_len);
+	strcpy(buffer, "{\"temperature\": ");
 	size_t len = 16;
 	if (isnan(temperature)) {
-		strncat(buffer + len, "\"Unknown\"", max_len - len);
+		strcpy(buffer + len, "\"Unknown\"");
 		len += 9;
 	} else {
 		len += snprintf(buffer + len, max_len - len, "%.2f", temperature);
 	}
-	strncat(buffer + len, ", \"humidity\": ", max_len - len);
-	len += 13;
+	strcpy(buffer + len, ", \"humidity\": ");
+	len += 14;
 	if (isnan(humidity)) {
-		strncat(buffer + len, "\"Unknown\"", max_len - len);
+		strcpy(buffer + len, "\"Unknown\"");
 		len += 9;
 	} else {
 		len += snprintf(buffer + len, max_len - len, "%.2f", humidity);

@@ -90,96 +90,87 @@ String prom::getMetrics() {
 	char *buffer = new char[max_len + 1];
 	buffer[0] = 0;
 
-	strncat(buffer,
-			"# HELP environment_temperature The current measured external temperature in degrees celsius.\n",
-			max_len);
+	strcpy(buffer,
+			"# HELP environment_temperature The current measured external temperature in degrees celsius.\n");
 	size_t len = 93;
-	strncat(buffer + len,
-			"# TYPE environment_temperature gauge\nenvironment_temperature ",
-			max_len - len);
+	strcpy(buffer + len,
+			"# TYPE environment_temperature gauge\nenvironment_temperature ");
 	len += 37 + 24;
 	if (!isnan(temperature)) {
 		len += snprintf(buffer + len, max_len - len, "%.3f\n", temperature);
 	} else {
-		strncat(buffer + len, "NAN\n", max_len - len);
+		strcpy(buffer + len, "NAN\n");
 		len += 4;
 	}
 
-	strncat(buffer + len,
-			"# HELP environment_humidity The current measured external relative humidity in percent.\n",
-			max_len - len);
+	strcpy(buffer + len,
+			"# HELP environment_humidity The current measured external relative humidity in percent.\n");
 	len += 88;
-	strncat(buffer + len,
-			"# TYPE environment_humidity gauge\nenvironment_humidity ",
-			max_len - len);
+	strcpy(buffer + len,
+			"# TYPE environment_humidity gauge\nenvironment_humidity ");
 	len += 34 + 21;
 	if (!isnan(humidity)) {
 		len += snprintf(buffer + len, max_len - len, "%.3f\n", humidity);
 	} else {
-		strncat(buffer + len, "NAN\n", max_len - len);
+		strcpy(buffer + len, "NAN\n");
 		len += 4;
 	}
 
 	// From what I could find this seems to be impossible on a ESP8266.
 #ifdef ESP32
-	strncat(buffer + len,
-			"# HELP process_heap_bytes The amount of heap used on the ESP in bytes.\n",
-			max_len - len);
+	strcpy(buffer + len,
+			"# HELP process_heap_bytes The amount of heap used on the ESP in bytes.\n");
 	len += 71;
-	strncat(buffer + len,
-			"# TYPE process_heap_bytes gauge\nprocess_heap_bytes ",
-			max_len - len);
+	strcpy(buffer + len,
+			"# TYPE process_heap_bytes gauge\nprocess_heap_bytes ");
 	len += 32 + 19;
 	len += snprintf(buffer + len, max_len - len, "%u\n", used_heap);
 #endif
 
 #if ENABLE_WEB_SERVER == 1
 	// Write web server statistics.
-	strncat(buffer + len,
-			"# HELP http_requests_total The total number of http requests handled by this server.\n",
-			max_len - len);
+	strcpy(buffer + len,
+			"# HELP http_requests_total The total number of http requests handled by this server.\n");
 	len += 85;
-	strncat(buffer + len, "# TYPE http_requests_total counter\n",
-			max_len - len);
+	strcpy(buffer + len, "# TYPE http_requests_total counter\n");
 	len += 35;
 
 	for (std::pair<String,
 			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
 		for (std::pair<std::pair<WebRequestMethod, uint16_t>, uint64_t> response_stats : uri_stats.second) {
-			strncat(buffer + len, "http_requests_total{method=\"",
-					max_len - len);
+			strcpy(buffer + len, "http_requests_total{method=\"");
 			len += 28;
 			switch (response_stats.first.first) {
 			case HTTP_GET:
-				strncat(buffer + len, "get", max_len - len);
+				strcpy(buffer + len, "get");
 				len += 3;
 				break;
 			case HTTP_POST:
-				strncat(buffer + len, "post", max_len - len);
+				strcpy(buffer + len, "post");
 				len += 4;
 				break;
 			case HTTP_PUT:
-				strncat(buffer + len, "put", max_len - len);
+				strcpy(buffer + len, "put");
 				len += 3;
 				break;
 			case HTTP_PATCH:
-				strncat(buffer + len, "patch", max_len - len);
+				strcpy(buffer + len, "patch");
 				len += 5;
 				break;
 			case HTTP_DELETE:
-				strncat(buffer + len, "delete", max_len - len);
+				strcpy(buffer + len, "delete");
 				len += 6;
 				break;
 			case HTTP_HEAD:
-				strncat(buffer + len, "head", max_len - len);
+				strcpy(buffer + len, "head");
 				len += 4;
 				break;
 			case HTTP_OPTIONS:
-				strncat(buffer + len, "options", max_len - len);
+				strcpy(buffer + len, "options");
 				len += 7;
 				break;
 			default:
-				strncat(buffer + len, "unknown", max_len - len);
+				strcpy(buffer + len, "unknown");
 				len += 7;
 				log_e("Unknown request method %u for uri \"%s\" in stats map.",
 						response_stats.first.first, uri_stats.first.c_str());
