@@ -45,6 +45,7 @@
           "custom": {
             "axisCenteredZero": false,
             "axisColorMode": "text",
+            "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -120,7 +121,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "environment_temperature{job=\"esp-wifi-thermometer\"}",
+          "expr": "esptherm_external_temperature_celsius",
           "instant": false,
           "interval": "",
           "legendFormat": "Temperature ({{instance}})",
@@ -221,7 +222,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "environment_humidity{job=\"esp-wifi-thermometer\"}",
+          "expr": "esptherm_external_humidity_percent",
           "interval": "",
           "legendFormat": "Relative Humidity ({{instance}})",
           "range": true,
@@ -321,7 +322,7 @@
           },
           "editorMode": "code",
           "exemplar": false,
-          "expr": "rate(http_requests_total{job=\"esp-wifi-thermometer\"}[2m])",
+          "expr": "rate(esptherm_http_requests_total[2m])",
           "interval": "",
           "legendFormat": "Requests to {{instance}}{{path}} with response code {{code}}",
           "range": true,
@@ -359,6 +360,6 @@
   "timezone": "",
   "title": "ESP WiFi Thermometer",
   "uid": "MBA9A_57s",
-  "version": 4,
+  "version": 5,
   "weekStart": ""
 }
