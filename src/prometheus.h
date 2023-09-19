@@ -121,7 +121,7 @@ size_t writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_l],
  * Checks whether the given Accept header accepts openmetrics text protocol version 1.0.0.
  *
  * @param accept_str	The Accept header to check.
- * @return	True if the given header specifies that the client is openmetrics compliant.
+ * @return	True if the given header contains "application/openmetrics-text".
  */
 bool acceptsOpenMetrics(const char *accept_str);
 

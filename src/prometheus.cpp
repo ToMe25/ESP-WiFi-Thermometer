@@ -264,25 +264,7 @@ size_t prom::writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 bool prom::acceptsOpenMetrics(const char *accept_str) {
 	const char *start = strstr(accept_str, "application/openmetrics-text");
-	if (start == NULL) {
-		return false;
-	}
-
-	while (start != NULL) {
-		const char *end = strchr(start, ',');
-		if (end == NULL) {
-			end = start + strlen(start);
-		}
-
-		const char *result = strstr(start, "version=1.0.0");
-		if (result != NULL && result < end) {
-			return true;
-		}
-
-		start = strstr(end, "application/openmetrics-text");
-	}
-
-	return false;
+	return start != NULL;
 }
 
 web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
@@ -293,6 +275,7 @@ web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
 	} else {
 		log_d("Client doesn't accept openmetrics.");
 	}
+
 	const String metrics = getMetrics(openmetrics);
 	AsyncWebServerResponse *response =
 			request->beginResponse(200,
