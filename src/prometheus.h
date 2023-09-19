@@ -90,6 +90,29 @@ size_t writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 		const char (&metric_name)[nm_l], const char (&metric_unit)[u_l],
 		const char (&metric_description)[dc_l], const char (&metric_type)[tp_l],
 		const double value, const bool openmetrics);
+
+/**
+ * Writes a metric metadata line constructed from the given strings to the given buffer.
+ * All the string arguments have to be compile time constant character arrays, **NOT POINTERS**!
+ * This function does write a NUL byte after the text it writes, but this byte isn't considered for the return value.
+ *
+ * @tparam fnm_l	The length of the metadata field name.
+ * @tparam ns_l		The length of the metric namespace.
+ * @tparam nm_l		The length of the metric name, without the unit and namespace part.
+ * @tparam u_l		The length of the unit string.
+ * @tparam vl_l		The length of the value string.
+ * @param buffer				The character buffer to write to.
+ * @param field_name			The name of the metric metadata field. Has to be in CAPS.
+ * @param metric_namespace		The name of the metric namespace to use.
+ * @param metric_name			The name of the metric to write without the namespace and unit components.
+ * @param metric_unit			The unit of the metric to write. May be empty.
+ * @param value					The value string to write to the output buffer.
+ * @return	The number of characters that were written to the output buffer.
+ */
+template<size_t fnm_l, size_t ns_l, size_t nm_l, size_t u_l, size_t vl_l>
+size_t writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_l],
+		const char (&metric_namespace)[ns_l], const char (&metric_name)[nm_l],
+		const char (&metric_unit)[u_l], const char (&value)[vl_l]);
 #endif
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1

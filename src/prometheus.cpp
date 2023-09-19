@@ -113,19 +113,11 @@ String prom::getMetrics() {
 
 #if ENABLE_WEB_SERVER == 1
 	// Write web server statistics.
-	strcpy(buffer + len, "# HELP ");
-	len += 7;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len,
-			"_http_requests_total The total number of HTTP requests handled by this server.\n");
-	len += 79;
-	strcpy(buffer + len, "# TYPE ");
-	len += 7;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len, "_http_requests_total counter\n");
-	len += 29;
+	len += writeMetricMetadataLine(buffer + len, "HELP", PROMETHEUS_NAMESPACE,
+			"http_requests_total", "",
+			"The total number of HTTP requests handled by this server.");
+	len += writeMetricMetadataLine(buffer + len, "TYPE", PROMETHEUS_NAMESPACE,
+			"http_requests_total", "", "counter");
 
 	for (std::map<String,
 			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>>::const_iterator uri_stats =
@@ -197,45 +189,10 @@ size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 		const char (&metric_name)[nm_l], const char (&metric_unit)[u_l],
 		const char (&metric_description)[dc_l], const char (&metric_type)[tp_l],
 		const double value, const bool openmetrics) {
-	strcpy(buffer, "# HELP ");
-	size_t written = 7;
-	if (ns_l > 1) {
-		strcpy(buffer + written, metric_namespace);
-		written += ns_l - 1;
-		buffer[written++] = '_';
-	}
-	strcpy(buffer + written, metric_name);
-	written += nm_l - 1;
-	if (u_l > 1) {
-		buffer[written++] = '_';
-		strcpy(buffer + written, metric_unit);
-		written += u_l - 1;
-	}
-
-	buffer[written++] = ' ';
-	strcpy(buffer + written, metric_description);
-	written += dc_l - 1;
-	buffer[written++] = '\n';
-
-	strcpy(buffer + written, "# TYPE ");
-	written += 7;
-	if (ns_l > 1) {
-		strcpy(buffer + written, metric_namespace);
-		written += ns_l - 1;
-		buffer[written++] = '_';
-	}
-	strcpy(buffer + written, metric_name);
-	written += nm_l - 1;
-	if (u_l > 1) {
-		buffer[written++] = '_';
-		strcpy(buffer + written, metric_unit);
-		written += u_l - 1;
-	}
-
-	buffer[written++] = ' ';
-	strcpy(buffer + written, metric_type);
-	written += tp_l - 1;
-	buffer[written++] = '\n';
+	size_t written = writeMetricMetadataLine(buffer, "HELP", metric_namespace,
+			metric_name, metric_unit, metric_description);
+	written += writeMetricMetadataLine(buffer + written, "TYPE", metric_namespace,
+			metric_name, metric_unit, metric_type);
 
 	if (ns_l > 1) {
 		strcpy(buffer + written, metric_namespace);
@@ -260,13 +217,46 @@ size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 
 	return written;
 }
+
+template<size_t fnm_l, size_t ns_l, size_t nm_l, size_t u_l, size_t vl_l>
+size_t prom::writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_l],
+		const char (&metric_namespace)[ns_l], const char (&metric_name)[nm_l],
+		const char (&metric_unit)[u_l], const char (&value)[vl_l]) {
+	size_t written = 0;
+	buffer[written++] = '#';
+	buffer[written++] = ' ';
+	strcpy(buffer + written, field_name);
+	written += fnm_l - 1;
+	buffer[written++] = ' ';
+
+	if (ns_l > 1) {
+		strcpy(buffer + written, metric_namespace);
+		written += ns_l - 1;
+		buffer[written++] = '_';
+	}
+	strcpy(buffer + written, metric_name);
+	written += nm_l - 1;
+	if (u_l > 1) {
+		buffer[written++] = '_';
+		strcpy(buffer + written, metric_unit);
+		written += u_l - 1;
+	}
+
+	buffer[written++] = ' ';
+	strcpy(buffer + written, value);
+	written += vl_l - 1;
+	buffer[written++] = '\n';
+	buffer[written] = 0;
+
+	return written;
+}
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
 	const String metrics = getMetrics();
-	AsyncWebServerResponse *response = request->beginResponse(200, "text/plain",
-			metrics);
+	AsyncWebServerResponse *response = request->beginResponse(200,
+			"text/plain; version=0.0.4; charset=utf-8", metrics);
 	response->addHeader("Cache-Control", "no-cache");
 	return web::ResponseData(response, metrics.length(), 200);
 }
