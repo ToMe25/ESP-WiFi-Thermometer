@@ -20,4 +20,6 @@ Not all of these are necessarily going to be implemented at all.
  * Find a way to make the kubernetes service(for prometheus) automatically point to the esp(mDNS?)
  * Add missed measurements to the next prometheus scrape or push with a timestamp
  * Add optional MQTT broker if dsm is disabled
+ * Add MQTT state json
+ * Cleanup MQTT code
  * Add MQTT discovery support(https://www.home-assistant.io/docs/mqtt/discovery/)

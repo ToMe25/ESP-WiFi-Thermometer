@@ -79,81 +79,36 @@ String prom::getMetrics() {
 #endif
 	// The added lengths of all the lines.
 	// One float is assumed to have three digits before and after the dot.
-	// An integer is assumed to be at most 20 digits.
+	// An integer is assumed to be at most 20 digits, plus four characters because of the way they are formatted.
 	const size_t max_len = 99 + 43 + 37 + 94 + 40 + 34
 			+ PROMETHEUS_NAMESPACE_LEN * 6 +
 #ifdef ESP32
-			71 + 32 + 40 +
+			71 + 32 + 44 +
 #endif
 #if ENABLE_WEB_SERVER == 1
 			86 + 36 + PROMETHEUS_NAMESPACE_LEN * 2
-			+ (79 + PROMETHEUS_NAMESPACE_LEN) * http_requests_total.size()
+			+ (83 + PROMETHEUS_NAMESPACE_LEN) * http_requests_total.size()
 			+ uri_len_sum +
 #endif
 			0;
 
 	char *buffer = new char[max_len + 1];
-	buffer[0] = 0;
 
-	// Write temperature metric.
-	strcpy(buffer, "# HELP ");
-	size_t len = 7;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len,
-			"_external_temperature_celsius The current measured external temperature in degrees celsius.\n");
-	len += 92;
-	strcpy(buffer + len, "# TYPE ");
-	len += 7;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len, "_external_temperature_celsius gauge\n");
-	len += 36;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len, "_external_temperature_celsius ");
-	len += 30;
-	if (!isnan(temperature)) {
-		len += snprintf(buffer + len, max_len - len, "%.3f\n", temperature);
-	} else {
-		strcpy(buffer + len, "NAN\n");
-		len += 4;
-	}
-
-	// Write humidity metric.
-	strcpy(buffer + len, "# HELP ");
-	len += 7;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len,
-			"_external_humidity_percent The current measured external relative humidity in percent.\n");
-	len += 87;
-	strcpy(buffer + len, "# TYPE ");
-	len += 7;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len, "_external_humidity_percent gauge\n");
-	len += 33;
-	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
-	len += PROMETHEUS_NAMESPACE_LEN;
-	strcpy(buffer + len, "_external_humidity_percent ");
-	len += 27;
-	if (!isnan(humidity)) {
-		len += snprintf(buffer + len, max_len - len, "%.3f\n", humidity);
-	} else {
-		strcpy(buffer + len, "NAN\n");
-		len += 4;
-	}
+	// Write sensor metrics.
+	size_t len = writeMetric(buffer, PROMETHEUS_NAMESPACE,
+			"external_temperature", "celsius",
+			"The current measured external temperature in degrees celsius.",
+			"gauge", (double) temperature, false);
+	len += writeMetric(buffer + len, PROMETHEUS_NAMESPACE, "external_humidity",
+			"percent",
+			"The current measured external relative humidity in percent.",
+			"gauge", (double) humidity, false);
 
 	// From what I could find this seems to be impossible on a ESP8266.
 #ifdef ESP32
-	strcpy(buffer + len,
-			"# HELP process_heap_bytes The amount of heap used on the ESP in bytes.\n");
-	len += 71;
-	strcpy(buffer + len,
-			"# TYPE process_heap_bytes gauge\nprocess_heap_bytes ");
-	len += 32 + 19;
-	len += snprintf(buffer + len, max_len - len, "%u\n", used_heap);
+	len += writeMetric(buffer + len, "process", "heap", "bytes",
+			"The amount of heap used on the ESP in bytes.", "gauge",
+			(double) used_heap, false);
 #endif
 
 #if ENABLE_WEB_SERVER == 1
@@ -221,9 +176,9 @@ String prom::getMetrics() {
 			}
 
 			len += snprintf(buffer + len, max_len - len,
-					"\",code=\"%u\",path=\"%s\"} %llu\n",
+					"\",code=\"%u\",path=\"%s\"} %.3f\n",
 					response_stats->first.second, uri_stats->first.c_str(),
-					response_stats->second);
+					(double) response_stats->second);
 			if (len >= max_len) {
 				log_e("Metrics generation buffer overflow.");
 				break;
@@ -235,6 +190,75 @@ String prom::getMetrics() {
 	String metrics = buffer;
 	delete[] buffer;
 	return metrics;
+}
+
+template<size_t ns_l, size_t nm_l, size_t u_l, size_t dc_l, size_t tp_l>
+size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
+		const char (&metric_name)[nm_l], const char (&metric_unit)[u_l],
+		const char (&metric_description)[dc_l], const char (&metric_type)[tp_l],
+		const double value, const bool openmetrics) {
+	strcpy(buffer, "# HELP ");
+	size_t written = 7;
+	if (ns_l > 1) {
+		strcpy(buffer + written, metric_namespace);
+		written += ns_l - 1;
+		buffer[written++] = '_';
+	}
+	strcpy(buffer + written, metric_name);
+	written += nm_l - 1;
+	if (u_l > 1) {
+		buffer[written++] = '_';
+		strcpy(buffer + written, metric_unit);
+		written += u_l - 1;
+	}
+
+	buffer[written++] = ' ';
+	strcpy(buffer + written, metric_description);
+	written += dc_l - 1;
+	buffer[written++] = '\n';
+
+	strcpy(buffer + written, "# TYPE ");
+	written += 7;
+	if (ns_l > 1) {
+		strcpy(buffer + written, metric_namespace);
+		written += ns_l - 1;
+		buffer[written++] = '_';
+	}
+	strcpy(buffer + written, metric_name);
+	written += nm_l - 1;
+	if (u_l > 1) {
+		buffer[written++] = '_';
+		strcpy(buffer + written, metric_unit);
+		written += u_l - 1;
+	}
+
+	buffer[written++] = ' ';
+	strcpy(buffer + written, metric_type);
+	written += tp_l - 1;
+	buffer[written++] = '\n';
+
+	if (ns_l > 1) {
+		strcpy(buffer + written, metric_namespace);
+		written += ns_l - 1;
+		buffer[written++] = '_';
+	}
+	strcpy(buffer + written, metric_name);
+	written += nm_l - 1;
+	if (u_l > 1) {
+		buffer[written++] = '_';
+		strcpy(buffer + written, metric_unit);
+		written += u_l - 1;
+	}
+
+	if (!isnan(value)) {
+		written += sprintf(buffer + written, " %.3f\n", value);
+	} else {
+		strcpy(buffer + written, " NAN\n");
+		written += 5;
+	}
+	buffer[written] = 0;
+
+	return written;
 }
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 

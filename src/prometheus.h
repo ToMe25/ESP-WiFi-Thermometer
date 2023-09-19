@@ -64,6 +64,32 @@ void connect();
  * @return	A string containing all the metrics for a prometheus server.
  */
 String getMetrics();
+
+/**
+ * Writes a metric entry constructed from the given values to the given buffer.
+ * All the string arguments have to be compile time constant character arrays, **NOT POINTERS**!
+ * This function does write a NUL byte after the text it writes, but this byte isn't considered for the return value.
+ *
+ * @tparam ns_l	The length of the metric namespace.
+ * @tparam nm_l	The length of the metric name, without the unit and namespace part.
+ * @tparam u_l	The length of the unit string.
+ * @tparam dc_l	The length of the metric description.
+ * @tparam tp_l	The length of the metric type.
+ * @param buffer				The character buffer to write to.
+ * @param metric_namespace		The name of the metric namespace to use.
+ * @param metric_name			The name of the metric to write without the namespace and unit components.
+ * @param metric_unit			The unit of the metric to write. May be empty.
+ * @param metric_description	The description text for the metric.
+ * @param metric_type			The metric type to write to the buffer.
+ * @param value					The current value of the given metric.
+ * @param openmetrics			Whether to use the OpenMetrics spec, instead of the default prometheus one.
+ * @return	The number of bytes written to the output buffer.
+ */
+template<size_t ns_l, size_t nm_l, size_t u_l, size_t dc_l, size_t tp_l>
+size_t writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
+		const char (&metric_name)[nm_l], const char (&metric_unit)[u_l],
+		const char (&metric_description)[dc_l], const char (&metric_type)[tp_l],
+		const double value, const bool openmetrics);
 #endif
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
