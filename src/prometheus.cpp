@@ -68,7 +68,7 @@ void prom::connect() {
 }
 
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-String prom::getMetrics() {
+String prom::getMetrics(const bool openmetrics) {
 #if ENABLE_WEB_SERVER == 1
 	// First determine the sum of all called path lengths.
 	size_t uri_len_sum = 0;
@@ -80,17 +80,18 @@ String prom::getMetrics() {
 	// The added lengths of all the lines.
 	// One float is assumed to have three digits before and after the dot.
 	// An integer is assumed to be at most 20 digits, plus four characters because of the way they are formatted.
-	const size_t max_len = 99 + 43 + 37 + 94 + 40 + 34
-			+ PROMETHEUS_NAMESPACE_LEN * 6 +
+	const size_t max_len = 99 + 43 + 37 + (openmetrics ? 39 : 0) + 94 + 40 + 34
+			+ (openmetrics ? 36 : 0)
+			+ PROMETHEUS_NAMESPACE_LEN * (openmetrics ? 9 : 6) +
 #ifdef ESP32
-			71 + 32 + 44 +
+			71 + 32 + 44 + (openmetrics ? 44 : 0) +
 #endif
 #if ENABLE_WEB_SERVER == 1
 			86 + 36 + PROMETHEUS_NAMESPACE_LEN * 2
 			+ (83 + PROMETHEUS_NAMESPACE_LEN) * http_requests_total.size()
 			+ uri_len_sum +
 #endif
-			0;
+			(openmetrics ? 5 : 0);
 
 	char *buffer = new char[max_len + 1];
 
@@ -98,17 +99,17 @@ String prom::getMetrics() {
 	size_t len = writeMetric(buffer, PROMETHEUS_NAMESPACE,
 			"external_temperature", "celsius",
 			"The current measured external temperature in degrees celsius.",
-			"gauge", (double) temperature, false);
+			"gauge", (double) temperature, openmetrics);
 	len += writeMetric(buffer + len, PROMETHEUS_NAMESPACE, "external_humidity",
 			"percent",
 			"The current measured external relative humidity in percent.",
-			"gauge", (double) humidity, false);
+			"gauge", (double) humidity, openmetrics);
 
 	// From what I could find this seems to be impossible on a ESP8266.
 #ifdef ESP32
 	len += writeMetric(buffer + len, "process", "heap", "bytes",
 			"The amount of heap used on the ESP in bytes.", "gauge",
-			(double) used_heap, false);
+			(double) used_heap, openmetrics);
 #endif
 
 #if ENABLE_WEB_SERVER == 1
@@ -177,7 +178,11 @@ String prom::getMetrics() {
 			}
 		}
 	}
-#endif
+#endif /* ENABLE_WEB_SERVER == 1 */
+	if (openmetrics) {
+		strcpy(buffer + len, "# EOF\n");
+		len += 6;
+	}
 
 	String metrics = buffer;
 	delete[] buffer;
@@ -193,6 +198,10 @@ size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 			metric_name, metric_unit, metric_description);
 	written += writeMetricMetadataLine(buffer + written, "TYPE", metric_namespace,
 			metric_name, metric_unit, metric_type);
+	if (openmetrics) {
+		written += writeMetricMetadataLine(buffer + written, "UNIT", metric_namespace,
+				metric_name, metric_unit, metric_unit);
+	}
 
 	if (ns_l > 1) {
 		strcpy(buffer + written, metric_namespace);
@@ -253,10 +262,44 @@ size_t prom::writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+bool prom::acceptsOpenMetrics(const char *accept_str) {
+	const char *start = strstr(accept_str, "application/openmetrics-text");
+	if (start == NULL) {
+		return false;
+	}
+
+	while (start != NULL) {
+		const char *end = strchr(start, ',');
+		if (end == NULL) {
+			end = start + strlen(start);
+		}
+
+		const char *result = strstr(start, "version=1.0.0");
+		if (result != NULL && result < end) {
+			return true;
+		}
+
+		start = strstr(end, "application/openmetrics-text");
+	}
+
+	return false;
+}
+
 web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
-	const String metrics = getMetrics();
-	AsyncWebServerResponse *response = request->beginResponse(200,
-			"text/plain; version=0.0.4; charset=utf-8", metrics);
+	const bool openmetrics = request->hasHeader("Accept")
+			&& acceptsOpenMetrics(request->header("Accept").c_str());
+	if (openmetrics) {
+		log_d("Client accepts openmetrics.");
+	} else {
+		log_d("Client doesn't accept openmetrics.");
+	}
+	const String metrics = getMetrics(openmetrics);
+	AsyncWebServerResponse *response =
+			request->beginResponse(200,
+					(openmetrics ?
+							"application/openmetrics-text; version=1.0.0; charset=utf-8" :
+							"text/plain; version=0.0.4; charset=utf-8"),
+					metrics);
 	response->addHeader("Cache-Control", "no-cache");
 	return web::ResponseData(response, metrics.length(), 200);
 }

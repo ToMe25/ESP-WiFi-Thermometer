@@ -61,9 +61,10 @@ void connect();
 /**
  * Creates a string containing the metrics for prometheus.
  *
+ * @param openmetrics	Whether to generate OpenMetrics compliant output. Default is Prometheus 0.0.4 output.
  * @return	A string containing all the metrics for a prometheus server.
  */
-String getMetrics();
+String getMetrics(const bool openmetrics = false);
 
 /**
  * Writes a metric entry constructed from the given values to the given buffer.
@@ -89,7 +90,7 @@ template<size_t ns_l, size_t nm_l, size_t u_l, size_t dc_l, size_t tp_l>
 size_t writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 		const char (&metric_name)[nm_l], const char (&metric_unit)[u_l],
 		const char (&metric_description)[dc_l], const char (&metric_type)[tp_l],
-		const double value, const bool openmetrics);
+		const double value, const bool openmetrics = false);
 
 /**
  * Writes a metric metadata line constructed from the given strings to the given buffer.
@@ -116,6 +117,14 @@ size_t writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_l],
 #endif
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
+/**
+ * Checks whether the given Accept header accepts openmetrics text protocol version 1.0.0.
+ *
+ * @param accept_str	The Accept header to check.
+ * @return	True if the given header specifies that the client is openmetrics compliant.
+ */
+bool acceptsOpenMetrics(const char *accept_str);
+
 /**
  * The callback method to respond to a HTTP get request for the metrics page.
  *
