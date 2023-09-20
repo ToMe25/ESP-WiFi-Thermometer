@@ -1,8 +1,8 @@
-let temperature
-let humidity
-let time
-let update_interval
-let timer_interval
+var temperature
+var humidity
+var time
+var update_interval
+var timer_interval
 
 window.onload=init
 
@@ -28,7 +28,7 @@ console.error('Error: ',err)
 }
 
 function timer(){
-let date=new Date()
+var date=new Date()
 const split=time.innerText.split('.')[0].split(':')
 date.setHours(split[0],split[1],split[2],time.innerText.split('.')[1])
 date.setSeconds(date.getSeconds()+1)
@@ -37,7 +37,7 @@ const hours=date.getHours()%24
 const minutes=date.getMinutes()%60
 const seconds=date.getSeconds()%60
 const milliseconds=date.getMilliseconds()%1000
-let timeStr=""
+var timeStr=""
 if(hours<10){
 timeStr+='0'
 }
