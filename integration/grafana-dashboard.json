@@ -28,7 +28,20 @@
   "fiscalYearStartMonth": 0,
   "graphTooltip": 0,
   "id": 6,
-  "links": [],
+  "links": [
+    {
+      "asDropdown": false,
+      "icon": "external link",
+      "includeVars": false,
+      "keepTime": false,
+      "tags": [],
+      "targetBlank": true,
+      "title": "Github",
+      "tooltip": "ESP-WiFi-Thermometer github repository",
+      "type": "link",
+      "url": "https://github.com/ToMe25/ESP-WiFi-Thermometer"
+    }
+  ],
   "liveNow": false,
   "panels": [
     {
@@ -45,7 +58,6 @@
           "custom": {
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -63,7 +75,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -99,7 +111,6 @@
         "y": 0
       },
       "id": 2,
-      "interval": "10s",
       "options": {
         "legend": {
           "calcs": [],
@@ -119,14 +130,18 @@
             "type": "prometheus",
             "uid": "1ZsklKL7z"
           },
-          "editorMode": "code",
+          "disableTextWrap": false,
+          "editorMode": "builder",
           "exemplar": false,
-          "expr": "esptherm_external_temperature_celsius",
+          "expr": "avg_over_time(esptherm_external_temperature_celsius[$__interval])",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "instant": false,
           "interval": "",
           "legendFormat": "Temperature ({{instance}})",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "Temperature",
@@ -164,7 +179,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -200,7 +215,6 @@
         "y": 8
       },
       "id": 4,
-      "interval": "10s",
       "options": {
         "legend": {
           "calcs": [],
@@ -220,13 +234,17 @@
             "type": "prometheus",
             "uid": "1ZsklKL7z"
           },
-          "editorMode": "code",
+          "disableTextWrap": false,
+          "editorMode": "builder",
           "exemplar": false,
-          "expr": "esptherm_external_humidity_percent",
+          "expr": "avg_over_time(esptherm_external_humidity_percent[$__interval])",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "interval": "",
           "legendFormat": "Relative Humidity ({{instance}})",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "Relative Humidity",
@@ -246,7 +264,7 @@
           "custom": {
             "axisCenteredZero": false,
             "axisColorMode": "text",
-            "axisLabel": "",
+            "axisLabel": "Since last data point",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -264,7 +282,7 @@
             "scaleDistribution": {
               "type": "linear"
             },
-            "showPoints": "never",
+            "showPoints": "auto",
             "spanNulls": false,
             "stacking": {
               "group": "A",
@@ -300,7 +318,6 @@
         "y": 16
       },
       "id": 6,
-      "interval": "10s",
       "options": {
         "legend": {
           "calcs": [],
@@ -320,13 +337,17 @@
             "type": "prometheus",
             "uid": "1ZsklKL7z"
           },
-          "editorMode": "code",
+          "disableTextWrap": false,
+          "editorMode": "builder",
           "exemplar": false,
-          "expr": "rate(esptherm_http_requests_total[2m])",
+          "expr": "irate(esptherm_http_requests_total[$__rate_interval]) * $__interval_ms / 1000",
+          "fullMetaSearch": false,
+          "includeNullMetadata": true,
           "interval": "",
           "legendFormat": "Requests to {{instance}}{{path}} with response code {{code}}",
           "range": true,
-          "refId": "A"
+          "refId": "A",
+          "useBackend": false
         }
       ],
       "title": "HTTP Requests",
@@ -336,7 +357,12 @@
   "refresh": "10s",
   "schemaVersion": 38,
   "style": "dark",
-  "tags": [],
+  "tags": [
+    "esp32",
+    "temperature",
+    "humidity",
+    "prometheus"
+  ],
   "templating": {
     "list": []
   },
@@ -360,6 +386,6 @@
   "timezone": "",
   "title": "ESP WiFi Thermometer",
   "uid": "MBA9A_57s",
-  "version": 5,
+  "version": 6,
   "weekStart": ""
 }
