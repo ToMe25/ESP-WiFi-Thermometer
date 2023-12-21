@@ -15,6 +15,7 @@
 // It would be possible to always only include one, but that makes it a pain when switching between them.
 // Especially when doing it repeatedly for testing.
 #include <DallasTemperature.h>
+#include <Adafruit_Sensor.h> // Required for DHT library.
 #include <DHT.h>
 
 // Includes the content of the file "wifissid.txt" in the project root.

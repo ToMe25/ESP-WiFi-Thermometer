@@ -14,7 +14,6 @@
 #include "mqtt.h"
 #include <iomanip>
 #include <sstream>
-#include <Adafruit_Sensor.h>
 #if ENABLE_ARDUINO_OTA == 1
 #include <ArduinoOTA.h>
 #endif
@@ -158,10 +157,10 @@ void setupOTA() {
 #ifdef ESP32
 void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 	switch (id) {
-	case SYSTEM_EVENT_STA_START:
+	case ARDUINO_EVENT_WIFI_STA_START:
 		WiFi.setHostname(HOSTNAME);
 		break;
-	case SYSTEM_EVENT_STA_CONNECTED:
+	case ARDUINO_EVENT_WIFI_STA_CONNECTED:
 		WiFi.enableIpV6();
 
 		if (STATIC_IP != IPADDR_ANY) {
@@ -173,11 +172,11 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 			mqtt::connect();
 		}
 		break;
-	case SYSTEM_EVENT_GOT_IP6:
+	case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
 		Serial.print("Using STA IPv6 ");
 		Serial.println(localhost_ipv6 = WiFi.localIPv6());
 		break;
-	case SYSTEM_EVENT_STA_GOT_IP:
+	case ARDUINO_EVENT_WIFI_STA_GOT_IP:
 #if CORE_DEBUG_LEVEL == 5
 		delay(10);// if not doing this the additional logging causes the next log entry to not work.
 #endif
@@ -188,15 +187,15 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 		prom::connect();
 		mqtt::connect();
 		break;
-	case SYSTEM_EVENT_STA_DISCONNECTED:
+	case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
 		WiFi.reconnect();
 		break;
-	case SYSTEM_EVENT_SCAN_DONE:
+	case ARDUINO_EVENT_WIFI_SCAN_DONE:
 		Serial.println("WiFi scan results: ");
 		Serial.print("Found ");
-		Serial.print((uint16_t) info.scan_done.number);
+		Serial.print((uint16_t) info.wifi_scan_done.number);
 		Serial.println(" WiFi networks.");
-		for (uint8_t i = 0; i < info.scan_done.number; i++) {
+		for (uint8_t i = 0; i < info.wifi_scan_done.number; i++) {
 			String SSID;
 			uint8_t encryptionType;
 			int32_t RSSI;
