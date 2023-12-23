@@ -35,7 +35,7 @@
 // The time between two measurements in deep sleep mode.
 // Specified in seconds.
 // Default is 5 minutes, or 300 seconds.
-static constexpr uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 30;
+static constexpr uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
 
 // Deep sleep mode automatic config.
 #undef ENABLE_WEB_SERVER
