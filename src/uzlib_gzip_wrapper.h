@@ -2,7 +2,10 @@
  * uzlib_gzip_wrapper.h
  *
  *  Created on: May 26, 2023
- *      Author: ToMe25
+ *
+ * Copyright (C) 2023 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #ifndef SRC_HTML_UZLIB_GZIP_WRAPPER_H_
@@ -24,7 +27,7 @@ private:
 	/**
 	 * A pointer to the first byte of compressed data.
 	 */
-	const uint8_t* const cmp_start;
+	const uint8_t *const cmp_start;
 
 	/**
 	 * The number of already decompressed bytes.
@@ -43,7 +46,8 @@ public:
 	 * 					The range of valid values is from -8 to -15.
 	 * 					Values outside of this range will be clamped to this range.
 	 */
-	uzlib_gzip_wrapper(const uint8_t *cmp_start, const uint8_t *cmp_end, int8_t wsize);
+	uzlib_gzip_wrapper(const uint8_t *cmp_start, const uint8_t *cmp_end,
+			int8_t wsize);
 
 	/**
 	 * Destroys this gzip wrapper, and removes its internal memory buffer.

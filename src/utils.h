@@ -18,7 +18,6 @@
 namespace utility {
 /**
  * A method to get the index of the Most Significant Bit set in a number.
- * Necessary because the std log2 function doesn't exist on arm hosts.
  *
  * @param number	The number to get the MSB for.
  * @return	The index of the Most Significant Bit set in the number.
