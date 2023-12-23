@@ -2,7 +2,10 @@
  * config.h
  *
  *  Created on: 24.12.2021
- *      Author: ToMe25
+ *
+ * Copyright (C) 2021 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #ifndef SRC_CONFIG_H_
@@ -32,7 +35,7 @@
 // The time between two measurements in deep sleep mode.
 // Specified in seconds.
 // Default is 5 minutes, or 300 seconds.
-static constexpr uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 300;
+static constexpr uint32_t DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL = 30;
 
 // Deep sleep mode automatic config.
 #undef ENABLE_WEB_SERVER

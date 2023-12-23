@@ -2,7 +2,10 @@
  * AsyncMultitypeFallbackWebHandler.cpp
  *
  *  Created on: Jun 17, 2023
- *      Author: ToMe25
+ *
+ * Copyright (C) 2023 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #include <AsyncTrackingFallbackWebHandler.h>
