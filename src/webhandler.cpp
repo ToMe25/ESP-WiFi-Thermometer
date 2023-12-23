@@ -2,25 +2,26 @@
  * webhandler.cpp
  *
  *  Created on: May 30, 2023
- *      Author: ToMe25
+ *
+ * Copyright (C) 2023 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #include "webhandler.h"
-#include "main.h"
 #if ENABLE_WEB_SERVER == 1
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 || ENABLE_PROMETHEUS_PUSH == 1
 #include "prometheus.h"
 #endif
+#include "sensor_handler.h"
 #include "AsyncHeadOnlyResponse.h"
-#include <sstream>
-#endif
-#include <iomanip>
 #ifdef ESP32
 #include <ESPmDNS.h>
 #elif defined(ESP8266)
 #include <ESP8266mDNS.h>
 #endif
 #include "fallback_log.h"
+#endif /* ENABLE_WEB_SERVER == 1 */
 
 #if ENABLE_WEB_SERVER == 1
 AsyncWebServer web::server(WEB_SERVER_PORT);
@@ -30,8 +31,12 @@ std::map<String, web::AsyncTrackingFallbackWebHandler*> web::handlers;
 void web::setup() {
 #if ENABLE_WEB_SERVER == 1
 	std::map<String, std::function<std::string()>> index_replacements = { {
-			"TEMP", getTemperature }, { "HUMID", getHumidity }, { "TIME",
-			getTimeSinceMeasurement } };
+			"TEMP", std::bind(&sensors::SensorHandler::getLastTemperatureString,
+					&sensors::SENSOR_HANDLER) }, { "HUMID", std::bind(
+			&sensors::SensorHandler::getLastHumidityString,
+			&sensors::SENSOR_HANDLER) }, { "TIME", std::bind(
+			&sensors::SensorHandler::getTimeSinceValidMeasurementString,
+			&sensors::SENSOR_HANDLER) } };
 
 	registerRedirect("/", "/index.html");
 	registerReplacingStaticHandler("/index.html", "text/html", INDEX_HTML_START,
@@ -46,7 +51,8 @@ void web::setup() {
 
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> ResponseData {
-				const std::string temp = getTemperature();
+				const std::string temp =
+						sensors::SENSOR_HANDLER.getTemperatureString();
 				return ResponseData(
 						request->beginResponse(200, "text/plain", temp.c_str()),
 						temp.length(), 200);
@@ -54,7 +60,8 @@ void web::setup() {
 
 	registerRequestHandler("/humidity", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> ResponseData {
-				const std::string humidity = getHumidity();
+				const std::string humidity =
+						sensors::SENSOR_HANDLER.getHumidityString();
 				return ResponseData(
 						request->beginResponse(200, "text/plain",
 								humidity.c_str()), humidity.length(), 200);
@@ -107,23 +114,28 @@ web::ResponseData::ResponseData(AsyncWebServerResponse *response,
 }
 
 web::ResponseData web::getJson(AsyncWebServerRequest *request) {
-	const std::string time_string = getTimeSinceMeasurement();
+	// TODO format time from int64_t using snprintf
+	const std::string time_string =
+			sensors::SENSOR_HANDLER.getTimeSinceValidMeasurementString();
 	// Valid values will never be longer than "Unknown".
-	const size_t max_len = 61 + time_string.length();
+	const size_t max_len = 62 + time_string.length();
 	char *buffer = new char[max_len + 1];
 	buffer[0] = 0;
 
 	strcpy(buffer, "{\"temperature\": ");
 	size_t len = 16;
-	if (isnan(temperature)) {
+	const float temperature = sensors::SENSOR_HANDLER.getLastTemperature();
+	if (std::isnan(temperature)) {
 		strcpy(buffer + len, "\"Unknown\"");
 		len += 9;
 	} else {
 		len += snprintf(buffer + len, max_len - len, "%.2f", temperature);
 	}
+
 	strcpy(buffer + len, ", \"humidity\": ");
 	len += 14;
-	if (isnan(humidity)) {
+	const float humidity = sensors::SENSOR_HANDLER.getLastHumidity();
+	if (std::isnan(humidity)) {
 		strcpy(buffer + len, "\"Unknown\"");
 		len += 9;
 	} else {

@@ -2,7 +2,10 @@
  * webhander.h
  *
  *  Created on: May 30, 2023
- *      Author: ToMe25
+ *
+ * Copyright (C) 2023 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #ifndef SRC_WEBHANDLER_H_
@@ -86,7 +89,8 @@ public:
 	 * @param content_len	The number of bytes of the response body to send.
 	 * @param status_code	The HTTP status code this response will send.
 	 */
-	ResponseData(AsyncWebServerResponse *response, const size_t content_len, const uint16_t status_code);
+	ResponseData(AsyncWebServerResponse *response, const size_t content_len,
+			const uint16_t status_code);
 };
 
 /**
@@ -160,8 +164,7 @@ size_t decompressingResponseFiller(
  * @param index			The number of bytes already created by this method.
  * @return	The number of bytes written to the output buffer.
  */
-size_t replacingResponseFiller(
-		const std::map<String, String> &replacements,
+size_t replacingResponseFiller(const std::map<String, String> &replacements,
 		std::shared_ptr<int64_t> offset, const uint8_t *start,
 		const uint8_t *end, uint8_t *buffer, const size_t max_len,
 		const size_t index);
@@ -327,8 +330,8 @@ void registerStaticHandler(const char *uri, const String &content_type,
  * @param start			The pointer for the start of the file.
  * @param end			The pointer for the end of the file.
  */
-void registerCompressedStaticHandler(const char *uri, const String &content_type,
-		const uint8_t *start, const uint8_t *end);
+void registerCompressedStaticHandler(const char *uri,
+		const String &content_type, const uint8_t *start, const uint8_t *end);
 
 /**
  * Registers a request handler that returns the given content type and web page each time it is called.

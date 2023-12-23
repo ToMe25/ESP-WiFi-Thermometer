@@ -8,17 +8,21 @@ Not all of these are necessarily going to be implemented at all.
  * Fix ESP8266 ipv6 support
  * Fix ESP8266 WiFi scan support
  * Merge wifissid.txt and wifipass.txt into wificreds.txt and merge mqttuser.txt and mqttpass.txt into mqttcreds.txt
+ * Improve log messages for when measurements fail
 
 ## Web Interface
- * Add error message to log and web interface if measurement fails
+ * Add error message to web interface if measurement fails
  * Add a javescript temperature and humidity graph to the web interface?
  * Remove not measured values(for example humidity for the DS18B20)
- * Add degrees fahrenheit mode to web interface
+ * Add degrees fahrenheit mode to web interface(clientside setting)
  * Allow caching of static resources using a hash of their content as an ETag
+ * Add theme switcher to web interface(clientside setting)
+ * Web server IPv6 support
 
 ## Integration
  * Find a way to make the kubernetes service(for prometheus) automatically point to the esp(mDNS?)
- * Add missed measurements to the next prometheus scrape or push with a timestamp
+ * Add missed measurements to the next prometheus scrape or push with a timestamp?
+ * Add measurement timestamp to measurements for prometheus
  * Add optional MQTT broker if dsm is disabled
  * Add MQTT state json
  * Cleanup MQTT code

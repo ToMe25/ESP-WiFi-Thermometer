@@ -4,14 +4,16 @@
  * This file contains some general utilities that didn't fit any other file.
  *
  *  Created on: Sep 16, 2023
- *      Author: ToMe25
+ *
+ * Copyright (C) 2023 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
-#include <cstdint>
-#include <cstdlib>
+#include <string>
 
 namespace utility {
 /**
@@ -77,5 +79,43 @@ constexpr size_t strlen(const char *str) {
  * EXPAND_MACRO is a utility macro to expand a macro to its string form.
  */
 #define EXPAND_MACRO(macro) #macro
+
+namespace utility {
+/**
+ * Converts the given temperature from degrees celsius to degrees fahrenheit.
+ *
+ * @param celsius	The temperature to convert in celsius.
+ * @return	The converted temperature in fahrenheit.
+ */
+float celsiusToFahrenheit(const float celsius);
+
+/**
+ * Converts the given floating point number to a string.
+ *
+ * Returns "Unknown" if the measurement is NAN.
+ *
+ * Necessary, in part, because `std::to_string(float)` doesn't exist in the GCC version used by the espressif framework.
+ * Also because `std::to_string(float)` doesn't allow specifying the number of decimal digits.
+ *
+ * @param measurement		The floating point number to convert to a string.
+ * @param decimal_digits	The number of digits after the decimal dot to round to.
+ * @return	The newly created string.
+ */
+std::string float_to_string(const float measurement,
+		const uint8_t decimal_digits);
+
+/**
+ * Converts the given timespan to a string.
+ *
+ * Converts the given timespan in milliseconds to a string with the format "HH:MM:SS.mmm".
+ * If the value is more than 100 hours, `time_ms % 100h` is converted to a string.
+ *
+ * If the value is negative "Unknown" will be returned.
+ *
+ * @param time_ms	The timespan to convert to a string.
+ * @return	The newly created string.
+ */
+std::string timespan_to_string(const int64_t time_ms);
+}
 
 #endif /* SRC_UTILS_H_ */

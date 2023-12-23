@@ -2,11 +2,15 @@
  * prometheus.cpp
  *
  *  Created on: 25.12.2021
- *      Author: ToMe25
+ *
+ * Copyright (C) 2021 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #include "prometheus.h"
 #include "main.h"
+#include "sensor_handler.h"
 #include <iomanip>
 #include <sstream>
 #include "fallback_log.h"
@@ -33,6 +37,7 @@ void prom::setup() {
 
 void prom::loop() {
 #ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
+	// TODO move to getMetrics
 	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
 #endif
 
@@ -99,11 +104,13 @@ String prom::getMetrics(const bool openmetrics) {
 	size_t len = writeMetric(buffer, PROMETHEUS_NAMESPACE,
 			"external_temperature", "celsius",
 			"The current measured external temperature in degrees celsius.",
-			"gauge", (double) temperature, openmetrics);
+			"gauge", (double) sensors::SENSOR_HANDLER.getTemperature(),
+			openmetrics);
 	len += writeMetric(buffer + len, PROMETHEUS_NAMESPACE, "external_humidity",
 			"percent",
 			"The current measured external relative humidity in percent.",
-			"gauge", (double) humidity, openmetrics);
+			"gauge", (double) sensors::SENSOR_HANDLER.getHumidity(),
+			openmetrics);
 
 	// From what I could find this seems to be impossible on a ESP8266.
 #ifdef ESP32
@@ -196,11 +203,11 @@ size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 		const double value, const bool openmetrics) {
 	size_t written = writeMetricMetadataLine(buffer, "HELP", metric_namespace,
 			metric_name, metric_unit, metric_description);
-	written += writeMetricMetadataLine(buffer + written, "TYPE", metric_namespace,
-			metric_name, metric_unit, metric_type);
+	written += writeMetricMetadataLine(buffer + written, "TYPE",
+			metric_namespace, metric_name, metric_unit, metric_type);
 	if (openmetrics) {
-		written += writeMetricMetadataLine(buffer + written, "UNIT", metric_namespace,
-				metric_name, metric_unit, metric_unit);
+		written += writeMetricMetadataLine(buffer + written, "UNIT",
+				metric_namespace, metric_name, metric_unit, metric_unit);
 	}
 
 	if (ns_l > 1) {
@@ -216,7 +223,7 @@ size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 		written += u_l - 1;
 	}
 
-	if (!isnan(value)) {
+	if (!std::isnan(value)) {
 		written += sprintf(buffer + written, " %.3f\n", value);
 	} else {
 		strcpy(buffer + written, " NAN\n");
@@ -228,9 +235,10 @@ size_t prom::writeMetric(char *buffer, const char (&metric_namespace)[ns_l],
 }
 
 template<size_t fnm_l, size_t ns_l, size_t nm_l, size_t u_l, size_t vl_l>
-size_t prom::writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_l],
-		const char (&metric_namespace)[ns_l], const char (&metric_name)[nm_l],
-		const char (&metric_unit)[u_l], const char (&value)[vl_l]) {
+size_t prom::writeMetricMetadataLine(char *buffer,
+		const char (&field_name)[fnm_l], const char (&metric_namespace)[ns_l],
+		const char (&metric_name)[nm_l], const char (&metric_unit)[u_l],
+		const char (&value)[vl_l]) {
 	size_t written = 0;
 	buffer[written++] = '#';
 	buffer[written++] = ' ';

@@ -135,6 +135,11 @@ static constexpr const char SERVER_HEADER[] = SERVER_HEADER_PROGRAM " (ESP8266)"
 // Only used if SENSOR_TYPE is SENSOR_TYPE_DHT.
 // Valid types are 11, 12, 21, and 22.
 static constexpr uint8_t DHT_TYPE = 22;
+// The index of the Dallas sensor.
+// Only used if SENSOR_TYPE is SENSOR_TYPE_DALLAS.
+// The this is used to select the sensor to use, if multiple are connected on the same pin.
+// Note that connecting a new sensor can change the indices of the existing ones.
+static constexpr uint8_t DALLAS_INDEX = 0;
 // The gpio pin to which the data pin of the sensor is connected.
 // Default is 5.
 static constexpr uint8_t SENSOR_PIN = 5;

@@ -2,7 +2,10 @@
  * prometheus.h
  *
  *  Created on: 25.12.2021
- *      Author: ToMe25
+ *
+ * Copyright (C) 2021 ToMe25.
+ * This project is licensed under the MIT License.
+ * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #ifndef SRC_PROMETHEUS_H_
@@ -12,7 +15,9 @@
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 #include "webhandler.h"
 #endif
+#if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 #include <map>
+#endif
 #if ENABLE_PROMETHEUS_PUSH == 1
 #ifdef ESP32
 #include <AsyncTCP.h>

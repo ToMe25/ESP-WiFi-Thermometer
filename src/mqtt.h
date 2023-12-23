@@ -24,6 +24,7 @@ extern uint64_t last_publish;
 #endif
 #endif
 
+// TODO make optional, somehow
 // Includes the content of the file "mqttuser.txt" in the project root.
 // Make sure this file doesn't end with an empty line.
 extern const char MQTT_USER[] asm("_binary_mqttuser_txt_start");

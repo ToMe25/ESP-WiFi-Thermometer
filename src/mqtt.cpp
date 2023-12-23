@@ -7,6 +7,7 @@
 
 #include "mqtt.h"
 #include "main.h"
+#include "sensor_handler.h"
 #include <iomanip>
 #include <sstream>
 
@@ -67,18 +68,28 @@ void mqtt::publishMeasurements() {
 			}
 
 			std::ostringstream converter;
-			converter << std::setprecision(3) << temperature;
-			if (!mqttClient.publish((ns + "/temperature").c_str(), 0, true, converter.str().c_str())) {
-				return;
+			if (sensors::SENSOR_HANDLER.supportsTemperature()) {
+				converter << std::setprecision(3)
+						<< sensors::SENSOR_HANDLER.getTemperature();
+				if (!mqttClient.publish((ns + "/temperature").c_str(), 0, true,
+						converter.str().c_str())) {
+					log_w("Failed to publish temperature.");
+					return;
+				}
 			}
 
 			converter.str("");
 			converter.clear();
 
-			converter << std::setprecision(3) << humidity;
+			if (sensors::SENSOR_HANDLER.supportsHumidity()) {
+				converter << std::setprecision(3)
+						<< sensors::SENSOR_HANDLER.getHumidity();
 
-			if (!mqttClient.publish((ns + "/humidity").c_str(), 0, true, converter.str().c_str())) {
-				return;
+				if (!mqttClient.publish((ns + "/humidity").c_str(), 0, true,
+						converter.str().c_str())) {
+					log_w("Failed to publish humidity.");
+					return;
+				}
 			}
 
 #if ENABLE_DEEP_SLEEP_MODE == 1
@@ -91,9 +102,9 @@ void mqtt::publishMeasurements() {
 
 			mqttClient.disconnect(false);
 
-			while (*connected) {
+			do {
 				delay(10);
-			}
+			} while (*connected);
 #else
 			last_publish = now;
 		}

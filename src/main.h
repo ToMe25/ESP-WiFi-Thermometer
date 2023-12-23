@@ -12,11 +12,6 @@
 #define SRC_MAIN_H_
 
 #include "config.h"
-// It would be possible to always only include one, but that makes it a pain when switching between them.
-// Especially when doing it repeatedly for testing.
-#include <DallasTemperature.h>
-#include <Adafruit_Sensor.h> // Required for DHT library.
-#include <DHT.h>
 
 // Includes the content of the file "wifissid.txt" in the project root.
 // Make sure this file doesn't end with an empty line.
@@ -34,24 +29,12 @@ extern IPAddress localhost;
 extern IPv6Address localhost_ipv6;
 #endif
 
-//Sensor variables
-#if SENSOR_TYPE == SENSOR_TYPE_DHT
-extern DHT dht;
-#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
-extern OneWire wire;
-extern DallasTemperature sensors;
-#endif
-
-extern float temperature;
-extern float humidity;
-extern uint64_t last_measurement;
-
 // Other variables
 extern std::string command;
 
 extern uint8_t loop_iterations;
 
-extern uint64_t start_ms;
+extern volatile uint64_t start_ms;
 
 // Methods
 /**
@@ -101,48 +84,11 @@ void loop();
 bool handle_serial_input(const std::string &input);
 
 /**
- * Reads in the sensor measurements and stores them in the correct values.
- */
-void measure();
-
-/**
- * Returns the last measured temperature in degrees celsius, rounded to two decimal digits.
- * Or "Unknown" if it is NAN.
- *
- * @return	The last measured temperature.
- */
-std::string getTemperature();
-
-/**
- * Returns the last measured relative humidity in percent, rounded to two decimal digits.
- * Or "Unknown" if it is NAN.
- *
- * @return the last measured relative humidity.
- */
-std::string getHumidity();
-
-/**
- * Returns a string with the time since the last measurement formatted like this "Hour(24):Minute:Second.Millisecond".
- * Currently only used for the web server.
- *
- * @return	A formatted string representing the time since the last measurement.
- */
-std::string getTimeSinceMeasurement();
-
-/**
  * Print the given temperature in degrees celsius and degrees fahrenheit.
  *
  * @param out	The print object to print to.
  * @param temp	The temperature to print. In degrees celsius.
  */
 void printTemperature(Print &out, const float temp);
-
-/**
- * Converts the given temperature from degrees celsius to degrees fahrenheit.
- *
- * @param celsius	The temperature to convert in celsius.
- * @return	The converted temperature in fahrenheit.
- */
-float celsiusToFahrenheit(const float celsius);
 
 #endif /* SRC_MAIN_H_ */

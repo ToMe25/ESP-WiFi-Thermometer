@@ -28,8 +28,17 @@ function update() {
 }
 
 function timer() {
+	if (time.innerText == "Unknown") {
+		return
+	}
+
 	var date = new Date()
 	const split = time.innerText.split('.')[0].split(':')
+	if (split.length != 3) {
+		console.error('Date string "%s" is invalid!', time.innerText)
+		return
+	}
+
 	date.setHours(split[0], split[1], split[2], time.innerText.split('.')[1])
 	date.setSeconds(date.getSeconds() + 1)
 

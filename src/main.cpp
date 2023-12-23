@@ -3,17 +3,16 @@
  *
  *  Created on: 06.11.2020
  *
- * Copyright (C) 2020-2021 ToMe25.
+ * Copyright (C) 2020 ToMe25.
  * This project is licensed under the MIT License.
  * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
 #include "main.h"
+#include "mqtt.h"
 #include "webhandler.h"
 #include "prometheus.h"
-#include "mqtt.h"
-#include <iomanip>
-#include <sstream>
+#include "sensor_handler.h"
 #if ENABLE_ARDUINO_OTA == 1
 #include <ArduinoOTA.h>
 #endif
@@ -26,28 +25,15 @@ IPAddress localhost;
 #ifdef ESP32
 IPv6Address localhost_ipv6;
 #endif
-#if SENSOR_TYPE == SENSOR_TYPE_DHT
-DHT dht(SENSOR_PIN, DHT_TYPE);
-#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
-OneWire wire(SENSOR_PIN);
-DallasTemperature sensors(&wire);
-#endif
-float temperature = NAN;
-float humidity = NAN;
-uint64_t last_measurement = 0;
 std::string command;
 uint8_t loop_iterations = 0;
-uint64_t start_ms = 0;
+volatile uint64_t start_ms = 0;
 
 void setup() {
 	start_ms = millis();
 	Serial.begin(115200);
 
-#if SENSOR_TYPE == SENSOR_TYPE_DHT
-	dht.begin();
-#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
-	sensors.begin();
-#endif
+	sensors::SENSOR_HANDLER.begin();
 
 	setupWiFi();
 #if ENABLE_ARDUINO_OTA == 1
@@ -59,12 +45,13 @@ void setup() {
 	mqtt::setup();
 
 #if ENABLE_DEEP_SLEEP_MODE == 1
-	measure();
+	sensors::SENSOR_HANDLER.requestMeasurement();
+	// FiXME wait for measurements
 
-	printTemperature(Serial, temperature);
+	printTemperature(Serial, sensors::SENSOR_HANDLER.getTemperature());
 	Serial.print("Humidity: ");
-	Serial.print(getHumidity().c_str());
-	if (!isnan(humidity)) {
+	Serial.print(sensors::SENSOR_HANDLER.getHumidityString().c_str());
+	if (!std::isnan(sensors::SENSOR_HANDLER.getHumidity())) {
 		Serial.println('%');
 	} else {
 		Serial.println();
@@ -84,7 +71,9 @@ void setup() {
 	WiFi.disconnect(1);
 
 #ifdef ESP32
-	esp_sleep_enable_timer_wakeup(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
+	esp_sleep_enable_timer_wakeup(
+			DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000
+					- (micros() - start_ms * 1000));
 	esp_deep_sleep_start();
 #elif defined(ESP8266)
 	ESP.deepSleep(DEEP_SLEEP_MODE_MEASUREMENT_INTERVAL * 1000000 - (micros() - start_ms * 1000));
@@ -220,6 +209,7 @@ void onWiFiEvent(WiFiEventId_t id, WiFiEventInfo_t info) {
 }
 #elif defined(ESP8266)
 void onWiFiEvent(WiFiEvent_t id) {
+	// FIXME set hostname on ESP8266
 	switch (id) {
 	case WIFI_EVENT_STAMODE_GOT_IP:
 		log_i("WiFi ready %lums after start.", (long unsigned int ) (millis() - start_ms));
@@ -239,22 +229,35 @@ void onWiFiEvent(WiFiEvent_t id) {
 #endif
 
 void loop() {
-	uint64_t start = millis();
+	const uint64_t start = millis();
 
 	if (loop_iterations % 4 == 0) {
-		measure();
+		if (sensors::SENSOR_HANDLER.getTimeSinceMeasurement() == -1
+				|| sensors::SENSOR_HANDLER.getTimeSinceMeasurement()
+						>= sensors::SENSOR_HANDLER.getMinInterval()) {
+			if (!sensors::SENSOR_HANDLER.requestMeasurement()) {
+				log_w("Failed to get new measurements from sensor.");
+			}
+		}
 
-		if (loop_iterations % 20 == 0 && millis() - last_measurement < 10000) {
-			printTemperature(Serial, temperature);
-			if (!isnan(humidity)) {
-				Serial.print("Humidity: ");
-				Serial.print(getHumidity().c_str());
-				Serial.println('%');
+		if (loop_iterations % 20 == 0
+				&& sensors::SENSOR_HANDLER.getTimeSinceMeasurement() < 10000) {
+			printTemperature(Serial, sensors::SENSOR_HANDLER.getTemperature());
+			if (sensors::SENSOR_HANDLER.supportsHumidity()) {
+				Serial.print("Relative Humidity: ");
+				Serial.print(
+						utility::float_to_string(
+								sensors::SENSOR_HANDLER.getHumidity(), 2).c_str());
+				if (!std::isnan(sensors::SENSOR_HANDLER.getHumidity())) {
+					Serial.println('%');
+				} else {
+					Serial.println();
+				}
 			}
 		}
 	}
 
-	uint available = Serial.available();
+	const uint available = Serial.available();
 	if (available > 0) {
 		char input[available];
 		Serial.readBytes(input, available);
@@ -270,7 +273,8 @@ void loop() {
 					Serial.println();
 					Serial.print("Unknown Command: ");
 					Serial.println(command.c_str());
-					Serial.println("Use \"help\" to get a list of valid commands.");
+					Serial.println(
+							"Use \"help\" to get a list of valid commands.");
 				}
 				command = "";
 			} else if (!iscntrl(c)) {
@@ -297,20 +301,22 @@ void loop() {
 	mqtt::loop();
 
 	loop_iterations++;
-	uint64_t end = millis();
+	const uint64_t end = millis();
 	delay(max(0, 500 - int16_t(end - start)));
 }
 
 bool handle_serial_input(const std::string &input) {
 	if (input == "temperature" || input == "temp") {
 		Serial.println();
-		printTemperature(Serial, temperature);
+		printTemperature(Serial, sensors::SENSOR_HANDLER.getTemperature());
 		return true;
 	} else if (input == "humidity") {
 		Serial.println();
 		Serial.print("Relative humidity: ");
-		Serial.print(getHumidity().c_str());
-		if (!isnan(humidity)) {
+		Serial.print(
+				utility::float_to_string(sensors::SENSOR_HANDLER.getHumidity(),
+						2).c_str());
+		if (!std::isnan(sensors::SENSOR_HANDLER.getHumidity())) {
 			Serial.println('%');
 		} else {
 			Serial.println();
@@ -338,11 +344,15 @@ bool handle_serial_input(const std::string &input) {
 	} else if (input == "help") {
 		Serial.println();
 		Serial.println("ESP-WiFi-Thermometer help:");
-		Serial.println("temperature (or temp): Prints the last measured temperature in °C and °F.");
-		Serial.println("humidity:              Prints the relative humidity in %.");
-		Serial.println("ip:                    Prints the current IPv4 and IPv6 address of this device.");
+		Serial.println(
+				"temperature (or temp): Prints the last measured temperature in °C and °F.");
+		Serial.println(
+				"humidity:              Prints the relative humidity in %.");
+		Serial.println(
+				"ip:                    Prints the current IPv4 and IPv6 address of this device.");
 #ifdef ESP32
-		Serial.println("scan:                  Scans for WiFi networks in the area and prints the result.");
+		Serial.println(
+				"scan:                  Scans for WiFi networks in the area and prints the result.");
 #endif
 		Serial.println("help:                  Prints this help text.");
 		return true;
@@ -351,87 +361,15 @@ bool handle_serial_input(const std::string &input) {
 	}
 }
 
-void measure() {
-#if SENSOR_TYPE == SENSOR_TYPE_DHT
-	float temp = dht.readTemperature();
-	if (!isnan(temp)) {
-		temperature = temp;
-	}
-
-	float humid = dht.readHumidity();
-	if (!isnan(humid)) {
-		humidity = humid;
-	}
-
-	if (!isnan(temp) && !isnan(humid)) {
-		last_measurement = millis();
-	}
-#elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
-	if (sensors.getDeviceCount() == 0) {
-		sensors.begin();
-	}
-	sensors.requestTemperaturesByIndex(0);
-	float temp = sensors.getTempCByIndex(0);
-	if (temp != DEVICE_DISCONNECTED_C) {
-		temperature = temp;
-		last_measurement = millis();
-	}
-#endif
-}
-
-std::string getTemperature() {
-	if (isnan(temperature)) {
-		return "Unknown";
-	}
-	std::ostringstream converter;
-	converter << std::setprecision(temperature > 10 ? 4 : 3) << temperature;
-	return converter.str();
-}
-
-std::string getHumidity() {
-	if (isnan(humidity)) {
-		return "Unknown";
-	}
-	std::ostringstream converter;
-	converter << std::setprecision(humidity > 10 ? 4 : 3) << humidity;
-	return converter.str();
-}
-
-std::string getTimeSinceMeasurement() {
-	std::ostringstream stream;
-	uint64_t now = millis();
-	stream << std::internal << std::setfill('0') << std::setw(2);
-	stream << (now - last_measurement) / 3600000 % 24;
-	stream << ':';
-	stream << std::internal << std::setfill('0') << std::setw(2);
-	stream << (now - last_measurement) / 60000 % 60;
-	stream << ':';
-	stream << std::internal << std::setfill('0') << std::setw(2);
-	stream << (now - last_measurement) / 1000 % 60;
-	stream << '.';
-	stream << std::internal << std::setfill('0') << std::setw(3);
-	stream << (now - last_measurement) % 1000;
-	return stream.str();
-}
-
 void printTemperature(Print &out, const float temp) {
 	out.print("Temperature: ");
-	if (isnan(temp)) {
-		out.println("Unknown");
-	} else {
-		std::ostringstream converter;
-		converter << std::setprecision(temp > 10 ? 4 : 3) << temp;
-		out.print(converter.str().c_str());
+	if (!std::isnan(temp)) {
+		out.print(utility::float_to_string(temp, 2).c_str());
 		out.print("°C, ");
-		converter.str("");
-		converter.clear();
-		const float tempF = celsiusToFahrenheit(temp);
-		converter << std::setprecision(tempF > 10 ? 4 : 3) << tempF;
-		out.print(converter.str().c_str());
+		out.print(
+				utility::float_to_string(utility::celsiusToFahrenheit(temp), 2).c_str());
 		out.println("°F");
+	} else {
+		out.println("Unknown");
 	}
-}
-
-float celsiusToFahrenheit(const float celsius) {
-	return celsius * 1.8 + 32;
 }
