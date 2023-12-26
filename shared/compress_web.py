@@ -49,7 +49,7 @@ def remove_whitespaces(lines_in, mode):
         In all modes spaces are removed if they are the first or last character in a line.
         In Default, HTML, and CSS mode multiple spaces in a row are always collapsed to a single one.
         In JavaScript mode multiple spaces in a row are collapsed, unless they are inside of a quote.
-        In all modes except JavaScript mode /* ... */ comments are removed entirely.
+        In all modes except HTML mode /* ... */ comments are removed entirely.
         In Default mode spaces are removed if they are before or after a character from the separator_chars list.
         In CSS mode spaces are removed if they are before or after a character from the separator_chars list,
         except if they are before an opening bracket.

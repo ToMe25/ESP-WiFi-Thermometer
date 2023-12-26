@@ -9,6 +9,7 @@ Not all of these are necessarily going to be implemented at all.
  * Fix ESP8266 WiFi scan support
  * Merge wifissid.txt and wifipass.txt into wificreds.txt and merge mqttuser.txt and mqttpass.txt into mqttcreds.txt
  * Improve log messages for when measurements fail
+ * Use an asynchronous DHT library(for example https://github.com/bertmelis/esp32DHT/)?
 
 ## Web Interface
  * Add error message to web interface if measurement fails

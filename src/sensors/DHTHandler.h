@@ -12,7 +12,6 @@
 #define SRC_SENSORS_DHTHANDLER_H_
 
 #include "sensor_handler.h"
-// TODO switch to an async library.
 #include <Adafruit_Sensor.h> // Required for DHT library.
 #include <DHT.h>
 

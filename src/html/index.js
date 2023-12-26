@@ -1,51 +1,63 @@
-var temperature
-var humidity
-var time
+var temp_elemen
+var humidity_element
+var time_element
 var update_interval
 var timer_interval
+var json_time
+var update_time
 
 window.onload = init
 
+/**
+ * The function used to initialize this script.
+ * 
+ * The function to be called when the page finished loading, to initialize this script.
+ */
 function init() {
 	update_interval = window.setInterval(update, 1000)
 	timer_interval = window.setInterval(timer, 1000)
-	temperature = document.getElementById('temp')
-	humidity = document.getElementById('humid')
-	time = document.getElementById('time')
+	temp_elemen = document.getElementById('temp')
+	humidity_element = document.getElementById('humid')
+	time_element = document.getElementById('time')
+	json_time = parseTimeString(time_element.innerText)
+	update_time = Date.now()
 }
 
+/**
+ * The update function downloading new data from the ESP.
+ * 
+ * This function fetches new measurements from the ESP and updates the page.
+ */
 function update() {
-	fetch('data.json', { method: 'get' })
+	fetch('data.json', { method: 'get', signal: AbortSignal.timeout(3000) })
 		.then((res) => {
 			return res.json()
 		}).then((out) => {
-			temperature.innerText = out.temperature
-			humidity.innerText = out.humidity
-			time.innerText = time.dateTime = out.time
+			temp_elemen.innerText = out.temperature
+			humidity_element.innerText = out.humidity
+			time_element.innerText = time_element.dateTime = out.time
+			json_time = parseTimeString(out.time)
+			update_time = Date.now()
 		}).catch((err) => {
 			console.error('Error: ', err)
 		})
 }
 
+/**
+ * The timer function updating the time since measurement every second.
+ * 
+ * A function that will be called once every second, and updates the time since the last measurement.
+ */
 function timer() {
-	if (time.innerText == "Unknown") {
+	if (time_element.innerText == "Unknown") {
 		return
 	}
 
-	var date = new Date()
-	const split = time.innerText.split('.')[0].split(':')
-	if (split.length != 3) {
-		console.error('Date string "%s" is invalid!', time.innerText)
-		return
-	}
-
-	date.setHours(split[0], split[1], split[2], time.innerText.split('.')[1])
-	date.setSeconds(date.getSeconds() + 1)
-
-	const hours = date.getHours() % 24
-	const minutes = date.getMinutes() % 60
-	const seconds = date.getSeconds() % 60
-	const milliseconds = date.getMilliseconds() % 1000
+	var date = new Date(Date.now() - update_time + json_time)
+	const hours = date.getUTCHours()
+	const minutes = date.getUTCMinutes()
+	const seconds = date.getUTCSeconds()
+	const milliseconds = date.getUTCMilliseconds()
 	var timeStr = ""
 	if (hours < 10) {
 		timeStr += '0'
@@ -69,5 +81,37 @@ function timer() {
 		}
 	}
 	timeStr += milliseconds
-	time.innerText = time.dateTime = timeStr
+	time_element.innerText = time_element.dateTime = timeStr
+}
+
+/**
+ * Parses the given time string to the number of milliseconds it represents.
+ * 
+ * This function parses a string in the format "HH:MM:SS.mmm" to a number.
+ * The result is the number of milliseconds the time represents.
+ * 
+ * Will return null if time is "Unknown" or can not be parsed.
+ * 
+ * @param {string} time The string to parse.
+ * @return {number} The parsed Date object.
+ */
+function parseTimeString(time) {
+	if (typeof (time) != "string") {
+		console.error("Can't parse time object of type %s.", typeof (time))
+		return null
+	}
+
+	if (time == "Unknown") {
+		return null
+	}
+
+	const split = time.split('.')[0].split(':')
+	if (split.length != 3) {
+		console.error('Date string "%s" is invalid!', time)
+		return null
+	}
+
+	var date = new Date(0)
+	date.setUTCHours(split[0], split[1], split[2], time.split('.')[1])
+	return date.getTime()
 }
