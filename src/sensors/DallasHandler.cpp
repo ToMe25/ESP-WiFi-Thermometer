@@ -34,16 +34,22 @@ bool DallasHandler::begin() {
 		return false;
 	}
 	_sensors.setResolution(address, RESOLUTION);
+	_sensors.setWaitForConversion(false);
 
 	return true;
 }
 
 bool DallasHandler::requestMeasurement() {
-	if (_last_request == -1 || millis() - _last_request > MIN_INTERVAL) {
-		_last_request = _last_finished_request = millis();
+	if (_last_request == -1 || millis() - _last_request >= MIN_INTERVAL) {
+		// Read previous measurements, if they weren't read yet.
+		if (_last_request > _last_finished_request) {
+			getTemperature();
+		}
+
+		_last_request = millis();
 		DeviceAddress address;
 		if (!_sensors.getAddress(address, SENSOR_INDEX)) {
-			log_d("Failed to get address for sensor %u.", SENSOR_INDEX);
+			log_w("Failed to get address for sensor %u.", SENSOR_INDEX);
 			return false;
 		}
 
@@ -51,36 +57,10 @@ bool DallasHandler::requestMeasurement() {
 			_sensors.setResolution(address, RESOLUTION);
 		}
 
-		// TODO make async.
 		if (!_sensors.requestTemperaturesByAddress(address).result) {
-			log_d("Failed to read data from DS18 index %u.", SENSOR_INDEX);
+			log_w("Failed to read data from DS18 index %u.", SENSOR_INDEX);
 			return false;
 		}
-
-		_last_finished_request = _last_request;
-
-		const int32_t temp = _sensors.getTemp(address);
-		if (temp == DEVICE_DISCONNECTED_RAW) {
-			log_d("Failed to read data from DS18 index %u.", SENSOR_INDEX);
-			_temperature = NAN;
-			return false;
-		} else if (temp == DEVICE_FAULT_OPEN_RAW) {
-			log_d("Failed to read data from DS18 index %u.", SENSOR_INDEX);
-			_temperature = NAN;
-			return false;
-		} else if (temp == DEVICE_FAULT_SHORTGND_RAW) {
-			log_d("DS18 sensor reports short to ground fault.");
-			_temperature = NAN;
-			return false;
-		} else if (temp == DEVICE_FAULT_SHORTVDD_RAW) {
-			log_d("DS18 sensor reports short to vdd fault.");
-			_temperature = NAN;
-			return false;
-		}
-
-		_last_valid_temperature = _temperature =
-				DallasTemperature::rawToCelsius(temp);
-		_last_valid_request = _last_finished_request;
 		return true;
 	} else {
 		log_i("Attempted to read sensor data before minimum delay.");
@@ -95,10 +75,49 @@ bool DallasHandler::supportsTemperature() const {
 }
 
 float DallasHandler::getTemperature() {
+	if (_last_request > _last_finished_request
+			&& millis() - _last_request >= MIN_INTERVAL) {
+		DeviceAddress address;
+		if (!_sensors.getAddress(address, SENSOR_INDEX)) {
+			log_w("Failed to get address for sensor %u.", SENSOR_INDEX);
+			_temperature = NAN;
+			_last_finished_request = _last_request;
+			return _temperature;
+		}
+
+		const int32_t temp = _sensors.getTemp(address);
+		if (temp == DEVICE_DISCONNECTED_RAW) {
+			log_d("Failed to read data from DS18 index %u.", SENSOR_INDEX);
+			_temperature = NAN;
+		} else if (temp == DEVICE_FAULT_OPEN_RAW) {
+			log_d("Failed to read data from DS18 index %u.", SENSOR_INDEX);
+			_temperature = NAN;
+		} else if (temp == DEVICE_FAULT_SHORTGND_RAW) {
+			log_d("DS18 sensor reports short to ground fault.");
+			_temperature = NAN;
+		} else if (temp == DEVICE_FAULT_SHORTVDD_RAW) {
+			log_d("DS18 sensor reports short to vdd fault.");
+			_temperature = NAN;
+		} else {
+			_temperature = DallasTemperature::rawToCelsius(temp);
+		}
+
+		_last_finished_request = _last_request;
+
+		if (!std::isnan(_temperature)) {
+			_last_valid_temperature = _temperature;
+			_last_valid_request = _last_finished_request;
+		}
+	}
+
 	return _temperature;
 }
 
 float DallasHandler::getLastTemperature() {
+	if (_last_request > _last_finished_request
+			&& millis() - _last_request >= MIN_INTERVAL) {
+		getTemperature();
+	}
 	return _last_valid_temperature;
 }
 

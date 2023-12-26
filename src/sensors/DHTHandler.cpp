@@ -28,17 +28,17 @@ bool DHTHandler::begin() {
 }
 
 bool DHTHandler::requestMeasurement() {
-	if (_last_request == -1 || millis() - _last_request > MIN_INTERVAL) {
+	if (_last_request == -1 || millis() - _last_request >= MIN_INTERVAL) {
 		_last_request = millis();
 		if (!_dht.read(false)) {
 			_temperature = _humidity = NAN;
-			log_d("Failed to read data from dht.");
+			log_w("Failed to read data from dht.");
 			return false;
 		}
 
-		_last_finished_request = _last_request;
 		_temperature = _dht.readTemperature(false);
 		_humidity = _dht.readHumidity(false);
+		_last_finished_request = _last_request;
 
 		// Measurements are considered to be either entirely valid, or entirely invalid.
 		if (!std::isnan(_temperature) && !std::isnan(_humidity)) {
@@ -46,7 +46,7 @@ bool DHTHandler::requestMeasurement() {
 			_last_valid_humidity = _humidity;
 			_last_valid_request = _last_finished_request;
 		} else {
-			log_d("Read partially invalid data from dht.");
+			log_i("Read partially invalid data from dht.");
 		}
 
 		return true;
