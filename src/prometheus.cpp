@@ -15,9 +15,6 @@
 #include <sstream>
 #include "fallback_log.h"
 
-#ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
-uint32_t prom::used_heap = 0;
-#endif
 #if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 std::map<String, std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> prom::http_requests_total;
 #endif
@@ -36,11 +33,6 @@ void prom::setup() {
 }
 
 void prom::loop() {
-#ifdef ESP32// From what I could find this seems to be impossible on a ESP8266.
-	// TODO move to getMetrics
-	used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
-#endif
-
 #if ENABLE_PROMETHEUS_PUSH == 1
 	pushMetrics();
 #endif
@@ -114,6 +106,7 @@ String prom::getMetrics(const bool openmetrics) {
 
 	// From what I could find this seems to be impossible on a ESP8266.
 #ifdef ESP32
+	const uint64_t used_heap = ESP.getHeapSize() - ESP.getFreeHeap();
 	len += writeMetric(buffer + len, "process", "heap", "bytes",
 			"The amount of heap used on the ESP in bytes.", "gauge",
 			(double) used_heap, openmetrics);

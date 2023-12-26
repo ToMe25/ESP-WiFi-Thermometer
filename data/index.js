@@ -19,8 +19,19 @@ update_time=Date.now()
 }
 
 function update(){
-fetch('data.json',{method:'get',signal:AbortSignal.timeout(3000)})
+var options={method:'GET'}
+var timeout
+if(typeof(AbortController)=='function'){
+const abort=new AbortController();
+options.signal=abort.signal
+timeout=setTimeout(()=>abort.abort(),3000);
+}
+
+fetch('data.json',options)
 .then((res)=>{
+if(timeout!=undefined){
+clearTimeout(timeout)
+}
 return res.json()
 }).then((out)=>{
 temp_elemen.innerText=out.temperature
@@ -29,6 +40,9 @@ time_element.innerText=time_element.dateTime=out.time
 json_time=parseTimeString(out.time)
 update_time=Date.now()
 }).catch((err)=>{
+if(timeout!=undefined){
+clearTimeout(timeout)
+}
 console.error('Error: ',err)
 })
 }
