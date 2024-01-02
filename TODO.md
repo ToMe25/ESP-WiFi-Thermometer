@@ -3,7 +3,7 @@ A list of todos to be implemented at a later date.
 Not all of these are necessarily going to be implemented at all.
 
 ## General
- * Change main to an actual class
+ * Change main to an actual class?
  * Keep some history of measurements(required for some other todos)
  * Fix ESP8266 ipv6 support
  * Fix ESP8266 WiFi scan support

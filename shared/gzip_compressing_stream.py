@@ -1,13 +1,17 @@
-"""A custom gzip compressing stream using a smaller window size."""
+"""A custom gzip compressing stream using a configurable window size.
+
+Also contains a simple command line interface."""
 
 import errno
 import io
 import os
 import struct
 import sys
+import traceback
 import zlib
 
 __all__ = ["GzipCompressingStream"]
+
 
 class GzipCompressingStream(io.RawIOBase):
     """A write-only stream deflate compressing the written data into a gzip file.
@@ -34,6 +38,7 @@ class GzipCompressingStream(io.RawIOBase):
         ----------
         filename: str
             The path of the output file to write to.
+            If '-' is given, this stream will write to the standard output stream.
         compresslevel: int
             The zlib compression level to use.
             Valid values are from -8 to -15.
@@ -44,10 +49,15 @@ class GzipCompressingStream(io.RawIOBase):
         if wsize > -8 or wsize < -15:
             raise ValueError("Window size out of range")
 
-        if not filename.endswith(".gz"):
+        if filename != "-" and not filename.endswith(".gz"):
             filename += ".gz"
 
-        self.fileobj = open(filename, 'wb')
+        if filename == "-":
+            self.fileobj = sys.stdout.buffer
+            filename = ""
+        else:
+            self.fileobj = open(filename, 'wb')
+
         self.crc = zlib.crc32(b'')
         self.compress = zlib.compressobj(compresslevel, zlib.DEFLATED, wsize, zlib.DEF_MEM_LEVEL, 0)
 
@@ -65,7 +75,7 @@ class GzipCompressingStream(io.RawIOBase):
             The gzip compression level used.
         """
 
-        self.fileobj.write(b'\x1f\x8b\x08') # magic numbers + deflate compression
+        self.fileobj.write(b'\x1f\x8b\x08')  # magic numbers + deflate compression
         try:
             # filename should always end with .gz
             filename = os.path.basename(filename)[:-3]
@@ -81,7 +91,7 @@ class GzipCompressingStream(io.RawIOBase):
         else:
             self.fileobj.write(b'\x00')
 
-        self.fileobj.write(b'\x00\x00\x00\x00') # don't write last modified time
+        self.fileobj.write(b'\x00\x00\x00\x00')  # don't write last modified time
 
         if compresslevel == 9:
             self.fileobj.write(b'\x02')
@@ -90,7 +100,7 @@ class GzipCompressingStream(io.RawIOBase):
         else:
             self.fileobj.write(b'\x00')
 
-        self.fileobj.write(b'\xff') # unknown os
+        self.fileobj.write(b'\xff')  # unknown os
 
         if filename:
             self.fileobj.write(filename + b'\x00')
@@ -138,12 +148,15 @@ class GzipCompressingStream(io.RawIOBase):
         if self.closed:
             return
 
-        super().close()
-        self.fileobj.write(self.compress.flush())
-        self.fileobj.write(struct.pack("<L", self.crc))
-        self.fileobj.write(struct.pack("<L", self.size & 0xffffffff))
+        fileobj = self.fileobj
+        self.fileobj = None
 
-        self.fileobj.close()
+        fileobj.write(self.compress.flush())
+        fileobj.write(struct.pack("<L", self.crc))
+        fileobj.write(struct.pack("<L", self.size & 0xffffffff))
+
+        if fileobj != sys.stdout.buffer:
+            fileobj.close()
 
     def flush(self):
         """Flushes the current compression cache and file object.
@@ -153,6 +166,10 @@ class GzipCompressingStream(io.RawIOBase):
 
         self.fileobj.write(self.compress.flush(zlib.Z_SYNC_FLUSH))
         self.fileobj.flush()
+
+    @property
+    def closed(self):
+        return self.fileobj == None
 
     def fileno(self):
         return self.fileobj.fileno()
@@ -177,3 +194,57 @@ class GzipCompressingStream(io.RawIOBase):
 
     def readinto(self, _):
         raise OSError(errno.EBADF, "Cannot read write-only file.")
+
+
+def main():
+    """The entrypoint for the command line interface.
+    
+    This function is only intended to be called if this file is run in module mode.
+    It parses the command line arguments, compresses one or more files, and returns the process exit code.
+    """
+
+    from argparse import ArgumentParser
+    parser = ArgumentParser(description=
+        "A simple command line interface for the gzip_compressing_stream module, "
+        "compresses a file and leaves it untouched.")
+    parser.add_argument("--window-size", dest="wsize", metavar='SIZE', type=int,
+        default=-10, help="The deflate window size to use.")
+    parser.add_argument('-c', "--compression-level", dest="clevel", metavar='LEVEL',
+        type=int, default=9, help="The level of compression to use. 1 is fastest, 9 is best.")
+    parser.add_argument("args", nargs="*", default=["-"], metavar='FILE',
+        help="A file to compress. Use '-' to read from standard input and write to standard output.")
+    args = parser.parse_args()
+
+    for arg in args.args:
+        if arg == "-":
+            fin = sys.stdin.buffer
+        else:
+            try:
+                fin = open(arg, "rb")
+            except OSError as e:
+                if e.errno == errno.ENOENT:
+                    print(f"File or directory {arg} not found!", file=sys.stderr)
+                    return 1
+                elif e.errno == errno.EISDIR:
+                    print(f"File {arg} is a directory!", file=sys.stderr)
+                    return 1
+                else:
+                    traceback.print_exc()
+                    return 1
+
+        fout = GzipCompressingStream(arg, args.clevel, args.wsize)
+        while True:
+            chunk = fin.read(128 * 1024)
+            if not chunk:
+                break
+            fout.write(chunk)
+
+        fout.close()
+        if fin != sys.stdin.buffer:
+            fin.close()
+
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
