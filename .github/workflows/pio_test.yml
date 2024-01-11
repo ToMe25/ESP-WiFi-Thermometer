@@ -1,0 +1,51 @@
+# This workflow builds all platformio build targets to test whether any of them were broken by a commit.
+
+name: Platform IO test
+
+on: 
+  push:
+    paths:
+      - test/**
+      - lib/**
+      - shared/**
+      - platformio.ini
+      - .github/workflows/pio_test.yml
+  pull_request:
+    branches: 
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    name: Platform IO test (${{ matrix.os }}) 
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: 3.x
+
+      - name: Cache pip packages and Platform IO build cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pip
+            ~/.platformio
+            .pio
+          key: platformio-${{ hashFiles('platformio.ini') }}-${{ matrix.os }}
+
+      - name: Install Platform IO
+        run: pip install -U platformio
+
+      - name: Platform IO test
+        run: pio test -e native
