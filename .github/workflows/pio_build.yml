@@ -6,8 +6,9 @@ on:
   push:
     paths:
       - src/**
-      - lib/**
       - include/**
+      - lib/**
+      - shared/**
       - platformio.ini
       - .github/workflows/pio_build.yml
   pull_request:
@@ -25,6 +26,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+      fail-fast: false
 
     steps:
       - name: Checkout Repo
