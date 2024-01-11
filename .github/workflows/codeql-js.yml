@@ -6,9 +6,9 @@ on:
   push:
     paths:
       - src/**
-      - lib/**
-      - test/**
       - include/**
+      - lib/**
+      - shared/**
       - platformio.ini
       - .github/workflows/codeql-js.yml
   pull_request:
