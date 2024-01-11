@@ -13,6 +13,7 @@
 #ifndef SRC_UTILS_H_
 #define SRC_UTILS_H_
 
+#include <cstddef>
 #include <string>
 
 namespace utils {

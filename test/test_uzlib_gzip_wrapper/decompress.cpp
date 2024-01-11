@@ -92,12 +92,12 @@ void setUp() {
 	if (uncompressed_path) {
 		const size_t u_len = std::strlen(uncompressed_path);
 		compressed_path = new char[u_len + 4]; // 3 for .gz plus NUL byte.
-		strncpy(compressed_path, uncompressed_path, u_len);
+		strncpy(compressed_path, uncompressed_path, u_len + 1);
 		strncpy(compressed_path + u_len, ".gz", 4);
 
 		const size_t bc_len = std::strlen(BASE_COMMAND);
 		compress_command = new char[bc_len + u_len + 1];
-		strncpy(compress_command, BASE_COMMAND, bc_len);
+		strncpy(compress_command, BASE_COMMAND, bc_len + 1);
 		strncpy(compress_command + bc_len, uncompressed_path, u_len + 1);
 	}
 
