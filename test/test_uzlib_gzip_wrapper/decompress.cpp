@@ -25,7 +25,7 @@ const std::mt19937::result_type RANDOM_SEED = 1685018244;
 /**
  * The characters to be used as part of the generated random data.
  */
-const char RANDOM_CHARS[] =
+constexpr char RANDOM_CHARS[] =
 		"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
 /**
