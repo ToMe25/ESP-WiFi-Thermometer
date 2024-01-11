@@ -37,8 +37,8 @@ typedef std::function<
 				AsyncWebServerRequest *request)> HTTPFallbackRequestHandler;
 }
 
-#include <AsyncTrackingFallbackWebHandler.h>
-#include "uzlib_gzip_wrapper.h"
+#include "AsyncTrackingFallbackWebHandler.h"
+#include <uzlib_gzip_wrapper.h>
 #include <map>
 
 extern const char INDEX_HTML_START[] asm("_binary_data_index_html_start");
@@ -147,8 +147,8 @@ ResponseData getJson(AsyncWebServerRequest *request);
  * @return	The number of bytes written to the output buffer.
  */
 size_t decompressingResponseFiller(
-		const std::shared_ptr<uzlib_gzip_wrapper> decomp, uint8_t *buffer,
-		const size_t max_len, const size_t index);
+		const std::shared_ptr<gzip::uzlib_ungzip_wrapper> decomp,
+		uint8_t *buffer, const size_t max_len, const size_t index);
 
 /**
  * A AwsResponseFiller copying the given static file, and replacing the given template strings.

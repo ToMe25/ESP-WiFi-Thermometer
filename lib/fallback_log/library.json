@@ -1,0 +1,12 @@
+{
+	"name": "FallbackLog",
+	"description": "A header only library containing fallback definitions of the log_X macros.",
+	"version": "1.0.0",
+	"license": "MIT",
+	"dependencies": [
+		{
+			"name": "utils",
+			"version": "utils"
+		}
+	]
+}

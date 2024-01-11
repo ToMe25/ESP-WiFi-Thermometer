@@ -20,7 +20,7 @@
 #elif defined(ESP8266)
 #include <ESP8266mDNS.h>
 #endif
-#include "fallback_log.h"
+#include <fallback_log.h>
 #endif /* ENABLE_WEB_SERVER == 1 */
 
 #if ENABLE_WEB_SERVER == 1
@@ -87,7 +87,7 @@ void web::setup() {
 	DefaultHeaders::Instance().addHeader("Access-Control-Allow-Origin", "*");
 	server.begin();
 
-	uzlib_init();
+	gzip::init();
 
 #if ENABLE_ARDUINO_OTA != 1
 	MDNS.begin(HOSTNAME);
@@ -152,8 +152,8 @@ web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 }
 
 size_t web::decompressingResponseFiller(
-		const std::shared_ptr<uzlib_gzip_wrapper> decomp, uint8_t *buffer,
-		const size_t max_len, const size_t index) {
+		const std::shared_ptr<gzip::uzlib_ungzip_wrapper> decomp,
+		uint8_t *buffer, const size_t max_len, const size_t index) {
 	return decomp->decompress(buffer, max_len);
 }
 
@@ -375,11 +375,11 @@ web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
 		response->addHeader("Content-Encoding", "gzip");
 	} else {
 		using namespace std::placeholders;
-		std::shared_ptr<uzlib_gzip_wrapper> decomp = std::make_shared<
-				uzlib_gzip_wrapper>(start, end, GZIP_DECOMP_WINDOW_SIZE);
+		std::shared_ptr<gzip::uzlib_ungzip_wrapper> decomp = std::make_shared<
+				gzip::uzlib_ungzip_wrapper>(start, end,
+				GZIP_DECOMP_WINDOW_SIZE);
 		content_length = decomp->getDecompressedSize();
-		response = request->beginResponse(content_type,
-				decomp->getDecompressedSize(),
+		response = request->beginResponse(content_type, content_length,
 				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
 	}
 	response->setCode(status_code);

@@ -13,7 +13,7 @@
 #include <cmath>
 #include <sstream>
 
-namespace utility {
+namespace utils {
 
 uint8_t get_msb(const uint32_t number) {
 	uint8_t idx = 0;
@@ -65,4 +65,4 @@ std::string timespan_to_string(const int64_t time_ms) {
 	return stream.str();
 }
 
-} /* namespace utility */
+} /* namespace utils */

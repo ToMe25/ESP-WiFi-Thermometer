@@ -13,7 +13,7 @@
 #include "sensor_handler.h"
 #include <iomanip>
 #include <sstream>
-#include "fallback_log.h"
+#include <fallback_log.h>
 
 #if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 std::map<String, std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> prom::http_requests_total;

@@ -15,7 +15,7 @@
 
 #include <string>
 
-namespace utility {
+namespace utils {
 /**
  * A method to get the index of the Most Significant Bit set in a number.
  *
@@ -58,12 +58,12 @@ struct const_expr_value {
 constexpr size_t strlen(const char *str) {
 	return (*str == 0) ? 0 : strlen(str + 1) + 1;
 }
-}
+} /* namespace utils */
 
 /**
  * CONST_EXPR_VALUE is an utility macro to get force compile time evaluation of a constexpr value.
  */
-#define CONST_EXPR_VALUE(exp) utility::const_expr_value<decltype(exp), exp>::value
+#define CONST_EXPR_VALUE(exp) utils::const_expr_value<decltype(exp), exp>::value
 
 /**
  * FILE_BASE_NAME is a macro that represents the base name of the current file.
@@ -71,7 +71,7 @@ constexpr size_t strlen(const char *str) {
 #ifdef __FILE_NAME__
 #define FILE_BASE_NAME __FILE_NAME__
 #else
-#define FILE_BASE_NAME &__FILE__[CONST_EXPR_VALUE(utility::get_base_name_offset(__FILE__))]
+#define FILE_BASE_NAME &__FILE__[CONST_EXPR_VALUE(utils::get_base_name_offset(__FILE__))]
 #endif
 
 /**
@@ -79,7 +79,7 @@ constexpr size_t strlen(const char *str) {
  */
 #define EXPAND_MACRO(macro) #macro
 
-namespace utility {
+namespace utils {
 /**
  * Converts the given temperature from degrees celsius to degrees fahrenheit.
  *
@@ -115,6 +115,6 @@ std::string float_to_string(const float measurement,
  * @return	The newly created string.
  */
 std::string timespan_to_string(const int64_t time_ms);
-}
+} /* namespace utils */
 
 #endif /* SRC_UTILS_H_ */

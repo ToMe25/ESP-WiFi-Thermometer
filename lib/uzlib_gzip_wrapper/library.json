@@ -1,0 +1,16 @@
+{
+	"name": "UZLibGzipWrapper",
+	"description": "A wrapper to help with storing the data associated with (de)compressing a GZIP file using UZLib. Can't handle compressing yet.",
+	"version": "1.0.0",
+	"license": "MIT",
+	"dependencies": [
+		{
+			"name": "uzlib",
+			"version": "https://github.com/pfalcon/uzlib.git"
+		},
+		{
+			"name": "FallbackLog",
+			"version": "FallbackLog"
+		}
+	]
+}

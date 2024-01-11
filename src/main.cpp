@@ -19,7 +19,7 @@
 #if defined(ESP8266)
 #include <dhcpserver.h>
 #endif
-#include "fallback_log.h"
+#include <fallback_log.h>
 
 IPAddress localhost;
 #ifdef ESP32
@@ -246,7 +246,7 @@ void loop() {
 			if (sensors::SENSOR_HANDLER.supportsHumidity()) {
 				Serial.print("Relative Humidity: ");
 				Serial.print(
-						utility::float_to_string(
+						utils::float_to_string(
 								sensors::SENSOR_HANDLER.getHumidity(), 2).c_str());
 				if (!std::isnan(sensors::SENSOR_HANDLER.getHumidity())) {
 					Serial.println('%');
@@ -314,8 +314,7 @@ bool handle_serial_input(const std::string &input) {
 		Serial.println();
 		Serial.print("Relative humidity: ");
 		Serial.print(
-				utility::float_to_string(sensors::SENSOR_HANDLER.getHumidity(),
-						2).c_str());
+				utils::float_to_string(sensors::SENSOR_HANDLER.getHumidity(), 2).c_str());
 		if (!std::isnan(sensors::SENSOR_HANDLER.getHumidity())) {
 			Serial.println('%');
 		} else {
@@ -364,10 +363,10 @@ bool handle_serial_input(const std::string &input) {
 void printTemperature(Print &out, const float temp) {
 	out.print("Temperature: ");
 	if (!std::isnan(temp)) {
-		out.print(utility::float_to_string(temp, 2).c_str());
+		out.print(utils::float_to_string(temp, 2).c_str());
 		out.print("°C, ");
 		out.print(
-				utility::float_to_string(utility::celsiusToFahrenheit(temp), 2).c_str());
+				utils::float_to_string(utils::celsiusToFahrenheit(temp), 2).c_str());
 		out.println("°F");
 	} else {
 		out.println("Unknown");

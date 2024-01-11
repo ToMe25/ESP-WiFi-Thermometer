@@ -13,13 +13,13 @@
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 || ENABLE_PROMETHEUS_PUSH == 1
 #include "prometheus.h"
 #endif
-#include "utils.h"
-#include "fallback_log.h"
+#include <utils.h>
+#include <fallback_log.h>
 
 web::AsyncTrackingFallbackWebHandler::AsyncTrackingFallbackWebHandler(
 		const String &uri, HTTPFallbackRequestHandler fallback) :
 		_uri(uri), _fallbackHandler(fallback), _handlers(
-				utility::get_msb(HTTP_ANY) + 1) {
+				utils::get_msb(HTTP_ANY) + 1) {
 
 }
 
@@ -28,7 +28,7 @@ web::AsyncTrackingFallbackWebHandler::~AsyncTrackingFallbackWebHandler() {
 }
 
 web::HTTPRequestHandler web::AsyncTrackingFallbackWebHandler::_getHandler(const WebRequestMethod method) const {
-	return _handlers[utility::get_msb((WebRequestMethodComposite) method)];
+	return _handlers[utils::get_msb((WebRequestMethodComposite) method)];
 }
 
 void web::AsyncTrackingFallbackWebHandler::setHandler(const WebRequestMethodComposite methods, HTTPRequestHandler handler) {

@@ -10,7 +10,7 @@
 
 #include "config.h"
 #include "sensor_handler.h"
-#include "utils.h"
+#include <utils.h>
 #if SENSOR_TYPE == SENSOR_TYPE_DHT
 #include "sensors/DHTHandler.h"
 #elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
@@ -27,19 +27,19 @@ SensorHandler::~SensorHandler() {
 }
 
 const std::string SensorHandler::getTemperatureString() {
-	return utility::float_to_string(getTemperature(), 2);
+	return utils::float_to_string(getTemperature(), 2);
 }
 
 const std::string SensorHandler::getLastTemperatureString() {
-	return utility::float_to_string(getLastTemperature(), 2);
+	return utils::float_to_string(getLastTemperature(), 2);
 }
 
 const std::string SensorHandler::getHumidityString() {
-	return utility::float_to_string(getHumidity(), 2);
+	return utils::float_to_string(getHumidity(), 2);
 }
 
 const std::string SensorHandler::getLastHumidityString() {
-	return utility::float_to_string(getLastHumidity(), 2);
+	return utils::float_to_string(getLastHumidity(), 2);
 }
 
 int64_t SensorHandler::getTimeSinceMeasurement() {
@@ -59,11 +59,11 @@ int64_t SensorHandler::getTimeSinceValidMeasurement() {
 }
 
 const std::string SensorHandler::getTimeSinceMeasurementString() {
-	return utility::timespan_to_string(getTimeSinceMeasurement());
+	return utils::timespan_to_string(getTimeSinceMeasurement());
 }
 
 const std::string SensorHandler::getTimeSinceValidMeasurementString() {
-	return utility::timespan_to_string(getTimeSinceValidMeasurement());
+	return utils::timespan_to_string(getTimeSinceValidMeasurement());
 }
 
 uint16_t SensorHandler::getMinInterval() const {

@@ -10,6 +10,8 @@ Not all of these are necessarily going to be implemented at all.
  * Merge wifissid.txt and wifipass.txt into wificreds.txt and merge mqttuser.txt and mqttpass.txt into mqttcreds.txt
  * Improve log messages for when measurements fail
  * Use an asynchronous DHT library(for example https://github.com/bertmelis/esp32DHT/)?
+ * Add (stream?) compression to uzlib_gzip_wrapper
+ * Change callback based uzlib_ungzip_wrapper to use C++ function objects instead of C function pointers
 
 ## Web Interface
  * Add error message to web interface if measurement fails
@@ -19,6 +21,7 @@ Not all of these are necessarily going to be implemented at all.
  * Allow caching of static resources using a hash of their content as an ETag
  * Add theme switcher to web interface(clientside setting)
  * Web server IPv6 support
+ * Add current commit to prometheus info and HTTP Server header
 
 ## Integration
  * Find a way to make the kubernetes service(for prometheus) automatically point to the esp(mDNS?)
@@ -28,3 +31,5 @@ Not all of these are necessarily going to be implemented at all.
  * Add MQTT state json
  * Cleanup MQTT code
  * Add MQTT discovery support(https://www.home-assistant.io/docs/mqtt/discovery/)
+ * Add WiFi info to prometheus metrics
+ * Dynamically gzip compress metrics page?
