@@ -21,7 +21,7 @@ permissions:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    name: Platform IO build ${{ matrix.os == 'ubuntu-latest' && 'all' || 'some' }}(${{ matrix.os }}) 
+    name: Platform IO build ${{ matrix.os == 'ubuntu-latest' && 'all' || 'some' }} (${{ matrix.os }}) 
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
@@ -42,7 +42,7 @@ jobs:
             ~/.cache/pip
             ~/.platformio
             .pio
-          key: platformio-${{ hashFiles('platformio.ini') }}
+          key: platformio-${{ hashFiles('platformio.ini') }}-${{ matrix.os }}
 
       - name: Install Platform IO
         run: pip install -U platformio
