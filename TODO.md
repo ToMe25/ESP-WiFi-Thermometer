@@ -33,3 +33,4 @@ Not all of these are necessarily going to be implemented at all.
  * Add MQTT discovery support(https://www.home-assistant.io/docs/mqtt/discovery/)
  * Add WiFi info to prometheus metrics
  * Dynamically gzip compress metrics page?
+ * Implement actual prometheus library as external project

@@ -1,55 +1,88 @@
 /* This is the start of the common css for most of my esp projects */
 :root {
-	--border-color: #808080;
-	background-color: #c2cbd1;
+	--bg-color: #c6cbd4;
+	--main-bg-color: #eaeaea;
+	--border-color: #6a6a6a;
+	--text-color: #393939;
+	--link-color: #767e84;
+	--active-link-color: #666c7b;
+
+	background-color: var(--bg-color);
+	color: var(--text-color);
 	color-scheme: light dark;
 	text-align: center;
 }
 
+body {
+	display: inline-block;
+	min-width: 100%;
+	margin: 0px;
+	padding: 0px;
+}
+
+main,
 .main {
-	background-color: #ededed;
-	color: #0d0d0d;
+	background-color: var(--main-bg-color);
 	font-size: 2rem;
-	max-width: 100%;
 	border: 4px solid var(--border-color);
 	border-radius: 10px;
 	display: inline-block;
-	padding: 30px;
 	margin: 5% 0;
-	box-sizing: border-box;
+	padding: 30px;
+}
+
+code {
+	background-color: #b9b9b9;
+	padding: 2px 5px;
+	border-radius: 4px;
+	font-size: 0.9em;
 }
 
 h1 {
+	color: #202020;
 	font-size: 4rem;
 	margin: 5% 1.2rem;
 }
 
 h3, label, p {
-	color: #3F3F48;
 	font-weight: bold;
 	margin: 0.8rem 0;
 	font-size: 2.5rem;
 }
 
+a:link,
+a:visited {
+	color: var(--link-color);
+}
+
+a:hover,
+a:active {
+	color: var(--active-link-color);
+}
+
 @media only screen and (prefers-color-scheme: dark) {
 	:root {
-		--border-color: #484946;
-		background-color: #222221;
+		--bg-color: #0f0e0c;
+		--main-bg-color: #1f1e1c;
+		--border-color: #626259;
+		--text-color: #80807e;
+		--link-color: #656562;
+		--active-link-color: #525250;
 	}
 
-	.main {
-		background-color: #131312;
-		color: #aab1b5;
+	h1 {
+		color: #a5a5a0;
 	}
 
-	h3, label, p {
-		color: #8d9398;
+	code {
+		background-color: #121211;
 	}
 }
 
 @media only screen and (max-width: calc(30rem + 68px)) {
+	main,
 	.main {
-		padding: 8% 6%;
+		padding: 4vh 5vw;
 	}
 
 	h1 {
@@ -64,21 +97,9 @@ h3, label, p {
 /* This is the end of the common css for most of my esp projects */
 
 h1 {
-	margin: 1rem 0;
+	margin: 1rem 0.5rem;
 }
 
-a:link,
-a:visited,
-a:hover,
-a:active {
-	color: #8d9398;
-}
-
-@media only screen and (prefers-color-scheme: dark) {
-	a:link,
-	a:visited,
-	a:hover,
-	a:active {
-		color: #525550;
-	}
+hr {
+	border-color: var(--border-color);
 }

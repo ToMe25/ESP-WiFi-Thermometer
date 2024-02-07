@@ -5,23 +5,23 @@
 <meta name="author" content="ToMe25" />
 <meta name="description" content="A ESP Thermometer Web Page" />
 <meta name="viewport" content="width=device-width" />
-<meta name="theme-color" content="#c2cbd1" media="not (prefers-color-scheme: dark)"/>
-<meta name="theme-color" content="#222221" media="(prefers-color-scheme: dark)"/>
+<meta name="theme-color" content="#c6cbd4" media="not (prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#0f0e0c" media="(prefers-color-scheme: dark)" />
 <title>ESP WiFi Thermometer</title>
-<link rel="stylesheet" type="text/css" href="/main.css">
-<link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48 64x64">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any">
-<link rel="apple-touch-icon" type="image/png" href="/favicon.png">
+<link rel="stylesheet" type="text/css" href="/main.css" />
+<link rel="icon" href="/favicon.ico" type="image/x-icon" sizes="16x16 32x32 48x48 64x64" />
+<link rel="icon" href="/favicon.svg" type="image/svg+xml" sizes="any" />
+<link rel="apple-touch-icon" type="image/png" href="/favicon.png" />
 <link rel="manifest" href="manifest.json" />
 <script type="text/javascript" src="index.js" defer></script>
 </head>
 <body>
-	<div class="main">
+	<main>
 		<h1>ESP WiFi Thermometer</h1>
 		<hr />
 		<p>Temperature: <data id="temp">$TEMP$</data>&deg;C</p>
-		<p>Humidity: <data id="humid">$HUMID$</data>&#37;</p>
+		<p>Humidity: <data id="humid">$HUMID$</data>&percnt;</p>
 		<p>Time since Measurement: <time id="time" datetime="$TIME$">$TIME$</time></p>
-	</div>
+	</main>
 </body>
 </html>

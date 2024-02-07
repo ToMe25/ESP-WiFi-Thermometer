@@ -1,12 +1,10 @@
-var temp_elemen
+var temp_element
 var humidity_element
 var time_element
 var update_interval
 var timer_interval
 var json_time
 var update_time
-
-window.onload = init
 
 /**
  * The function used to initialize this script.
@@ -16,7 +14,7 @@ window.onload = init
 function init() {
 	update_interval = window.setInterval(update, 1000)
 	timer_interval = window.setInterval(timer, 1000)
-	temp_elemen = document.getElementById('temp')
+	temp_element = document.getElementById('temp')
 	humidity_element = document.getElementById('humid')
 	time_element = document.getElementById('time')
 	json_time = parseTimeString(time_element.innerText)
@@ -44,7 +42,7 @@ function update() {
 			}
 			return res.json()
 		}).then((out) => {
-			temp_elemen.innerText = out.temperature
+			temp_element.innerText = out.temperature
 			humidity_element.innerText = out.humidity
 			time_element.innerText = time_element.dateTime = out.time
 			json_time = parseTimeString(out.time)
@@ -129,3 +127,5 @@ function parseTimeString(time) {
 	date.setUTCHours(split[0], split[1], split[2], time.split('.')[1])
 	return date.getTime()
 }
+
+document.addEventListener('DOMContentLoaded', init)

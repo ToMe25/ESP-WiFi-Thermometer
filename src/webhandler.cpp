@@ -235,8 +235,8 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 	const std::map<String, String> replacements { { "TITLE",
 			"Error 404 Not Found" }, { "ERROR",
 			"The requested file can not be found on this server!" },
-			{ "DETAILS", "The page \"" + request->url()
-					+ "\" couldn't be found." } };
+			{ "DETAILS", "The page <code>" + request->url()
+					+ "</code> couldn't be found." } };
 	ResponseData response = replacingRequestHandler(replacements, 404,
 			"text/html", (uint8_t*) ERROR_HTML_START, (uint8_t*) ERROR_HTML_END,
 			request);
@@ -300,8 +300,8 @@ web::ResponseData web::invalidMethodHandler(
 		std::map<String, String> replacements { { "TITLE",
 				"Error 405 Method Not Allowed" }, { "ERROR",
 				"The page cannot handle " + String(request->methodToString())
-						+ " requests!" }, { "DETAILS", "The page \""
-				+ request->url() + "\" can handle the request methods "
+						+ " requests!" }, { "DETAILS", "The page <code>"
+				+ request->url() + "</code> can handle the request methods "
 				+ validStr + "." } };
 
 		ResponseData response = replacingRequestHandler(replacements, 405,

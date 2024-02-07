@@ -20,7 +20,7 @@ input_gzip_blacklist = [ 'src/html/index.html', 'src/html/error.html' ]
 js_keywords = [ 'await', 'case', 'class', 'const', 'delete', 'export', 'extends', 'function', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'static', 'throw', 'typeof', 'var', 'void', 'yield' ]
 
 # The characters before/after which a space doesn't make a difference in default mode.
-separator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',' ]
+separator_chars = [ '(', ')', '[', ']', '{', '}', '<', '>', ':', ';', ',', '+', '-', '*', '/' ]
 
 # The window size parameter to use for gzip compression.
 # The actual window size used by zlib is pow(2, -gzip_windowsize).
@@ -55,7 +55,7 @@ def remove_whitespaces(lines_in, mode):
         except if they are before an opening bracket.
         In all modes empty lines at the beginning of the file are removed.
         In all modes multiple empty lines in a row a collapsed to a single one.
-        In CSS mode single linebreaks after commas are removed.
+        In CSS mode linebreaks after commas are removed.
     
     Returns
     -------
@@ -121,8 +121,8 @@ def remove_whitespaces(lines_in, mode):
         if len(line_out) > len(os.linesep) and line_out[-len(os.linesep) - 1] == ' ':
             line_out = line_out[:-len(os.linesep) - 2] + os.linesep
 
-        # Remove single linebreaks after lines ending with a comma
-        if mode == MinifyMode.CSS and lines_out and lines_out[-1].strip()[-1:] == ',' and line_out.strip():
+        # Remove linebreaks after lines ending with a comma
+        if mode == MinifyMode.CSS and lines_out and lines_out[-1].strip()[-1:] == ',':
             lines_out[-1] = lines_out[-1][:-len(os.linesep)] + line_out
         elif (lines_out and lines_out[-1].strip()) or line_out.strip():
             lines_out.append(line_out)

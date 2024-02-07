@@ -5,9 +5,13 @@ And a Deep Sleep Mode in which it is off for most of the time and outputs data l
 
 ## Web Interface  
 This program shows the measurements on a simple web interface.  
-This web interface updates its values every 2 seconds using javascript.  
-A screenshot of the web interface:  
+This web interface updates its values every 2 seconds using javascript.
+
+This is what the web interface looks like:  
 ![web interface](./images/web_interface.png)
+
+The web interface also has dark mode support:  
+![web interface dark mode](./images/web_interface_dark.png)
 
 ## Deep Sleep Mode
 Deep Sleep Mode is a operating mode where the ESP pushes metrics once, and then sleeps for a predefined time.  
