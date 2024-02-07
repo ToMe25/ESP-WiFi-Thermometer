@@ -159,6 +159,7 @@ size_t decompressingResponseFiller(
  * 						Will automatically be updated by this function.
  * @param start			A pointer to the first byte of the static page.
  * @param end			A pointer to the first byte after the static page.
+ * 						For C strings this is the terminating NUL byte.
  * @param buffer		The output buffer to write to.
  * @param max_len		The max number of bytes to write to the output buffer.
  * @param index			The number of bytes already created by this method.
@@ -213,10 +214,13 @@ ResponseData optionsHandler(const WebRequestMethodComposite validMethods,
 /**
  * A web request handler for a static page.
  *
+ * Automatically adds a "default-src 'self'" content security policy to "text/html" responses.
+ *
  * @param status_code	The HTTP response status code to send to the client.
  * @param content_type	The content type of the static file.
  * @param start			A pointer to the first byte of the compressed static file.
  * @param end			A pointer to the first byte after the end of the compressed static file.
+ * 						For C strings this is the terminating NUL byte.
  * @param request		The request to handle.
  * @return	The response to be sent to the client.
  */
@@ -226,13 +230,17 @@ ResponseData staticHandler(const uint16_t status_code,
 
 /**
  * A web request handler for a compressed static file.
+ *
  * If the client accepts gzip compressed files, the file is sent as is.
  * Otherwise it is decompressed on the fly.
+ *
+ * Automatically adds a "default-src 'self'" content security policy to "text/html" responses.
  *
  * @param status_code	The HTTP response status code to send to the client.
  * @param content_type	The content type of the static file.
  * @param start			A pointer to the first byte of the compressed static file.
  * @param end			A pointer to the first byte after the end of the compressed static file.
+ * 						For C strings this is the terminating NUL byte.
  * @param request		The request to handle.
  * @return	The response to be sent to the client.
  */
@@ -247,12 +255,15 @@ ResponseData compressedStaticHandler(const uint16_t status_code,
  * The templates will be replaced with the result of the function registered for them.
  * Note that each function will be called once, no matter how often its template appears.
  *
+ * Automatically adds a "default-src 'self'" content security policy to "text/html" responses.
+ *
  * @param replacements	A map mapping a template string to be replaced,
  * 						to a function returning its replacement value.
  * @param status_code	The HTTP response status code to send to the client.
  * @param content_type	The content type of the file to send.
  * @param start			A pointer to the first byte of the static file.
  * @param end			A pointer to the first byte after the static file.
+ * 						For C strings this is the terminating NUL byte.
  * @param request		The request to handle.
  * @return	The response to be sent to the client.
  */
@@ -272,6 +283,7 @@ ResponseData replacingRequestHandler(
  * @param content_type	The content type of the file to send.
  * @param start			A pointer to the first byte of the static file.
  * @param end			A pointer to the first byte after the static file.
+ * 						For C strings this is the terminating NUL byte.
  * @param request		The request to handle.
  * @return	The response to be sent to the client.
  */
@@ -327,8 +339,9 @@ void registerStaticHandler(const char *uri, const String &content_type,
  *
  * @param uri			The path on which the file can be found.
  * @param content_type	The content type for the file.
- * @param start			The pointer for the start of the file.
- * @param end			The pointer for the end of the file.
+ * @param start			The pointer to the first byte of the file.
+ * @param end			The pointer to the first byte after the end of the file.
+ * 						For C strings this is the terminating NUL byte.
  */
 void registerCompressedStaticHandler(const char *uri,
 		const String &content_type, const uint8_t *start, const uint8_t *end);

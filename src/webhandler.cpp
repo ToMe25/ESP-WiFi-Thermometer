@@ -53,18 +53,20 @@ void web::setup() {
 			[](AsyncWebServerRequest *request) -> ResponseData {
 				const std::string temp =
 						sensors::SENSOR_HANDLER.getTemperatureString();
-				return ResponseData(
-						request->beginResponse(200, "text/plain", temp.c_str()),
-						temp.length(), 200);
+				AsyncWebServerResponse *response = request->beginResponse(200,
+						"text/plain", temp.c_str());
+				response->addHeader("Cache-Control", "no-cache");
+				return ResponseData(response, temp.length(), 200);
 			});
 
 	registerRequestHandler("/humidity", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> ResponseData {
 				const std::string humidity =
 						sensors::SENSOR_HANDLER.getHumidityString();
-				return ResponseData(
-						request->beginResponse(200, "text/plain",
-								humidity.c_str()), humidity.length(), 200);
+				AsyncWebServerResponse *response = request->beginResponse(200,
+						"text/plain", humidity.c_str());
+				response->addHeader("Cache-Control", "no-cache");
+				return ResponseData(response, humidity.length(), 200);
 			});
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
@@ -234,12 +236,12 @@ void web::notFoundHandler(AsyncWebServerRequest *request) {
 	const size_t start = micros();
 	const std::map<String, String> replacements { { "TITLE",
 			"Error 404 Not Found" }, { "ERROR",
-			"The requested file can not be found on this server!" },
-			{ "DETAILS", "The page <code>" + request->url()
+			"The requested file can not be found on this server!" }, {
+			"DETAILS", "The page <code>" + request->url()
 					+ "</code> couldn't be found." } };
 	ResponseData response = replacingRequestHandler(replacements, 404,
-			"text/html", (uint8_t*) ERROR_HTML_START, (uint8_t*) ERROR_HTML_END,
-			request);
+			"text/html", (uint8_t*) ERROR_HTML_START,
+			(uint8_t*) ERROR_HTML_END - 1, request);
 	if (request->method() == HTTP_HEAD) {
 		response.response = new AsyncHeadOnlyResponse(response.response,
 				response.status_code);
@@ -306,7 +308,7 @@ web::ResponseData web::invalidMethodHandler(
 
 		ResponseData response = replacingRequestHandler(replacements, 405,
 				"text/html", (uint8_t*) ERROR_HTML_START,
-				(uint8_t*) ERROR_HTML_END, request);
+				(uint8_t*) ERROR_HTML_END - 1, request);
 		if (request->method() == HTTP_HEAD) {
 			response.response = new AsyncHeadOnlyResponse(response.response,
 					405);
@@ -356,9 +358,12 @@ web::ResponseData web::optionsHandler(
 web::ResponseData web::staticHandler(const uint16_t status_code,
 		const String &content_type, const uint8_t *start, const uint8_t *end,
 		AsyncWebServerRequest *request) {
-	return ResponseData(
-			request->beginResponse_P(status_code, content_type, start,
-					end - start), end - start, status_code);
+	AsyncWebServerResponse *response = request->beginResponse_P(status_code,
+			content_type, start, end - start);
+	if (!strcmp(content_type.c_str(), "text/html")) {
+		response->addHeader("Content-Security-Policy", "default-src 'self'");
+	}
+	return ResponseData(response, end - start, status_code);
 }
 
 web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
@@ -367,8 +372,7 @@ web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
 	AsyncWebServerResponse *response = NULL;
 	size_t content_length;
 	if (request->hasHeader("Accept-Encoding")
-			&& strstr(request->getHeader("Accept-Encoding")->value().c_str(),
-					"gzip")) {
+			&& strstr(request->header("Accept-Encoding").c_str(), "gzip")) {
 		content_length = end - start;
 		response = request->beginResponse_P(200, content_type, start,
 				end - start);
@@ -382,7 +386,14 @@ web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
 		response = request->beginResponse(content_type, content_length,
 				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
 	}
+
+	response->addHeader("Vary", "Accept-Encoding");
 	response->setCode(status_code);
+
+	if (!strcmp(content_type.c_str(), "text/html")) {
+		response->addHeader("Content-Security-Policy", "default-src 'self'");
+	}
+
 	return ResponseData(response, content_length, status_code);
 }
 
@@ -433,6 +444,9 @@ web::ResponseData web::replacingRequestHandler(
 			std::bind(replacingResponseFiller, replacements, offset, start, end,
 					_1, _2, _3));
 	response->setCode(status_code);
+	if (!strcmp(content_type.c_str(), "text/html")) {
+		response->addHeader("Content-Security-Policy", "default-src 'self'");
+	}
 	return ResponseData(response, content_length, status_code);
 }
 

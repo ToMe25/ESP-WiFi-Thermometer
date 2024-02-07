@@ -285,6 +285,7 @@ web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
 							"text/plain; version=0.0.4; charset=utf-8"),
 					metrics);
 	response->addHeader("Cache-Control", "no-cache");
+	response->addHeader("Vary", "Accept");
 	return web::ResponseData(response, metrics.length(), 200);
 }
 #endif
