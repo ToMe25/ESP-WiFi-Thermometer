@@ -111,9 +111,13 @@ void setUp() {
  */
 void tearDown() {
 	remove(uncompressed_path);
+	delete[] uncompressed_path;
 	uncompressed_path = NULL;
 	remove(compressed_path);
+	delete[] compressed_path;
 	compressed_path = NULL;
+	delete[] compress_command;
+	compress_command = NULL;
 	delete rng;
 	rng = NULL;
 	delete distribution;
@@ -225,6 +229,10 @@ void test_decompress_small() {
 		TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(uncompressed + start,
 				decompressed + start, comp_len, message);
 	}
+
+	delete[] compressed;
+	delete[] uncompressed;
+	delete[] decompressed;
 }
 
 /**
@@ -280,6 +288,10 @@ void test_decompress_large() {
 		TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(uncompressed + start,
 				decompressed + start, comp_len, message);
 	}
+
+	delete[] compressed;
+	delete[] uncompressed;
+	delete[] decompressed;
 }
 
 /**
@@ -403,6 +415,8 @@ void test_decompress_streaming() {
 
 	compressed_in->close();
 	uncompressed_in.close();
+	delete[] uncompressed;
+	delete[] decompressed;
 }
 
 void test_decompress_large_wsize() {
@@ -458,6 +472,10 @@ void test_decompress_large_wsize() {
 		TEST_ASSERT_EQUAL_STRING_LEN_MESSAGE(uncompressed + start,
 				decompressed + start, comp_len, message);
 	}
+
+	delete[] compressed;
+	delete[] uncompressed;
+	delete[] decompressed;
 }
 
 /**
@@ -475,7 +493,5 @@ int main(int argc, char **argv) {
 	RUN_TEST(test_decompress_streaming);
 	RUN_TEST(test_decompress_large_wsize);
 
-	// FIXME I would prefer to return non-zero if tests failed, but that seems to cause random errors on windows.
-	UNITY_END();
-	return 0;
+	return UNITY_END();
 }
