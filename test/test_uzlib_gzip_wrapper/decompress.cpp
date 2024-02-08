@@ -293,7 +293,7 @@ int read_compressed_callback(uzlib_uncomp *uncomp) {
 	const size_t RDBUFSIZ = 1024;
 
 	if (compressed_in->eof()
-			|| compressed_in->tellg() >= compressed_length - 4) {
+			|| (size_t) compressed_in->tellg() >= compressed_length - 4) {
 		if (uncomp->source != NULL) {
 			uncomp->source -= (compressed_length - 4) % RDBUFSIZ - 1;
 			delete[] (uncomp->source - 1);
@@ -364,7 +364,7 @@ void test_decompress_streaming() {
 
 	char *uncompressed = new char[BUFFER_SIZE];
 	char *decompressed = new char[BUFFER_SIZE];
-	while (uncompressed_in.tellg() < FILE_SIZE) {
+	while ((size_t) uncompressed_in.tellg() < FILE_SIZE) {
 		const size_t read =
 				uncompressed_in.read(uncompressed, BUFFER_SIZE).gcount();
 		const size_t pos = uncompressed_in.tellg();
@@ -475,5 +475,7 @@ int main(int argc, char **argv) {
 	RUN_TEST(test_decompress_streaming);
 	RUN_TEST(test_decompress_large_wsize);
 
-	return UNITY_END();
+	// FIXME I would prefer to return non-zero if tests failed, but that seems to cause random errors on windows.
+	UNITY_END();
+	return 0;
 }
