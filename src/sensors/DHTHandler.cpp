@@ -28,8 +28,9 @@ bool DHTHandler::begin() {
 }
 
 bool DHTHandler::requestMeasurement() {
-	if (_last_request == -1 || millis() - _last_request >= MIN_INTERVAL) {
-		_last_request = millis();
+	const uint64_t now = millis();
+	if (_last_request == -1 || now - _last_request >= MIN_INTERVAL) {
+		_last_request = now;
 		if (!_dht.read(false)) {
 			_temperature = _humidity = NAN;
 			log_w("Failed to read data from dht.");
@@ -53,7 +54,7 @@ bool DHTHandler::requestMeasurement() {
 	} else {
 		log_i("Attempted to read sensor data before minimum delay.");
 		log_d("Min delay: %ums, Time since measurement: %ums",
-				(uint32_t) MIN_INTERVAL, (uint32_t) (millis() - _last_request));
+				(uint32_t) MIN_INTERVAL, (uint32_t) (now - _last_request));
 		return false;
 	}
 }
