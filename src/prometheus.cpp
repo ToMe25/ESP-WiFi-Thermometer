@@ -263,14 +263,11 @@ size_t prom::writeMetricMetadataLine(char *buffer,
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
-bool prom::acceptsOpenMetrics(const char *accept_str) {
-	const char *start = strstr(accept_str, "application/openmetrics-text");
-	return start != NULL;
-}
-
 web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
 	const bool openmetrics = request->hasHeader("Accept")
-			&& acceptsOpenMetrics(request->header("Accept").c_str());
+			&& web::csvHeaderContains(request->header("Accept").c_str(),
+					"application/openmetrics-text");
+
 	if (openmetrics) {
 		log_d("Client accepts openmetrics.");
 	} else {
@@ -284,7 +281,7 @@ web::ResponseData prom::handleMetrics(AsyncWebServerRequest *request) {
 							"application/openmetrics-text; version=1.0.0; charset=utf-8" :
 							"text/plain; version=0.0.4; charset=utf-8"),
 					metrics);
-	response->addHeader("Cache-Control", "no-cache");
+	response->addHeader("Cache-Control", web::CACHE_CONTROL_NOCACHE);
 	response->addHeader("Vary", "Accept");
 	return web::ResponseData(response, metrics.length(), 200);
 }

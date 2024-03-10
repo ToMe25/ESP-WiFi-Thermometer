@@ -9,12 +9,13 @@
  */
 
 #include "AsyncHeadOnlyResponse.h"
+#include "fallback_log.h"
 
 #if ENABLE_WEB_SERVER == 1
 web::AsyncHeadOnlyResponse::AsyncHeadOnlyResponse(
 		AsyncWebServerResponse *wrapped, const int status_code) :
 		AsyncBasicResponse(status_code), _wrapped(wrapped) {
-
+	log_d("Creating head only response.");
 }
 
 web::AsyncHeadOnlyResponse::~AsyncHeadOnlyResponse() {

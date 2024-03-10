@@ -14,6 +14,7 @@
 #include "prometheus.h"
 #endif
 #include "sensor_handler.h"
+#include "generated/web_file_hashes.h"
 #include "AsyncHeadOnlyResponse.h"
 #ifdef ESP32
 #include <ESPmDNS.h>
@@ -26,6 +27,13 @@
 #if ENABLE_WEB_SERVER == 1
 AsyncWebServer web::server(WEB_SERVER_PORT);
 std::map<String, web::AsyncTrackingFallbackWebHandler*> web::handlers;
+
+web::ResponseData::ResponseData(AsyncWebServerResponse *response,
+		size_t content_len, uint16_t status_code) :
+		response(response), content_length(content_len), status_code(
+				status_code) {
+
+}
 #endif
 
 void web::setup() {
@@ -40,14 +48,14 @@ void web::setup() {
 
 	registerRedirect("/", "/index.html");
 	registerReplacingStaticHandler("/index.html", "text/html", INDEX_HTML_START,
-			index_replacements);
+			INDEX_HTML_END - 1, index_replacements);
 
 	registerCompressedStaticHandler("/main.css", "text/css", MAIN_CSS_START,
-			MAIN_CSS_END);
+			MAIN_CSS_END, MAIN_CSS_GZ_HASH);
 	registerCompressedStaticHandler("/index.js", "text/javascript",
-			INDEX_JS_START, INDEX_JS_END);
+			INDEX_JS_START, INDEX_JS_END, INDEX_JS_GZ_HASH);
 	registerCompressedStaticHandler("/manifest.json", "application/json",
-			MANIFEST_JSON_START, MANIFEST_JSON_END);
+			MANIFEST_JSON_START, MANIFEST_JSON_END, MANIFEST_JSON_GZ_HASH);
 
 	registerRequestHandler("/temperature", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> ResponseData {
@@ -55,7 +63,7 @@ void web::setup() {
 						sensors::SENSOR_HANDLER.getTemperatureString();
 				AsyncWebServerResponse *response = request->beginResponse(200,
 						"text/plain", temp.c_str());
-				response->addHeader("Cache-Control", "no-cache");
+				response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
 				return ResponseData(response, temp.length(), 200);
 			});
 
@@ -65,18 +73,18 @@ void web::setup() {
 						sensors::SENSOR_HANDLER.getHumidityString();
 				AsyncWebServerResponse *response = request->beginResponse(200,
 						"text/plain", humidity.c_str());
-				response->addHeader("Cache-Control", "no-cache");
+				response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
 				return ResponseData(response, humidity.length(), 200);
 			});
 
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
 
 	registerCompressedStaticHandler("/favicon.ico", "image/x-icon",
-			FAVICON_ICO_GZ_START, FAVICON_ICO_GZ_END);
+			FAVICON_ICO_GZ_START, FAVICON_ICO_GZ_END, FAVICON_ICO_GZ_HASH);
 	registerCompressedStaticHandler("/favicon.png", "image/png",
-			FAVICON_PNG_GZ_START, FAVICON_PNG_GZ_END);
+			FAVICON_PNG_GZ_START, FAVICON_PNG_GZ_END, FAVICON_PNG_GZ_HASH);
 	registerCompressedStaticHandler("/favicon.svg", "image/svg+xml",
-			FAVICON_SVG_GZ_START, FAVICON_SVG_GZ_END);
+			FAVICON_SVG_GZ_START, FAVICON_SVG_GZ_END, FAVICON_SVG_GZ_HASH);
 
 	// An OPTIONS request to * is supposed to return server-wide support.
 	registerRequestHandler("*", HTTP_OPTIONS,
@@ -108,11 +116,33 @@ void web::connect() {
 }
 
 #if ENABLE_WEB_SERVER == 1
-web::ResponseData::ResponseData(AsyncWebServerResponse *response,
-		size_t content_len, uint16_t status_code) :
-		response(response), content_length(content_len), status_code(
-				status_code) {
+bool web::csvHeaderContains(const char *header, const char *value) {
+	const char *cpos = header - 1;
+	const char *start = NULL;
+	const size_t header_len = strlen(header);
+	const size_t val_len = strlen(value);
+	while (header + header_len > ++cpos) {
+		if (start == NULL && isspace(*cpos) == 0 && *cpos != ','
+				&& *cpos != ';') {
+			start = cpos;
+		} else if (start != NULL && (*cpos == ',' || *cpos == ';')) {
+			if (cpos - start == val_len
+					&& strncmp(start, value, val_len) == 0) {
+				return true;
+			}
 
+			if (*cpos == ',') {
+				start = NULL;
+			}
+		}
+	}
+
+	if (start != NULL && cpos - start == val_len
+			&& strncmp(start, value, val_len) == 0) {
+		return true;
+	} else {
+		return false;
+	}
 }
 
 web::ResponseData web::getJson(AsyncWebServerRequest *request) {
@@ -149,7 +179,7 @@ web::ResponseData web::getJson(AsyncWebServerRequest *request) {
 	AsyncWebServerResponse *response = request->beginResponse(200,
 			"application/json", buffer);
 	delete[] buffer;
-	response->addHeader("Cache-Control", "no-cache");
+	response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
 	return ResponseData(response, len, 200);
 }
 
@@ -222,6 +252,11 @@ size_t web::replacingResponseFiller(
 			return max_len;
 		}
 	}
+}
+
+size_t web::dummyResponseFiller(const uint8_t *buffer, const size_t max_len,
+		const size_t index) {
+	return 0;
 }
 
 web::ResponseData web::defaultHeadRequestHandlerWrapper(
@@ -321,8 +356,8 @@ web::ResponseData web::invalidMethodHandler(
 			validStr += valid[i];
 		}
 		response.response->addHeader("Allow", validStr);
-		log_i("A client tried to access the not existing file \"%s\".",
-				request->url().c_str());
+		log_i("Received a request to \"%s\" with invalid method \"%s\".",
+				request->url().c_str(), request->methodToString());
 		return response;
 	}
 }
@@ -357,44 +392,127 @@ web::ResponseData web::optionsHandler(
 
 web::ResponseData web::staticHandler(const uint16_t status_code,
 		const String &content_type, const uint8_t *start, const uint8_t *end,
-		AsyncWebServerRequest *request) {
-	AsyncWebServerResponse *response = request->beginResponse_P(status_code,
-			content_type, start, end - start);
-	if (!strcmp(content_type.c_str(), "text/html")) {
+		AsyncWebServerRequest *request, const char *etag) {
+	char *etag_str = NULL;
+	if (etag != NULL) {
+		const size_t etag_len = strlen(etag);
+		etag_str = new char[etag_len + 3];
+		etag_str[0] = '"';
+		memcpy(etag_str + 1, etag, etag_len);
+		etag_str[etag_len + 1] = '"';
+		etag_str[etag_len + 2] = 0;
+	}
+
+	AsyncWebServerResponse *response = NULL;
+	size_t content_length = end - start;
+	uint16_t code = status_code;
+	if (etag_str != NULL && request->hasHeader("If-None-Match")
+			&& csvHeaderContains(request->header("If-None-Match").c_str(),
+					etag_str)) {
+		log_d("Client has up-to-date cached page.");
+		content_length = 0;
+		code = 304;
+		// TODO find a better way to avoid sending the content length.
+		response = request->beginResponse(content_type, content_length,
+				dummyResponseFiller);
+	} else {
+		response = request->beginResponse_P(code, content_type, start,
+				content_length);
+	}
+
+	response->setCode(code);
+
+	if (strcmp(content_type.c_str(), "text/html") == 0) {
 		response->addHeader("Content-Security-Policy", "default-src 'self'");
 	}
-	return ResponseData(response, end - start, status_code);
+
+	if (etag_str != NULL) {
+		response->addHeader("ETag", etag_str);
+		delete[] etag_str;
+		response->addHeader("Cache-Control", CACHE_CONTROL_CACHE);
+	} else {
+		response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
+	}
+
+	return ResponseData(response, content_length, code);
 }
 
 web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
 		const String &content_type, const uint8_t *start, const uint8_t *end,
-		AsyncWebServerRequest *request) {
+		AsyncWebServerRequest *request, const char *etag) {
+	const bool accepts_gzip = request->hasHeader("Accept-Encoding")
+			&& csvHeaderContains(request->header("Accept-Encoding").c_str(),
+					"gzip");
+
+	if (accepts_gzip) {
+		log_d("Client accepts gzip compressed data.");
+	} else {
+		log_d("Client doesn't accept gzip compressed data.");
+	}
+
+	char *enc_etag = NULL;
+	if (etag != NULL) {
+		const size_t etag_len = strlen(etag);
+		enc_etag = new char[etag_len + 3 + 5 * accepts_gzip];
+		enc_etag[0] = '"';
+		memcpy(enc_etag + 1, etag, etag_len);
+		if (accepts_gzip) {
+			memcpy(enc_etag + etag_len + 1, "-gzip", 5);
+		}
+		enc_etag[etag_len + 1 + 5 * accepts_gzip] = '"';
+		enc_etag[etag_len + 2 + 5 * accepts_gzip] = 0;
+	}
+
 	AsyncWebServerResponse *response = NULL;
-	size_t content_length;
-	if (request->hasHeader("Accept-Encoding")
-			&& strstr(request->header("Accept-Encoding").c_str(), "gzip")) {
+	size_t content_length = 0;
+	uint16_t code = status_code;
+	if (enc_etag != NULL && request->hasHeader("If-None-Match")
+			&& csvHeaderContains(request->header("If-None-Match").c_str(),
+					enc_etag)) {
+		log_d("Client has up-to-date cached page.");
+		code = 304;
+		// TODO find a better way to avoid sending the content length.
+		response = request->beginResponse(content_type, content_length,
+				dummyResponseFiller);
+		if (accepts_gzip) {
+			response->addHeader("Content-Encoding", "gzip");
+		}
+	} else if (accepts_gzip) {
 		content_length = end - start;
-		response = request->beginResponse_P(200, content_type, start,
-				end - start);
+		response = request->beginResponse_P(code, content_type, start,
+				content_length);
 		response->addHeader("Content-Encoding", "gzip");
 	} else {
 		using namespace std::placeholders;
 		std::shared_ptr<gzip::uzlib_ungzip_wrapper> decomp = std::make_shared<
 				gzip::uzlib_ungzip_wrapper>(start, end,
 				GZIP_DECOMP_WINDOW_SIZE);
-		content_length = decomp->getDecompressedSize();
-		response = request->beginResponse(content_type, content_length,
-				std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
+		content_length = max(0, decomp->getDecompressedSize());
+		if (content_length == 0) {
+			// Make sure to send the content length regardless.
+			response = request->beginResponse(code, content_type, "");
+		} else {
+			response = request->beginResponse(content_type, content_length,
+					std::bind(decompressingResponseFiller, decomp, _1, _2, _3));
+		}
 	}
 
+	response->setCode(code);
 	response->addHeader("Vary", "Accept-Encoding");
-	response->setCode(status_code);
 
-	if (!strcmp(content_type.c_str(), "text/html")) {
+	if (strcmp(content_type.c_str(), "text/html") == 0) {
 		response->addHeader("Content-Security-Policy", "default-src 'self'");
 	}
 
-	return ResponseData(response, content_length, status_code);
+	if (enc_etag != NULL) {
+		response->addHeader("ETag", enc_etag);
+		delete[] enc_etag;
+		response->addHeader("Cache-Control", CACHE_CONTROL_CACHE);
+	} else {
+		response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
+	}
+
+	return ResponseData(response, content_length, code);
 }
 
 web::ResponseData web::replacingRequestHandler(
@@ -447,6 +565,7 @@ web::ResponseData web::replacingRequestHandler(
 	if (!strcmp(content_type.c_str(), "text/html")) {
 		response->addHeader("Content-Security-Policy", "default-src 'self'");
 	}
+	response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
 	return ResponseData(response, content_length, status_code);
 }
 
@@ -476,23 +595,36 @@ void web::registerRequestHandler(const char *uri,
 }
 
 void web::registerStaticHandler(const char *uri, const String &content_type,
-		const char *page) {
+		const char *page, const char *etag) {
+	registerStaticHandler(uri, content_type, (uint8_t*) page,
+			(uint8_t*) page + strlen(page), etag);
+}
+
+void web::registerStaticHandler(const char *uri, const String &content_type,
+		const uint8_t *start, const uint8_t *end, const char *etag) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
-			std::bind(staticHandler, 200, content_type, (uint8_t*) page,
-					(uint8_t*) page + strlen(page), _1));
+			std::bind(staticHandler, 200, content_type, start, end, _1, etag));
 }
 
 void web::registerCompressedStaticHandler(const char *uri,
-		const String &content_type, const uint8_t *start, const uint8_t *end) {
+		const String &content_type, const uint8_t *start, const uint8_t *end,
+		const char *etag) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
 			std::bind(compressedStaticHandler, 200, content_type, start, end,
-					_1));
+					_1, etag));
 }
 
 void web::registerReplacingStaticHandler(const char *uri,
 		const String &content_type, const char *page,
+		const std::map<String, std::function<std::string()>> replacements) {
+	registerReplacingStaticHandler(uri, content_type, (uint8_t*) page,
+			(uint8_t*) page + strlen(page), replacements);
+}
+
+void web::registerReplacingStaticHandler(const char *uri,
+		const String &content_type, const uint8_t *start, const uint8_t *end,
 		const std::map<String, std::function<std::string()>> replacements) {
 	using namespace std::placeholders;
 	registerRequestHandler(uri, HTTP_GET,
@@ -502,7 +634,7 @@ void web::registerReplacingStaticHandler(const char *uri,
 							const uint16_t, const String&, const uint8_t*,
 							const uint8_t*, AsyncWebServerRequest*)>(
 					replacingRequestHandler, replacements, 200, content_type,
-					(uint8_t*) page, (uint8_t*) page + strlen(page), _1));
+					start, end, _1));
 }
 
 void web::registerRedirect(const char *uri, const char *target) {

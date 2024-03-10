@@ -12,13 +12,13 @@ Not all of these are necessarily going to be implemented at all.
  * Use an asynchronous DHT library(for example https://github.com/bertmelis/esp32DHT/)?
  * Add (stream?) compression to uzlib_gzip_wrapper
  * Change callback based uzlib_ungzip_wrapper to use C++ function objects instead of C function pointers
+ * Consider using PIO middleware or SCons compilation callback to generate compressed web files(into build dir?)
 
 ## Web Interface
  * Add error message to web interface if measurement fails
  * Add a javescript temperature and humidity graph to the web interface?
  * Remove not measured values(for example humidity for the DS18B20)
  * Add degrees fahrenheit mode to web interface(clientside setting)
- * Allow caching of static resources using a hash of their content as an ETag
  * Add theme switcher to web interface(clientside setting)
  * Web server IPv6 support
  * Add current commit to prometheus info and HTTP Server header
@@ -31,6 +31,10 @@ Not all of these are necessarily going to be implemented at all.
  * Add MQTT state json
  * Cleanup MQTT code
  * Add MQTT discovery support(https://www.home-assistant.io/docs/mqtt/discovery/)
- * Add WiFi info to prometheus metrics
  * Dynamically gzip compress metrics page?
  * Implement actual prometheus library as external project
+ * Add prometheus info metrics esptherm_build_info, esptherm_network_info, esptherm_module_info, and esptherm_sensor_info
+ * Add MQTT metrics to prometheus
+ * Add prometheus metrics for HTTP response times and sizes
+ * Add prometheus metrics for push statistics, if DSM is disabled
+ * Add measurement error metrics

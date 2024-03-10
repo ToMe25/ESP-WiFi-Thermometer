@@ -31,22 +31,31 @@ uzlib_ungzip_wrapper::uzlib_ungzip_wrapper(const uint8_t *cmp_start,
 		wsize = -15;
 	}
 
+	void *dict = NULL;
+	if (cmp_end < cmp_start + 29) {
+		log_e("Compressed buffer too small.");
+		log_i("A gzip compressed 0 byte file is 29 bytes in size.");
+		log_i("The given file was %d bytes.", cmp_end - cmp_start);
+	} else {
+		dict = malloc(pow(2, -wsize));
+
+		// Read uncompressed size from compressed file.
+		dlen = cmp_end[-1];
+		dlen = 256 * dlen + cmp_end[-2];
+		dlen = 256 * dlen + cmp_end[-3];
+		dlen = 256 * dlen + cmp_end[-4];
+
+	}
+
 	decomp = new uzlib_uncomp;
-	void *dict = malloc(pow(2, -wsize));
 	// Try anyways, since small files can be decompressed without one.
-	if (!dict) {
+	if (dict == NULL) {
 		log_e("Failed to allocate decompression dict.");
 	}
 
-	// Read uncompressed size from compressed file.
-	dlen = cmp_end[-1];
-	dlen = 256 * dlen + cmp_end[-2];
-	dlen = 256 * dlen + cmp_end[-3];
-	dlen = 256 * dlen + cmp_end[-4];
-
 	uzlib_uncompress_init(decomp, dict, pow(2, -wsize));
 	decomp->source = cmp_start;
-	decomp->source_limit = cmp_end - 4;
+	decomp->source_limit = cmp_end - 4 >= cmp_start ? cmp_end - 4 : cmp_start;
 	decomp->source_read_cb = NULL;
 	uzlib_gzip_parse_header(decomp);
 }

@@ -120,14 +120,6 @@ size_t writeMetricMetadataLine(char *buffer, const char (&field_name)[fnm_l],
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 /**
- * Checks whether the given Accept header accepts openmetrics text protocol version 1.0.0.
- *
- * @param accept_str	The Accept header to check.
- * @return	True if the given header contains "application/openmetrics-text".
- */
-bool acceptsOpenMetrics(const char *accept_str);
-
-/**
  * The callback method to respond to a HTTP get request for the metrics page.
  *
  * @param request	The request to respond to.

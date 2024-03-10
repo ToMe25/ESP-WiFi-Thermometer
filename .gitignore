@@ -10,6 +10,9 @@
 # Python
 __pycache__
 
+# MyPy
+.mypy_cache
+
 # Credentials
 wifissid.txt
 wifipass.txt

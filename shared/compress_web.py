@@ -1,16 +1,22 @@
-#!/usr/bin/python
-
-Import ("env")
+#!/usr/bin/env python3
 
 from enum import Enum
 import os
-import os.path as path
+from os import path
+import sys
 
 from gzip_compressing_stream import GzipCompressingStream
 
-# Unquoted spaces will be removed from these.
+try:
+    Import ("env") # type: ignore[name-defined]
+except:
+    print("Failed to load platformio environment!", file=sys.stderr)
+    exit(1)
+
+# Text files to potentially remove the spaces from, and compress.
 input_text_files = [ 'src/html/index.html', 'src/html/error.html', 'src/html/main.css', 'src/html/index.js', 'src/html/manifest.json', 'images/favicon.svg' ]
 
+# Binary files to compress without modifying.
 input_binary_files = [ 'images/favicon.ico', 'images/favicon.png' ]
 
 # These files will not be gzip compressed, just copied and potentially stripped of spaces.
@@ -161,10 +167,10 @@ def compress_file(input, text):
         Whether the input file is a text file.
     """
 
+    do_gzip = not input in input_gzip_blacklist
+    input = path.join(env.subst('$PROJECT_DIR'), input)
     filename = path.basename(input)
     minify = text
-
-    do_gzip = not input in input_gzip_blacklist
 
     if env.get('BUILD_TYPE') == "debug":
         print("Debug mode detected, not minifying text files.")
@@ -215,12 +221,8 @@ for file in input_text_files:
         filename = path.basename(file)
     else:
         filename = path.basename(file) + ".gz"
-    # Always build because the output will depend on whether we are building in debug mode.
-    env.AlwaysBuild(f"$BUILD_DIR/{filename}.txt.o")
     compress_file(file, True)
 
 for file in input_binary_files:
     filename = path.basename(file) + ".gz"
-    # Always build these because I'm too lazy to check whether they actually changed.
-    env.AlwaysBuild(f"$BUILD_DIR/{filename}.txt.o")
     compress_file(file, False)

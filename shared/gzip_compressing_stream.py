@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """A custom gzip compressing stream using a configurable window size.
 
 Also contains a simple command line interface."""
@@ -246,5 +248,5 @@ def main():
     return 0
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     sys.exit(main())
