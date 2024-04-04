@@ -19,3 +19,6 @@ wifipass.txt
 otapass.txt
 mqttuser.txt
 mqttpass.txt
+
+# This file changes every commit.
+src/generated/esptherm_version.h

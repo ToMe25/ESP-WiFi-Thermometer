@@ -76,9 +76,62 @@ constexpr size_t strlen(const char *str) {
 #endif
 
 /**
- * EXPAND_MACRO is a utility macro to expand a macro to its string form.
+ * MACRO_TO_STRING is a utility macro to convert a macro to its string form.
  */
-#define EXPAND_MACRO(macro) #macro
+#define MACRO_TO_STRING(macro) #macro
+
+/**
+ * EXPAND_MACRO is a utility macro to expand a macro value to its string form.
+ */
+#define EXPAND_MACRO(macro) MACRO_TO_STRING(macro)
+
+namespace utils {
+/**
+ * A helper struct to convert a set of digits to a C string.
+ *
+ * @tparam digits	The digits to convert to a string.
+ */
+template<uint8_t... digits>
+struct digits_to_chars { static const char value[]; };
+
+/**
+ * A helper struct to convert a set of digits to a C string.
+ *
+ * @tparam digits	The digits to convert to a string.
+ */
+template<uint8_t... digits>
+const char digits_to_chars<digits...>::value[] = {('0' + digits)..., 0};
+
+/**
+ * A helper struct separating a number into separate digits.
+ *
+ * @tparam rem		The remainder that is yet to be separated.
+ * @tparam digits	The digits to convert to a string.
+ */
+template<uint64_t rem, uint8_t... digits>
+struct explode : explode<rem / 10, rem % 10, digits...> {};
+
+/**
+ * A helper struct separating a number into separate digits.
+ *
+ * @tparam digits	The digits to convert to a string.
+ */
+template<uint8_t... digits>
+struct explode<0, digits...> : digits_to_chars<digits...> {};
+
+/**
+ * A helper struct converting an unsigned number to a string.
+ *
+ * @tparam num	The digits to convert to a string.
+ */
+template<uint64_t num>
+struct unsigned_to_string : explode<num / 10, num % 10> {};
+} /* namespace utils */
+
+/**
+ * UNSIGNED_TO_STRING is a helper macro converting an unsigned number to a constexpr string.
+ */
+#define UNSIGNED_TO_STRING(exp) utils::unsigned_to_string<exp>::value
 
 namespace utils {
 /**

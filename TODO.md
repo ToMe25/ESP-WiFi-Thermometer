@@ -33,7 +33,7 @@ Not all of these are necessarily going to be implemented at all.
  * Add MQTT discovery support(https://www.home-assistant.io/docs/mqtt/discovery/)
  * Dynamically gzip compress metrics page?
  * Implement actual prometheus library as external project
- * Add prometheus info metrics esptherm_build_info, esptherm_network_info, esptherm_module_info, and esptherm_sensor_info
+ * Add prometheus info metrics esptherm_network_info, esptherm_module_info, and esptherm_sensor_info
  * Add MQTT metrics to prometheus
  * Add prometheus metrics for HTTP response times and sizes
  * Add prometheus metrics for push statistics, if DSM is disabled

@@ -126,7 +126,7 @@ bool web::csvHeaderContains(const char *header, const char *value) {
 				&& *cpos != ';') {
 			start = cpos;
 		} else if (start != NULL && (*cpos == ',' || *cpos == ';')) {
-			if (cpos - start == val_len
+			if ((size_t) (cpos - start) == val_len
 					&& strncmp(start, value, val_len) == 0) {
 				return true;
 			}
@@ -137,7 +137,7 @@ bool web::csvHeaderContains(const char *header, const char *value) {
 		}
 	}
 
-	if (start != NULL && cpos - start == val_len
+	if (start != NULL && (size_t) (cpos - start) == val_len
 			&& strncmp(start, value, val_len) == 0) {
 		return true;
 	} else {

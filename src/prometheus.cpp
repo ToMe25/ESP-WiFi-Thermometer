@@ -11,6 +11,7 @@
 #include "prometheus.h"
 #include "main.h"
 #include "sensor_handler.h"
+#include "generated/esptherm_version.h"
 #include <iomanip>
 #include <sstream>
 #include <fallback_log.h>
@@ -18,7 +19,7 @@
 #if ENABLE_WEB_SERVER == 1 && (ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1)
 std::map<String, std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> prom::http_requests_total;
 #endif
-#if (ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1)
+#if ENABLE_PROMETHEUS_PUSH == 1 && ENABLE_DEEP_SLEEP_MODE != 1
 uint64_t prom::last_push = 0;
 #endif
 #if ENABLE_PROMETHEUS_PUSH == 1
@@ -69,26 +70,48 @@ String prom::getMetrics(const bool openmetrics) {
 #if ENABLE_WEB_SERVER == 1
 	// First determine the sum of all called path lengths.
 	size_t uri_len_sum = 0;
-	for (std::pair<String,
-			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> uri_stats : http_requests_total) {
+	for (const std::pair<String,
+			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> &uri_stats : http_requests_total) {
 		uri_len_sum += uri_stats.first.length();
 	}
 #endif
-	// The added lengths of all the lines.
-	// One float is assumed to have three digits before and after the dot.
-	// An integer is assumed to be at most 20 digits, plus four characters because of the way they are formatted.
-	const size_t max_len = 99 + 43 + 37 + (openmetrics ? 39 : 0) + 94 + 40 + 34
-			+ (openmetrics ? 36 : 0)
-			+ PROMETHEUS_NAMESPACE_LEN * (openmetrics ? 9 : 6) +
+
+#if defined(ESP32) || defined(ESP8266)
+	const char *SDK_VERSION = ESP.getSdkVersion();
+#else
+	const char *SDK_VERSION = "unknown";
+#endif
+	const size_t SDK_VERSION_LEN = strlen(SDK_VERSION);
+
+	// The temperature should never be more than three digits before and after the dot.
+	const size_t temp_max_len = 99 + 43 + PROMETHEUS_NAMESPACE_LEN * 3
+			+ (openmetrics ? 45 + PROMETHEUS_NAMESPACE_LEN : 0) + 38;
+	// The relative humidity should be three digits before and after the dot at most.
+	const size_t humidity_max_len = 94 + 40 + PROMETHEUS_NAMESPACE_LEN * 3
+			+ (openmetrics ? 42 + PROMETHEUS_NAMESPACE_LEN : 0) + 35;
 #ifdef ESP32
-			71 + 32 + 44 + (openmetrics ? 44 : 0) +
+	// A 32 bit unsigned int has 10 digits at most, plus four characters because of the way the number will be formatted.
+	const size_t heap_max_len = 71 + 32 + (openmetrics ? 32 : 0) + 34;
+#else
+	const size_t heap_max_len = 0;
 #endif
+	// Assume that the hash is always seven characters long.
+	const size_t build_info_max_len = 73 + 25 + PROMETHEUS_NAMESPACE_LEN * 3
+			+ (openmetrics ? -1 : 0) + 104 + MCU_TYPE_LEN + ARDUINO_VERSION_LEN + SDK_VERSION_LEN + CPP_VERSION_LEN;
 #if ENABLE_WEB_SERVER == 1
-			86 + 36 + PROMETHEUS_NAMESPACE_LEN * 2
-			+ (83 + PROMETHEUS_NAMESPACE_LEN) * http_requests_total.size()
-			+ uri_len_sum +
+	// An integer is assumed to be at most 20 digits, plus four characters because of the way they are formatted.
+	const size_t web_requests_total_max_len = 86 + 36
+			+ PROMETHEUS_NAMESPACE_LEN * 2
+			+ (83 + PROMETHEUS_NAMESPACE_LEN) * getRequestCounts()
+			+ uri_len_sum;
+#else
+	const size_t web_requests_total_max_len = 0;
 #endif
-			(openmetrics ? 5 : 0);
+	const size_t eof_max_len = (openmetrics ? 5 : 0);
+
+	// The added lengths of all the lines.
+	const size_t max_len = temp_max_len + humidity_max_len + heap_max_len
+			+ build_info_max_len + web_requests_total_max_len + eof_max_len;
 
 	char *buffer = new char[max_len + 1];
 
@@ -112,6 +135,41 @@ String prom::getMetrics(const bool openmetrics) {
 			(double) used_heap, openmetrics);
 #endif
 
+	len += writeMetricMetadataLine(buffer + len, "HELP", PROMETHEUS_NAMESPACE,
+			"build_info", "",
+			"A constant 1 with compile time information as labels.");
+	if (openmetrics) {
+		len += writeMetricMetadataLine(buffer + len, "TYPE",
+				PROMETHEUS_NAMESPACE, "build_info", "", "info");
+	} else {
+		len += writeMetricMetadataLine(buffer + len, "TYPE",
+				PROMETHEUS_NAMESPACE, "build_info", "", "gauge");
+	}
+	strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+	len += PROMETHEUS_NAMESPACE_LEN;
+	strcpy(buffer + len, "_build_info{esptherm_commit=\"");
+	len += 29;
+	strcpy(buffer + len, ESPTHERM_COMMIT);
+	len += 7;
+	strcpy(buffer + len, "\",mcu_type=\"");
+	len += 12;
+	strcpy(buffer + len, MCU_TYPE);
+	len += MCU_TYPE_LEN;
+	strcpy(buffer + len, "\",arduino_version=\"");
+	len += 19;
+	strcpy(buffer + len, ARDUINO_VERSION);
+	len += ARDUINO_VERSION_LEN;
+	strcpy(buffer + len, "\",sdk_version=\"");
+	len += 15;
+	strcpy(buffer + len, SDK_VERSION);
+	len += SDK_VERSION_LEN;
+	strcpy(buffer + len, "\",cpp_std_version=\"");
+	len += 19;
+	strcpy(buffer + len, CPP_VERSION);
+	len += CPP_VERSION_LEN;
+	strcpy(buffer + len, "\"} 1\n");
+	len += 5;
+
 #if ENABLE_WEB_SERVER == 1
 	// Write web server statistics.
 	len += writeMetricMetadataLine(buffer + len, "HELP", PROMETHEUS_NAMESPACE,
@@ -127,41 +185,45 @@ String prom::getMetrics(const bool openmetrics) {
 		for (std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>::const_iterator response_stats =
 				uri_stats->second.cbegin();
 				response_stats != uri_stats->second.cend(); response_stats++) {
-			strcpy(buffer + len, PROMETHEUS_NAMESPACE);
+			strncpy(buffer + len, PROMETHEUS_NAMESPACE,
+					min(max_len - len, PROMETHEUS_NAMESPACE_LEN));
 			len += PROMETHEUS_NAMESPACE_LEN;
-			strcpy(buffer + len, "_http_requests_total{method=\"");
+			strncpy(buffer + len, "_http_requests_total{method=\"",
+					min(max_len - len, (size_t) 29));
 			len += 29;
 			switch (response_stats->first.first) {
 			case HTTP_GET:
-				strcpy(buffer + len, "get");
+				strncpy(buffer + len, "get", min(max_len - len, (size_t) 3));
 				len += 3;
 				break;
 			case HTTP_POST:
-				strcpy(buffer + len, "post");
+				strncpy(buffer + len, "post", min(max_len - len, (size_t) 4));
 				len += 4;
 				break;
 			case HTTP_PUT:
-				strcpy(buffer + len, "put");
+				strncpy(buffer + len, "put", min(max_len - len, (size_t) 3));
 				len += 3;
 				break;
 			case HTTP_PATCH:
-				strcpy(buffer + len, "patch");
+				strncpy(buffer + len, "patch", min(max_len - len, (size_t) 5));
 				len += 5;
 				break;
 			case HTTP_DELETE:
-				strcpy(buffer + len, "delete");
+				strncpy(buffer + len, "delete", min(max_len - len, (size_t) 6));
 				len += 6;
 				break;
 			case HTTP_HEAD:
-				strcpy(buffer + len, "head");
+				strncpy(buffer + len, "head", min(max_len - len, (size_t) 4));
 				len += 4;
 				break;
 			case HTTP_OPTIONS:
-				strcpy(buffer + len, "options");
+				strncpy(buffer + len, "options",
+						min(max_len - len, (size_t) 7));
 				len += 7;
 				break;
 			default:
-				strcpy(buffer + len, "unknown");
+				strncpy(buffer + len, "unknown",
+						min(max_len - len, (size_t) 7));
 				len += 7;
 				log_e("Unknown request method %u for uri \"%s\" in stats map.",
 						response_stats->first.first, uri_stats->first.c_str());
@@ -180,7 +242,7 @@ String prom::getMetrics(const bool openmetrics) {
 	}
 #endif /* ENABLE_WEB_SERVER == 1 */
 	if (openmetrics) {
-		strcpy(buffer + len, "# EOF\n");
+		strncpy(buffer + len, "# EOF\n", min(max_len - len, (size_t) 7));
 		len += 6;
 	}
 
@@ -260,6 +322,17 @@ size_t prom::writeMetricMetadataLine(char *buffer,
 
 	return written;
 }
+
+#if ENABLE_WEB_SERVER == 1
+size_t prom::getRequestCounts() {
+	size_t count = 0;
+	for (const std::pair<String,
+			std::map<std::pair<WebRequestMethod, uint16_t>, uint64_t>> &uri_stats : http_requests_total) {
+		count += uri_stats.second.size();
+	}
+	return count;
+}
+#endif
 #endif /* ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1 */
 
 #if ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1

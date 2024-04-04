@@ -62,14 +62,15 @@ def generate_hash_header(hashes: Dict[str, str]) -> None:
     """Generates the header file containing the hashes of the static files.
 
     Generates a header file, in src/generated, containing constant definitions with the hashes of the static files.
-    
+
     @param hashes: The filenames and hashes to generate the header for.
+    @raise IOError: If opening or writing the header file fails.
     """
 
     print("Generating " + path.relpath(hash_header_path, env.subst("$PROJECT_ROOT"))) # type: ignore[name-defined]
 
-    header = open(hash_header_path, 'w')
-    header.write(
+    with open(hash_header_path, 'w') as header:
+        header.write(
 """/*
  * web_file_hashes.h
  *
@@ -86,21 +87,21 @@ def generate_hash_header(hashes: Dict[str, str]) -> None:
 
 """)
 
-    for file, hash in hashes.items():
-        header.write(
+        for file, hash in hashes.items():
+            header.write(
 f"""/**
  * The md5 hash of the file "{file}".
  */
 """)
 
-        id: str = file.upper()
-        for c in ['.', '-', '/', ' ']:
-            id = id.replace(c, '_')
+            id: str = file.upper()
+            for c in ['.', '-', '/', ' ']:
+                id = id.replace(c, '_')
 
-        header.write(f"static constexpr const char {id}_HASH[] = \"{hash}\";")
-        header.write(os.linesep + os.linesep)
+            header.write(f"static constexpr const char {id}_HASH[] = \"{hash}\";")
+            header.write(os.linesep + os.linesep)
 
-    header.write("#endif /* SRC_GENERATED_WEB_FILE_HASHES_H_ */" + os.linesep)
+        header.write("#endif /* SRC_GENERATED_WEB_FILE_HASHES_H_ */" + os.linesep)
 
 
 def main() -> int:
