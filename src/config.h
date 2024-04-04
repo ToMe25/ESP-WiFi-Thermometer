@@ -87,6 +87,7 @@ static const IPAddress SUBNET = IPAddress(255, 255, 255, 0);
 // Web Server options
 // Whether or not to enable the web server on the esp.
 // Set to 1 to enable and to 0 to disable.
+// Default is 1.
 #ifndef ENABLE_WEB_SERVER
 #define ENABLE_WEB_SERVER 1
 #endif
@@ -97,7 +98,9 @@ static constexpr uint16_t WEB_SERVER_PORT = 80;
 // The value for the Server header of all http responses sent by the webserver.
 // The hardware name may be added to the server header.
 // The default value is "ESP-WiFi-Thermometer".
+#ifndef SERVER_HEADER_PROGRAM
 #define SERVER_HEADER_PROGRAM "ESP-WiFi-Thermometer"
+#endif
 // Whether the hardware name in brackets should be added to the Server header.
 // Set to 1 to enable and 0 to disable.
 #define SERVER_HEADER_APPEND_HARDWARE 1
@@ -108,6 +111,13 @@ static constexpr uint16_t WEB_SERVER_PORT = 80;
 // The range of valid values is -8 to -15.
 // Default is -10.
 static constexpr int8_t GZIP_DECOMP_WINDOW_SIZE = -10;
+// Whether or not a Content-Security-Policy should be sent with html pages.
+// This prevents scripts from other sources from being loaded, but can make debugging and addons harder/less reliable.
+// Set to 0 to disable.
+// Default is 1.
+#ifndef ENABLE_CONTENT_SECURITY_POLICY
+#define ENABLE_CONTENT_SECURITY_POLICY 1
+#endif
 
 // Web server automatic config.
 #if SERVER_HEADER_APPEND_HARDWARE != 1

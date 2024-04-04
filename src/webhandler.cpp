@@ -422,9 +422,11 @@ web::ResponseData web::staticHandler(const uint16_t status_code,
 
 	response->setCode(code);
 
+#if ENABLE_CONTENT_SECURITY_POLICY == 1
 	if (strcmp(content_type.c_str(), "text/html") == 0) {
-		response->addHeader("Content-Security-Policy", "default-src 'self'");
+		response->addHeader("Content-Security-Policy", CSP_VALUE);
 	}
+#endif
 
 	if (etag_str != NULL) {
 		response->addHeader("ETag", etag_str);
@@ -500,9 +502,11 @@ web::ResponseData web::compressedStaticHandler(const uint16_t status_code,
 	response->setCode(code);
 	response->addHeader("Vary", "Accept-Encoding");
 
+#if ENABLE_CONTENT_SECURITY_POLICY == 1
 	if (strcmp(content_type.c_str(), "text/html") == 0) {
-		response->addHeader("Content-Security-Policy", "default-src 'self'");
+		response->addHeader("Content-Security-Policy", CSP_VALUE);
 	}
+#endif
 
 	if (enc_etag != NULL) {
 		response->addHeader("ETag", enc_etag);
@@ -562,9 +566,13 @@ web::ResponseData web::replacingRequestHandler(
 			std::bind(replacingResponseFiller, replacements, offset, start, end,
 					_1, _2, _3));
 	response->setCode(status_code);
+
+#if ENABLE_CONTENT_SECURITY_POLICY == 1
 	if (!strcmp(content_type.c_str(), "text/html")) {
-		response->addHeader("Content-Security-Policy", "default-src 'self'");
+		response->addHeader("Content-Security-Policy", CSP_VALUE);
 	}
+#endif
+
 	response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
 	return ResponseData(response, content_length, status_code);
 }

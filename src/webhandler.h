@@ -166,6 +166,13 @@ static constexpr char CACHE_CONTROL_NOCACHE[] = "no-store";
  */
 static constexpr char CACHE_CONTROL_CACHE[] = "public, no-cache";
 
+#if ENABLE_CONTENT_SECURITY_POLICY == 1
+/**
+ * The Content-Security-Policy to send with html responses.
+ */
+static constexpr char CSP_VALUE[] = "default-src 'self'";
+#endif
+
 /**
  * The character to use as a template delimiter.
  */

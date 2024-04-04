@@ -9,7 +9,9 @@
  */
 
 #include "prometheus.h"
+#if ENABLE_DEEP_SLEEP_MODE == 1
 #include "main.h"
+#endif
 #include "sensor_handler.h"
 #include "generated/esptherm_version.h"
 #include <iomanip>
