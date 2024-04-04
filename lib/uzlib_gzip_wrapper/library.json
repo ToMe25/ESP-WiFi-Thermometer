@@ -9,8 +9,7 @@
 			"version": "https://github.com/pfalcon/uzlib.git"
 		},
 		{
-			"name": "FallbackLog",
-			"version": "FallbackLog"
+			"name": "FallbackLog"
 		}
 	]
 }
