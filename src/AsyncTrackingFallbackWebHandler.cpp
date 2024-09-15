@@ -15,6 +15,9 @@
 #endif
 #include <utils.h>
 #include <fallback_log.h>
+#ifdef ESP8266
+#include <fallback_timer.h>
+#endif
 
 web::AsyncTrackingFallbackWebHandler::AsyncTrackingFallbackWebHandler(
 		const String &uri, HTTPFallbackRequestHandler fallback) :
@@ -27,11 +30,13 @@ web::AsyncTrackingFallbackWebHandler::~AsyncTrackingFallbackWebHandler() {
 
 }
 
-web::HTTPRequestHandler web::AsyncTrackingFallbackWebHandler::_getHandler(const WebRequestMethod method) const {
+web::HTTPRequestHandler web::AsyncTrackingFallbackWebHandler::_getHandler(
+		const WebRequestMethod method) const {
 	return _handlers[utils::get_msb((WebRequestMethodComposite) method)];
 }
 
-void web::AsyncTrackingFallbackWebHandler::setHandler(const WebRequestMethodComposite methods, HTTPRequestHandler handler) {
+void web::AsyncTrackingFallbackWebHandler::setHandler(
+		const WebRequestMethodComposite methods, HTTPRequestHandler handler) {
 	for (size_t i = 0; i < _handlers.size(); i++) {
 		if (methods & (1 << i)) {
 			_handlers[i] = handler;
@@ -66,7 +71,7 @@ bool web::AsyncTrackingFallbackWebHandler::canHandle(AsyncWebServerRequest *requ
 }
 
 void web::AsyncTrackingFallbackWebHandler::handleRequest(AsyncWebServerRequest *request) {
-	const size_t start = micros();
+	const uint64_t start = (uint64_t) esp_timer_get_time();
 	ResponseData response(request->beginResponse(500), 0, 500);
 	HTTPRequestHandler handler = _getHandler((WebRequestMethod) request->method());
 	if (handler) {
@@ -76,19 +81,19 @@ void web::AsyncTrackingFallbackWebHandler::handleRequest(AsyncWebServerRequest *
 		delete response.response;
 		response = _fallbackHandler(getHandledMethods(), request);
 	} else {
-		log_w("The handler for uri \"%s\" didn't have a handler for request type %s, and didn't have a fallback handler.",
+		log_w(
+				"The handler for uri \"%s\" didn't have a handler for request type %s, and didn't have a fallback handler.",
 				_uri.c_str(), request->methodToString());
 	}
 #if ENABLE_PROMETHEUS_PUSH == 1 || ENABLE_PROMETHEUS_SCRAPE_SUPPORT == 1
 	prom::http_requests_total[request->url()][ {
 			(WebRequestMethod) request->method(), response.status_code }]++;
 #endif
-	const size_t mid = micros();
+	const uint64_t mid = (uint64_t) esp_timer_get_time();
 	request->send(response.response);
-	const size_t end = micros();
-	log_d("Handling a request to \"%s\" took %luus + %luus.",
-			request->url().c_str(), (long unsigned int ) (mid - start),
-			(long unsigned int ) (end - mid));
+	const uint64_t end = (uint64_t) esp_timer_get_time();
+	log_d("Handling a request to \"%s\" took %lluus + %lluus.",
+			request->url().c_str(), (mid - start), (end - mid));
 }
 
 bool web::AsyncTrackingFallbackWebHandler::isRequestHandlerTrivial() {

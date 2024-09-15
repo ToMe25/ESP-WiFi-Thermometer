@@ -9,7 +9,7 @@
  */
 
 #include "prometheus.h"
-#if ENABLE_DEEP_SLEEP_MODE == 1
+#if ENABLE_DEEP_SLEEP_MODE == 1 || ENABLE_PROMETHEUS_PUSH == 1
 #include "main.h"
 #endif
 #include "sensor_handler.h"
@@ -378,7 +378,7 @@ void prom::pushMetrics() {
 	}
 
 #if ENABLE_DEEP_SLEEP_MODE != 1
-	uint64_t now = millis();
+	const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
 	if (now - last_push >= PROMETHEUS_PUSH_INTERVAL * 1000) {
 #endif
 		tcpClient = new AsyncClient();
@@ -423,7 +423,7 @@ void prom::pushMetrics() {
 						uint32_t code = atoi(status_code);
 						if (code == 200) {
 #if ENABLE_DEEP_SLEEP_MODE != 1
-							uint64_t now = millis();
+							const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
 
 							if (now - last_push >= (PROMETHEUS_PUSH_INTERVAL + 10) * 1000) {
 								log_i("Successfully pushed again after %lums.", now - last_push);

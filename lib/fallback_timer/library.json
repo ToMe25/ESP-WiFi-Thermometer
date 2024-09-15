@@ -1,0 +1,7 @@
+{
+	"name": "FallbackTimer",
+	"description": "A simple library containing a fallback definition of esp_timer_get_time.",
+	"version": "1.0.0",
+	"license": "MIT",
+	"platforms": [ "espressif8266" ]
+}

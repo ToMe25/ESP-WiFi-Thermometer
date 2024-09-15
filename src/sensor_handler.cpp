@@ -16,6 +16,9 @@
 #elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
 #include "sensors/DallasHandler.h"
 #endif
+#ifdef ESP8266
+#include <fallback_timer.h>
+#endif
 
 namespace sensors {
 
@@ -43,13 +46,13 @@ const std::string SensorHandler::getLastHumidityString() {
 }
 
 int64_t SensorHandler::getTimeSinceMeasurement() {
-	uint32_t now = millis();
+	const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
 	if (_last_finished_request == -1) {
 		return -1;
 	} else if (_last_finished_request < 0) {
 		log_d("Invalid time of last measurement: %lldms.", _last_finished_request);
 		return -1;
-	} else if (_last_finished_request > now) {
+	} else if ((uint64_t) _last_finished_request > now) {
 		log_d("Invalid time since last measurement: %lldms.", now - _last_finished_request);
 		return -1;
 	}
@@ -58,13 +61,13 @@ int64_t SensorHandler::getTimeSinceMeasurement() {
 }
 
 int64_t SensorHandler::getTimeSinceValidMeasurement() {
-	uint32_t now = millis();
+	const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
 	if (_last_valid_request == -1) {
 		return -1;
 	} else if (_last_valid_request < 0) {
 		log_d("Invalid time of last valid measurement: %lldms.", _last_valid_request);
 		return -1;
-	} else if (_last_valid_request > now) {
+	} else if ((uint64_t) _last_valid_request > now) {
 		log_d("Invalid time since last valid measurement: %lldms.", now - _last_valid_request);
 		return -1;
 	}

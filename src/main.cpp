@@ -16,8 +16,9 @@
 #if ENABLE_ARDUINO_OTA == 1
 #include <ArduinoOTA.h>
 #endif
-#if defined(ESP8266)
+#if ESP8266
 #include <dhcpserver.h>
+#include <fallback_timer.h>
 #endif
 #include <fallback_log.h>
 
@@ -229,7 +230,7 @@ void onWiFiEvent(WiFiEvent_t id) {
 #endif
 
 void loop() {
-	const uint64_t start = millis();
+	const uint64_t start = (uint64_t) esp_timer_get_time() / 1000;
 
 	if (loop_iterations % 4 == 0) {
 		if (sensors::SENSOR_HANDLER.getTimeSinceMeasurement() == -1
@@ -301,7 +302,7 @@ void loop() {
 	mqtt::loop();
 
 	loop_iterations++;
-	const uint64_t end = millis();
+	const uint64_t end = (uint64_t) esp_timer_get_time() / 1000;
 	delay(max(0, 500 - int16_t(end - start)));
 }
 

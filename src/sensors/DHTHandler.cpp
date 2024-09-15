@@ -10,6 +10,9 @@
 
 #include "sensors/DHTHandler.h"
 #include <fallback_log.h>
+#ifdef ESP8266
+#include <fallback_timer.h>
+#endif
 
 namespace sensors {
 
@@ -27,8 +30,8 @@ bool DHTHandler::begin() {
 }
 
 bool DHTHandler::requestMeasurement() {
-	const uint32_t now = millis();
-	if (_last_request == -1 || now - (uint32_t) _last_request >= MIN_INTERVAL) {
+	const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
+	if (_last_request == -1 || now - (uint64_t) _last_request >= MIN_INTERVAL) {
 		_last_request = now;
 		if (!_dht.read(false)) {
 			_temperature = _humidity = NAN;
@@ -52,8 +55,8 @@ bool DHTHandler::requestMeasurement() {
 		return true;
 	} else {
 		log_i("Attempted to read sensor data before minimum delay.");
-		log_d("Min delay: %ums, Time since measurement: %ums",
-				(uint32_t) MIN_INTERVAL, (now - (uint32_t) _last_request));
+		log_d("Min delay: %hums, Time since measurement: %llums",
+				MIN_INTERVAL, (now - (uint64_t) _last_request));
 		return false;
 	}
 }

@@ -10,6 +10,9 @@
 
 #include "sensors/DallasHandler.h"
 #include <fallback_log.h>
+#ifdef ESP8266
+#include <fallback_timer.h>
+#endif
 
 namespace sensors {
 
@@ -40,12 +43,12 @@ bool DallasHandler::begin() {
 }
 
 bool DallasHandler::requestMeasurement() {
-	uint32_t now = millis();
-	if (_last_request == -1 || now - (uint32_t) _last_request >= MIN_INTERVAL) {
+	uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
+	if (_last_request == -1 || now - (uint64_t) _last_request >= MIN_INTERVAL) {
 		// Read previous measurements, if they weren't read yet.
 		if (_last_request > _last_finished_request) {
 			getTemperature();
-			now = millis();
+			now = (uint64_t) esp_timer_get_time() / 1000;
 		}
 
 		_last_request = now;
@@ -66,8 +69,8 @@ bool DallasHandler::requestMeasurement() {
 		return true;
 	} else {
 		log_i("Attempted to read sensor data before minimum delay.");
-		log_d("Min delay: %ums, Time since measurement: %ums",
-				(uint32_t) MIN_INTERVAL, (now - (uint32_t) _last_request));
+		log_d("Min delay: %hums, Time since measurement: %llums", MIN_INTERVAL,
+				(now - (uint64_t) _last_request));
 		return false;
 	}
 }
@@ -77,8 +80,9 @@ bool DallasHandler::supportsTemperature() const {
 }
 
 float DallasHandler::getTemperature() {
+	const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
 	if (_last_request > _last_finished_request
-			&& millis() - (uint32_t) _last_request >= MIN_INTERVAL) {
+			&& now - (uint64_t) _last_request >= MIN_INTERVAL) {
 		DeviceAddress address;
 		if (!_sensors.getAddress(address, SENSOR_INDEX)) {
 			log_w("Failed to get address for sensor %u.", SENSOR_INDEX);
@@ -116,8 +120,9 @@ float DallasHandler::getTemperature() {
 }
 
 float DallasHandler::getLastTemperature() {
+	const uint64_t now = (uint64_t) esp_timer_get_time() / 1000;
 	if (_last_request > _last_finished_request
-			&& millis() - _last_request >= MIN_INTERVAL) {
+			&& now - (uint64_t) _last_request >= MIN_INTERVAL) {
 		getTemperature();
 	}
 	return _last_valid_temperature;

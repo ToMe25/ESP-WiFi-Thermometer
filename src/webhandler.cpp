@@ -22,6 +22,9 @@
 #include <ESP8266mDNS.h>
 #endif
 #include <fallback_log.h>
+#if ENABLE_TIMINGS_API == 1 && defined(ESP8266)
+#include <fallback_timer.h>
+#endif
 #endif /* ENABLE_WEB_SERVER == 1 */
 
 #if ENABLE_WEB_SERVER == 1
@@ -80,7 +83,7 @@ void web::setup() {
 #if ENABLE_TIMINGS_API == 1
 	registerRequestHandler("/timings/since_startup_ms", HTTP_GET,
 			[](AsyncWebServerRequest *request) -> ResponseData {
-				const String str = String(millis());
+				const String str = String(esp_timer_get_time() / 1000);
 				AsyncWebServerResponse *response = request->beginResponse(200,
 						"text/plain", str.c_str());
 				response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
@@ -110,7 +113,6 @@ void web::setup() {
 	registerStaticHandler("/timings/info", "text/plain",
 			"This directory contains various timing informations.\n"
 					"A list of these endpoints is currently not available.\n"
-					"The precision of these timings may not be ideal because the millis function returns an unsigned 32 bit interger that wraps after ~50 days.\n"
 					"All endpoints return values in milliseconds.");
 
 	registerRedirect("/timings", "/timings/info");

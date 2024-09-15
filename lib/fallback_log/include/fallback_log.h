@@ -14,8 +14,8 @@
  * The MIT license can be found in the project root and at https://opensource.org/licenses/MIT.
  */
 
-#ifndef SRC_FALLBACK_LOG_H_
-#define SRC_FALLBACK_LOG_H_
+#ifndef LIB_FALLBACK_TIMER_INCLUDE_FALLBACK_LOG_H_
+#define LIB_FALLBACK_TIMER_INCLUDE_FALLBACK_LOG_H_
 
 #include <cstdio>
 #include <utils.h>
@@ -77,4 +77,4 @@
 #endif
 #endif
 
-#endif /* SRC_FALLBACK_LOG_H_ */
+#endif /* LIB_FALLBACK_TIMER_INCLUDE_FALLBACK_LOG_H_ */
