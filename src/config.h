@@ -118,6 +118,13 @@ static constexpr int8_t GZIP_DECOMP_WINDOW_SIZE = -10;
 #ifndef ENABLE_CONTENT_SECURITY_POLICY
 #define ENABLE_CONTENT_SECURITY_POLICY 1
 #endif
+// Whether the timings api should be enabled.
+// The timings api exposes the time since the last measurement, last successful measurement, and startup in ms.
+// Set to 0 to disable.
+// Default is 1.
+#ifndef ENABLE_TIMINGS_API
+#define ENABLE_TIMINGS_API 1
+#endif
 
 // Web server automatic config.
 #if SERVER_HEADER_APPEND_HARDWARE != 1

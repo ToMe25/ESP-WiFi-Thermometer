@@ -14,8 +14,7 @@
 namespace sensors {
 
 DHTHandler::DHTHandler(uint8_t pin, uint8_t type) :
-		SensorHandler((type == 11 || type == 12) ? 1000 : 2000), _dht(
-				pin, type) {
+		SensorHandler((type == 11 || type == 12) ? 1000 : 2000), _dht(pin, type) {
 }
 
 DHTHandler::~DHTHandler() {
@@ -28,8 +27,8 @@ bool DHTHandler::begin() {
 }
 
 bool DHTHandler::requestMeasurement() {
-	const uint64_t now = millis();
-	if (_last_request == -1 || now - _last_request >= MIN_INTERVAL) {
+	const uint32_t now = millis();
+	if (_last_request == -1 || now - (uint32_t) _last_request >= MIN_INTERVAL) {
 		_last_request = now;
 		if (!_dht.read(false)) {
 			_temperature = _humidity = NAN;
@@ -54,7 +53,7 @@ bool DHTHandler::requestMeasurement() {
 	} else {
 		log_i("Attempted to read sensor data before minimum delay.");
 		log_d("Min delay: %ums, Time since measurement: %ums",
-				(uint32_t) MIN_INTERVAL, (uint32_t) (now - _last_request));
+				(uint32_t) MIN_INTERVAL, (now - (uint32_t) _last_request));
 		return false;
 	}
 }

@@ -77,6 +77,46 @@ void web::setup() {
 				return ResponseData(response, humidity.length(), 200);
 			});
 
+#if ENABLE_TIMINGS_API == 1
+	registerRequestHandler("/timings/since_startup_ms", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> ResponseData {
+				const String str = String(millis());
+				AsyncWebServerResponse *response = request->beginResponse(200,
+						"text/plain", str.c_str());
+				response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
+				return ResponseData(response, str.length(), 200);
+			});
+
+	registerRequestHandler("/timings/since_measurement_ms", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> ResponseData {
+				const String str = String(
+						sensors::SENSOR_HANDLER.getTimeSinceMeasurement());
+				AsyncWebServerResponse *response = request->beginResponse(200,
+						"text/plain", str.c_str());
+				response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
+				return ResponseData(response, str.length(), 200);
+			});
+
+	registerRequestHandler("/timings/since_successful_measurement_ms", HTTP_GET,
+			[](AsyncWebServerRequest *request) -> ResponseData {
+				const String str = String(
+						sensors::SENSOR_HANDLER.getTimeSinceValidMeasurement());
+				AsyncWebServerResponse *response = request->beginResponse(200,
+						"text/plain", str.c_str());
+				response->addHeader("Cache-Control", CACHE_CONTROL_NOCACHE);
+				return ResponseData(response, str.length(), 200);
+			});
+
+	registerStaticHandler("/timings/info", "text/plain",
+			"This directory contains various timing informations.\n"
+					"A list of these endpoints is currently not available.\n"
+					"The precision of these timings may not be ideal because the millis function returns an unsigned 32 bit interger that wraps after ~50 days.\n"
+					"All endpoints return values in milliseconds.");
+
+	registerRedirect("/timings", "/timings/info");
+	registerRedirect("/timings/", "/timings/info");
+#endif
+
 	registerRequestHandler("/data.json", HTTP_GET, getJson);
 
 	registerCompressedStaticHandler("/favicon.ico", "image/x-icon",

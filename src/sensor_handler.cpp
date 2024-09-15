@@ -10,7 +10,7 @@
 
 #include "config.h"
 #include "sensor_handler.h"
-#include <utils.h>
+#include <fallback_log.h>
 #if SENSOR_TYPE == SENSOR_TYPE_DHT
 #include "sensors/DHTHandler.h"
 #elif SENSOR_TYPE == SENSOR_TYPE_DALLAS
@@ -43,19 +43,33 @@ const std::string SensorHandler::getLastHumidityString() {
 }
 
 int64_t SensorHandler::getTimeSinceMeasurement() {
+	uint32_t now = millis();
 	if (_last_finished_request == -1) {
+		return -1;
+	} else if (_last_finished_request < 0) {
+		log_d("Invalid time of last measurement: %lldms.", _last_finished_request);
+		return -1;
+	} else if (_last_finished_request > now) {
+		log_d("Invalid time since last measurement: %lldms.", now - _last_finished_request);
 		return -1;
 	}
 
-	return millis() - _last_finished_request;
+	return now - _last_finished_request;
 }
 
 int64_t SensorHandler::getTimeSinceValidMeasurement() {
+	uint32_t now = millis();
 	if (_last_valid_request == -1) {
+		return -1;
+	} else if (_last_valid_request < 0) {
+		log_d("Invalid time of last valid measurement: %lldms.", _last_valid_request);
+		return -1;
+	} else if (_last_valid_request > now) {
+		log_d("Invalid time since last valid measurement: %lldms.", now - _last_valid_request);
 		return -1;
 	}
 
-	return millis() - _last_valid_request;
+	return now - _last_valid_request;
 }
 
 const std::string SensorHandler::getTimeSinceMeasurementString() {

@@ -21,7 +21,7 @@ Not all of these are necessarily going to be implemented at all.
  * Add degrees fahrenheit mode to web interface(clientside setting)
  * Add theme switcher to web interface(clientside setting)
  * Web server IPv6 support
- * Add current commit to prometheus info and HTTP Server header
+ * Add current commit HTTP Server header
 
 ## Integration
  * Find a way to make the kubernetes service(for prometheus) automatically point to the esp(mDNS?)

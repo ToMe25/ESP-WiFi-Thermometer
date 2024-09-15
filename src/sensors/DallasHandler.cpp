@@ -40,8 +40,8 @@ bool DallasHandler::begin() {
 }
 
 bool DallasHandler::requestMeasurement() {
-	uint64_t now = millis();
-	if (_last_request == -1 || now - _last_request >= MIN_INTERVAL) {
+	uint32_t now = millis();
+	if (_last_request == -1 || now - (uint32_t) _last_request >= MIN_INTERVAL) {
 		// Read previous measurements, if they weren't read yet.
 		if (_last_request > _last_finished_request) {
 			getTemperature();
@@ -67,7 +67,7 @@ bool DallasHandler::requestMeasurement() {
 	} else {
 		log_i("Attempted to read sensor data before minimum delay.");
 		log_d("Min delay: %ums, Time since measurement: %ums",
-				(uint32_t) MIN_INTERVAL, (uint32_t) (now - _last_request));
+				(uint32_t) MIN_INTERVAL, (now - (uint32_t) _last_request));
 		return false;
 	}
 }
@@ -78,7 +78,7 @@ bool DallasHandler::supportsTemperature() const {
 
 float DallasHandler::getTemperature() {
 	if (_last_request > _last_finished_request
-			&& millis() - _last_request >= MIN_INTERVAL) {
+			&& millis() - (uint32_t) _last_request >= MIN_INTERVAL) {
 		DeviceAddress address;
 		if (!_sensors.getAddress(address, SENSOR_INDEX)) {
 			log_w("Failed to get address for sensor %u.", SENSOR_INDEX);
