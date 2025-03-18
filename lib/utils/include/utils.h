@@ -14,6 +14,7 @@
 #define SRC_UTILS_H_
 
 #include <cstddef>
+#include <cstdint>
 #include <string>
 
 namespace utils {
