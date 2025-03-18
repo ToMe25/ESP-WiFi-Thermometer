@@ -15,7 +15,7 @@
 /**
  * The md5 hash of the file "main.css.gz".
  */
-static constexpr const char MAIN_CSS_GZ_HASH[] = "f144c285f1ef9fd820edeac7e3d79263";
+static constexpr const char MAIN_CSS_GZ_HASH[] = "3006e855a816651111ee82e92bcf6e8b";
 
 /**
  * The md5 hash of the file "index.js.gz".
