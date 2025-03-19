@@ -87,7 +87,7 @@ size_t compressed_length = 0;
  * Also initializes the random number generator.
  */
 void setUp() {
-	uncompressed_path = new char[L_tmpnam];
+	uncompressed_path = new char[L_tmpnam + 1];
 	uncompressed_path = tmpnam(uncompressed_path);
 	if (uncompressed_path) {
 		const size_t u_len = std::strlen(uncompressed_path);
@@ -110,12 +110,16 @@ void setUp() {
  * Deletes the compressed and uncompressed file, and destroys the random number generator.
  */
 void tearDown() {
-	remove(uncompressed_path);
-	delete[] uncompressed_path;
-	uncompressed_path = NULL;
-	remove(compressed_path);
-	delete[] compressed_path;
-	compressed_path = NULL;
+	if (uncompressed_path != NULL) {
+		remove(uncompressed_path);
+		delete[] uncompressed_path;
+		uncompressed_path = NULL;
+	}
+	if (compressed_path != NULL) {
+		remove(compressed_path);
+		delete[] compressed_path;
+		compressed_path = NULL;
+	}
 	delete[] compress_command;
 	compress_command = NULL;
 	delete rng;
@@ -136,6 +140,9 @@ void check_fixtures() {
 			"Failed to generate temporary file path.");
 	TEST_ASSERT_NOT_NULL_MESSAGE(compress_command,
 			"Failed to assemble command string.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(rng, "Failed to create rng.");
+	TEST_ASSERT_NOT_NULL_MESSAGE(distribution,
+			"Failed to create rng distribution.");
 
 	// Assume that a successful command returns 0.
 	TEST_ASSERT_EQUAL_INT_MESSAGE(0, std::system("python3 -V"),
