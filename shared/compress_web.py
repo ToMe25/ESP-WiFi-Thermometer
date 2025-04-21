@@ -72,6 +72,7 @@ def remove_whitespaces(lines_in, mode):
     if not isinstance(mode, MinifyMode):
         raise ValueError("mode has to be of type MinifyMode")
 
+    # TODO unify line separator handling
     lines_out = []
     current_quote = None
     for line in lines_in:
@@ -128,8 +129,8 @@ def remove_whitespaces(lines_in, mode):
             line_out = line_out[:-len(os.linesep) - 2] + os.linesep
 
         # Remove linebreaks after lines ending with a comma
-        if mode == MinifyMode.CSS and lines_out and lines_out[-1].strip()[-1:] == ',':
-            lines_out[-1] = lines_out[-1][:-len(os.linesep)] + line_out
+        if mode == MinifyMode.CSS and lines_out and lines_out[-1].rstrip()[-1:] == ',':
+            lines_out[-1] = lines_out[-1].rstrip() + line_out
         elif (lines_out and lines_out[-1].strip()) or line_out.strip():
             lines_out.append(line_out)
 
