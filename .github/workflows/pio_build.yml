@@ -51,8 +51,8 @@ jobs:
             ${{ steps.pip-cache.outputs.dir }}
             ~/.platformio
             .pio
-          key: ${{ matrix.os }}-platformio-${{ hashFiles('platformio.ini') }}
-          restore-keys: ${{ matrix.os }}-platformio-
+          key: ${{ matrix.os }}-build-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: ${{ matrix.os }}-build-platformio-
 
       - name: Install Platform IO
         id: pio-install
