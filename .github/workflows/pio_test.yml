@@ -61,3 +61,11 @@ jobs:
       - name: Platform IO test
         id: pio-test
         run: pio test -e native
+
+      - name: Upload test program
+        id: upload-artifact
+        if: ${{ steps.pio-install.conclusion == 'success' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.os }}-test-executable
+          path: .pio/build/native/program*
