@@ -50,7 +50,7 @@ jobs:
         with:
           path: |
             ${{ steps.pip-cache.outputs.dir }}
-            ~/.platformio
+            ~/.platformio/.cache
             .pio
           key: ${{ matrix.os }}-test-platformio-${{ hashFiles('platformio.ini') }}
           restore-keys: ${{ matrix.os }}-test-platformio-
