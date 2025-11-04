@@ -33,17 +33,36 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      id: checkout
+      uses: actions/checkout@v5
 
     - name: Setup Python
-      uses: actions/setup-python@v5
+      id: setup-python
+      uses: actions/setup-python@v6
       with:
         python-version: 3.x
 
+    - name: Get pip cache dir
+      id: pip-cache
+      shell: bash
+      run: |
+        echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+        
+    - name: Cache pip packages and Platform IO build cache
+      uses: actions/cache@v4
+      with:
+        path: |
+            ${{ steps.pip-cache.outputs.dir }}
+            ~/.platformio/.cache
+        key: ubuntu-latest-codeql-${{ matrix.env }}-platformio-${{ hashFiles('platformio.ini') }}
+        restore-keys: ubuntu-latest-codeql-${{ matrix.env }}-platformio-
+
     - name: Install Platform IO
+      id: pio-install
       run: pip install -U platformio
 
-    - name: Create crdential files
+    - name: Create dummy crdential files
+      id: create-dummy-creds
       run: |
         echo "OTA Password" > otapass.txt
         echo "WiFi SSID" > wifissid.txt
@@ -52,13 +71,16 @@ jobs:
         echo "MQTT Password" > mqttpass.txt
 
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
+      id: codeql-init
+      uses: github/codeql-action/init@v4
       with:
         languages: ${{ matrix.language }}
         queries: security-extended
 
     - name: Build using platformio
+      id: pio-build
       run: pio run -e ${{ matrix.env }}
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
+      id: codeql-analyze
+      uses: github/codeql-action/analyze@v4

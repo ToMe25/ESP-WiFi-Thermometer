@@ -1,4 +1,4 @@
-# This workflow builds all platformio build targets to test whether any of them were broken by a commit.
+# This workflow builds and runs the automated tests of this project to test whether any of them were broken by a commit.
 
 name: Platform IO test
 
@@ -29,24 +29,44 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        id: checkout
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: 3.x
 
+      - name: Get pip cache dir
+        id: pip-cache
+        shell: bash
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
       - name: Cache pip packages and Platform IO build cache
+        id: cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pip
-            ~/.platformio
+            ${{ steps.pip-cache.outputs.dir }}
+            ~/.platformio/.cache
             .pio
-          key: platformio-${{ hashFiles('platformio.ini') }}-${{ matrix.os }}
+          key: ${{ matrix.os }}-test-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: ${{ matrix.os }}-test-platformio-
 
       - name: Install Platform IO
+        id: pio-install
         run: pip install -U platformio
 
       - name: Platform IO test
+        id: pio-test
         run: pio test -e native
+
+      - name: Upload test program
+        id: upload-artifact
+        if: ${{ steps.pio-install.conclusion == 'success' }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: ${{ matrix.os }}-test-executable
+          path: .pio/build/native/program*
