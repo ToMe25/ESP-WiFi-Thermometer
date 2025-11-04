@@ -29,24 +29,35 @@ jobs:
 
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        id: checkout
+        uses: actions/checkout@v5
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        id: setup-python
+        uses: actions/setup-python@v6
         with:
           python-version: 3.x
 
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
+
       - name: Cache pip packages and Platform IO build cache
+        id: cache
         uses: actions/cache@v4
         with:
           path: |
-            ~/.cache/pip
+            ${{ steps.pip-cache.outputs.dir }}
             ~/.platformio
             .pio
-          key: platformio-${{ hashFiles('platformio.ini') }}-${{ matrix.os }}
+          key: ${{ matrix.os }}-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: ${{ matrix.os }}-platformio-
 
       - name: Install Platform IO
+        id: pio-install
         run: pip install -U platformio
 
       - name: Platform IO test
+        id: pio-test
         run: pio test -e native
