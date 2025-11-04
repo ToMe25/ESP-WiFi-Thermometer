@@ -41,6 +41,7 @@ jobs:
 
       - name: Get pip cache dir
         id: pip-cache
+        shell: bash
         run: |
           echo "dir=$(pip cache dir)" >> $GITHUB_OUTPUT
 
@@ -49,7 +50,7 @@ jobs:
         with:
           path: |
             ${{ steps.pip-cache.outputs.dir }}
-            ~/.platformio
+            ~/.platformio/.cache
             .pio
           key: ${{ matrix.os }}-build-platformio-${{ hashFiles('platformio.ini') }}
           restore-keys: ${{ matrix.os }}-build-platformio-
