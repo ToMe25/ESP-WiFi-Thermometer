@@ -1,4 +1,4 @@
-# This workflow builds all platformio build targets to test whether any of them were broken by a commit.
+# This workflow builds and runs the automated tests of this project to test whether any of them were broken by a commit.
 
 name: Platform IO test
 
@@ -51,8 +51,8 @@ jobs:
             ${{ steps.pip-cache.outputs.dir }}
             ~/.platformio
             .pio
-          key: ${{ matrix.os }}-platformio-${{ hashFiles('platformio.ini') }}
-          restore-keys: ${{ matrix.os }}-platformio-
+          key: ${{ matrix.os }}-test-platformio-${{ hashFiles('platformio.ini') }}
+          restore-keys: ${{ matrix.os }}-test-platformio-
 
       - name: Install Platform IO
         id: pio-install
