@@ -7,8 +7,11 @@
 .pydevproject
 .settings/
 
-# VS Code
+# Visual Studio Code
 .vscode
+
+# Visual Studio
+.vs
 
 # Python
 __pycache__

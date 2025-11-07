@@ -87,7 +87,8 @@ size_t compressed_length = 0;
  * Also initializes the random number generator.
  */
 void setUp() {
-	uncompressed_path = new char[L_tmpnam + 1];
+	const size_t u_buf_len = (L_tmpnam < 260 ? 260 : L_tmpnam) + 1; // L_tmpnam seems to be incorrect sometimes.
+	uncompressed_path = new char[u_buf_len];
 	uncompressed_path = tmpnam(uncompressed_path);
 	if (uncompressed_path) {
 		const size_t u_len = std::strlen(uncompressed_path);
